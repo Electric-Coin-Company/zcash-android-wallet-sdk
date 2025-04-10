@@ -12,7 +12,7 @@ data class LightWalletEndpointInfoUnsafe(
     val lightdInfo: LightdInfo
 ) {
     companion object {
-        internal fun new(lightdInfo: LightdInfo) = LightWalletEndpointInfoUnsafe(lightdInfo)
+        fun new(lightdInfo: LightdInfo) = LightWalletEndpointInfoUnsafe(lightdInfo)
     }
 
     val chainName: String = lightdInfo.chainName
