@@ -303,12 +303,28 @@ class SdkSynchronizer private constructor(
     override val status = _status.asStateFlow()
 
     /**
-     * Indicates the download progress of the Synchronizer. When progress reaches `PercentDecimal.ONE_HUNDRED_PERCENT`,
-     * that signals that the Synchronizer is in sync with the network. Balances should be considered
-     * inaccurate and outbound transactions should be prevented until this sync is complete. It is
-     * a simplified version of [processorInfo].
+     * Indicates the download progress of the Synchronizer.
+     *
+     * When progress reaches `PercentDecimal.ONE_HUNDRED_PERCENT`, it signals that the Synchronizer
+     * is up-to-date with the network's current chain tip. Balances should be considered inaccurate
+     * and outbound transactions should be prevented until this sync is complete.
+     *
+     * If you want to know whether the Synchronizer is fully in sync with the network, you also need
+     * to check [recoveryProgress].
      */
     override val progress: Flow<PercentDecimal> = processor.progress
+
+    /**
+     * Indicates the recovery progress of the Synchronizer.
+     *
+     * When progress reaches `PercentDecimal.ONE_HUNDRED_PERCENT`, it signals that the Synchronizer
+     * has recovered all past history. Balances should be considered a lower bound until this sync
+     * is complete.
+     *
+     * If you want to know whether the Synchronizer is fully in sync with the network, you also need
+     * to check [progress].
+     */
+    override val recoveryProgress: Flow<PercentDecimal?> = processor.recoveryProgress
 
     /**
      * Indicates the latest information about the blocks that have been processed by the SDK. This

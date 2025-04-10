@@ -63,12 +63,28 @@ interface Synchronizer {
     val status: Flow<Status>
 
     /**
-     * A flow of progress values, typically corresponding to this Synchronizer downloading blocks.
-     * Typically, any non-zero value below `PercentDecimal.ONE_HUNDRED_PERCENT` indicates that progress indicators can
-     * be shown and a value of `PercentDecimal.ONE_HUNDRED_PERCENT` signals that progress is complete and any progress
-     * indicators can be hidden.
+     * Indicates the download progress of the Synchronizer.
+     *
+     * When progress reaches `PercentDecimal.ONE_HUNDRED_PERCENT`, it signals that the Synchronizer
+     * is up-to-date with the network's current chain tip. Balances should be considered inaccurate
+     * and outbound transactions should be prevented until this sync is complete.
+     *
+     * If you want to know whether the Synchronizer is fully in sync with the network, you also need
+     * to check [recoveryProgress].
      */
     val progress: Flow<PercentDecimal>
+
+    /**
+     * Indicates the recovery progress of the Synchronizer.
+     *
+     * When progress reaches `PercentDecimal.ONE_HUNDRED_PERCENT`, it signals that the Synchronizer
+     * has recovered all past history. Balances should be considered a lower bound until this sync
+     * is complete.
+     *
+     * If you want to know whether the Synchronizer is fully in sync with the network, you also need
+     * to check [progress].
+     */
+    val recoveryProgress: Flow<PercentDecimal?>
 
     /**
      * A flow of processor details, updated every time blocks are processed to include the latest
