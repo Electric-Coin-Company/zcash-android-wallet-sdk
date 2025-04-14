@@ -108,6 +108,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.Instant
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
@@ -233,6 +234,17 @@ class SdkSynchronizer private constructor(
                 DatabaseCoordinator.getInstance(appContext).deleteDatabases(network, alias)
             }
         }
+
+        suspend fun estimateBirthdayHeight(
+            context: Context,
+            date: Instant,
+            network: ZcashNetwork,
+        ): BlockHeight =
+            CheckpointTool.estimateBirthdayHeight(
+                context = context,
+                date = date,
+                network = network
+            )
     }
 
     private val _status = MutableStateFlow(DISCONNECTED)
