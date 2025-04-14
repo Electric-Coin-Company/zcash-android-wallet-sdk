@@ -26,5 +26,8 @@ internal data class Checkpoint(
         return TreeState.fromParts(height.value, hash, epochSeconds.toInt(), saplingTree, orchardTree)
     }
 
+    @Suppress("MagicNumber")
+    internal val epochTimeMillis: Long by lazy { epochSeconds * 1000 }
+
     companion object
 }

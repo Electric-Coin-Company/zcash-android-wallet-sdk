@@ -95,7 +95,7 @@ private fun ConfigureSeedTopAppBar() {
 }
 
 @Composable
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "LongParameterList")
 private fun ConfigureSeedMainContent(
     paddingValues: PaddingValues,
     zcashNetwork: ZcashNetwork,
@@ -166,7 +166,7 @@ private fun ConfigureSeedMainContent(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("ktlint:standard:function-naming")
+@Suppress("ktlint:standard:function-naming", "LongMethod")
 private fun RestoreWalletSection(
     zcashNetwork: ZcashNetwork,
     onExistingWallet: (PersistableWallet) -> Unit,
@@ -177,10 +177,7 @@ private fun RestoreWalletSection(
     var openBdEstimateDialog by remember { mutableStateOf(false) }
 
     var walletBirthdayString by rememberSaveable {
-        mutableStateOf(
-            // fixme toString
-            estimatedHeight?.value?.toString()
-        )
+        mutableStateOf(estimatedHeight?.value?.toString())
     }
 
     @Composable
