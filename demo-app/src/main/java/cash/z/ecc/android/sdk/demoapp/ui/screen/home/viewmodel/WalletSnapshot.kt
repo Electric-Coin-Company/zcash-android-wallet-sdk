@@ -13,7 +13,7 @@ data class WalletSnapshot(
     val walletBalances: Map<AccountUuid, AccountBalance>,
     val exchangeRateUsd: BigDecimal?,
     val progress: PercentDecimal,
-    val recoveryProgress: PercentDecimal,
+    val isSpendable: Boolean,
     val synchronizerError: SynchronizerError?
 ) {
     fun balanceByAccountUuid(accountUuid: AccountUuid): AccountBalance =

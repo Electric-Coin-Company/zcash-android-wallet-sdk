@@ -68,23 +68,13 @@ interface Synchronizer {
      * When progress reaches `PercentDecimal.ONE_HUNDRED_PERCENT`, it signals that the Synchronizer
      * is up-to-date with the network's current chain tip. Balances should be considered inaccurate
      * and outbound transactions should be prevented until this sync is complete.
-     *
-     * If you want to know whether the Synchronizer is fully in sync with the network, you also need
-     * to check [recoveryProgress].
      */
     val progress: Flow<PercentDecimal>
 
     /**
-     * Indicates the recovery progress of the Synchronizer.
-     *
-     * When progress reaches `PercentDecimal.ONE_HUNDRED_PERCENT`, it signals that the Synchronizer
-     * has recovered all past history. Balances should be considered a lower bound until this sync
-     * is complete.
-     *
-     * If you want to know whether the Synchronizer is fully in sync with the network, you also need
-     * to check [progress].
+     * Indicates whether is the shielded wallet balance spendable or not during the block synchronization process.
      */
-    val recoveryProgress: Flow<PercentDecimal?>
+    val isSpendable: Flow<Boolean>
 
     /**
      * A flow of processor details, updated every time blocks are processed to include the latest

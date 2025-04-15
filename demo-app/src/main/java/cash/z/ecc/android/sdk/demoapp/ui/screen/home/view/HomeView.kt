@@ -206,13 +206,7 @@ private fun HomeMainContent(
         @Suppress("MagicNumber")
         if (walletSnapshot.status != Synchronizer.Status.SYNCED) {
             Text(text = stringResource(id = R.string.home_progress, walletSnapshot.progress.decimal * 100))
-            Text(
-                text =
-                    stringResource(
-                        id = R.string.home_recovery_progress,
-                        walletSnapshot.recoveryProgress.decimal * 100
-                    )
-            )
+            Text(text = stringResource(id = R.string.home_is_spendable, walletSnapshot.isSpendable))
 
             // Makes sync for debug builds more reliable and less annoying.
             // This is not perfect because the synchronizer switches to downloading/scanning periodically when doing

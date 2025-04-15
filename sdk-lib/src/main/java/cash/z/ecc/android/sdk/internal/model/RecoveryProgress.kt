@@ -1,8 +1,8 @@
 package cash.z.ecc.android.sdk.internal.model
 
 internal data class RecoveryProgress(
-    private val numerator: Long,
-    private val denominator: Long
+    val numerator: Long,
+    val denominator: Long
 ) : Progress(numerator, denominator) {
     override fun toString() = "RecoveryProgress($numerator/$denominator) -> ${getSafeRatio()}"
 
