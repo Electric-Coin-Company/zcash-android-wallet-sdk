@@ -72,9 +72,9 @@ interface Synchronizer {
     val progress: Flow<PercentDecimal>
 
     /**
-     * Indicates whether is the shielded wallet balance spendable or not during the block synchronization process.
+     * Indicates whether are the shielded wallet balances spendable or not during the block synchronization process.
      */
-    val isSpendable: Flow<Boolean>
+    val areFundsSpendable: Flow<Boolean>
 
     /**
      * A flow of processor details, updated every time blocks are processed to include the latest

@@ -793,6 +793,7 @@ class CompactBlockProcessor internal constructor(
             else -> {
                 // Do not report the progress and balances in case of any error, and
                 // tell the caller to fetch all subtree roots.
+                Twig.info { "Progress from rust: no progress information available, progress type: $result" }
                 return Pair(UInt.MIN_VALUE, UInt.MIN_VALUE)
             }
         }

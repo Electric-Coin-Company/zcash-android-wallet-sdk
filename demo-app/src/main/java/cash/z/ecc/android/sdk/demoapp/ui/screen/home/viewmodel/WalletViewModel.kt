@@ -526,7 +526,7 @@ private fun Synchronizer.toWalletSnapshot() =
         // 4
         progress,
         // 5
-        isSpendable,
+        areFundsSpendable,
         // 6
         toCommonError()
     ) { flows ->
