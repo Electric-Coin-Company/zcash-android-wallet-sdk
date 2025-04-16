@@ -314,7 +314,7 @@ class SdkSynchronizer private constructor(
     /**
      * Indicates whether is the shielded wallet balance spendable or not during the block synchronization process.
      */
-    override val isSpendable: Flow<Boolean> = processor.progress.map { it == PercentDecimal.ONE_HUNDRED_PERCENT }
+    override val isSpendable: Flow<Boolean> = processor.scanProgress.map { it == PercentDecimal.ONE_HUNDRED_PERCENT }
 
     /**
      * Indicates the latest information about the blocks that have been processed by the SDK. This

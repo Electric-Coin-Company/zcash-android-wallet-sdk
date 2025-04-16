@@ -85,6 +85,7 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.Locale
@@ -2254,9 +2255,10 @@ class CompactBlockProcessor internal constructor(
         scanProgress: ScanProgress,
         recoveryProgress: RecoveryProgress? = null
     ) {
-        _scanProgress.value = PercentDecimal(scanProgress.getSafeRatio())
-        _recoveryProgress.value = recoveryProgress?.getSafeRatio()?.let { PercentDecimal(it) }
-            ?: PercentDecimal.ZERO_PERCENT
+        _scanProgress.update { PercentDecimal(scanProgress.getSafeRatio()) }
+        _recoveryProgress.update {
+            recoveryProgress?.getSafeRatio()?.let { PercentDecimal(it) } ?: PercentDecimal.ZERO_PERCENT
+        }
 
         // [_progress] is calculated as sum numerator divided by denominators if [recoveryProgress] is not null
         _progress.value =
