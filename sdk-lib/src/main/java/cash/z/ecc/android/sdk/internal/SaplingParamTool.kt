@@ -73,7 +73,7 @@ internal class SaplingParamTool(
         /**
          * The Url that is used by default in zcashd
          */
-        private const val CLOUD_PARAM_DIR_URL = "https://z.cash/downloads/"
+        private const val CLOUD_PARAM_DIR_URL = "https://download.z.cash/downloads/"
 
         private val checkFilesMutex = Mutex()
 
@@ -255,7 +255,8 @@ internal class SaplingParamTool(
         TransactionEncoderException.FetchParamsException::class
     )
     internal suspend fun fetchParams(paramsToFetch: SaplingParameters) {
-        val url = URL("$CLOUD_PARAM_DIR_URL/${paramsToFetch.fileName}")
+        val url = URL("$CLOUD_PARAM_DIR_URL${paramsToFetch.fileName}")
+        Twig.debug { "Sapling params fetch URL: $url" }
         val temporaryFile =
             File(
                 paramsToFetch.destinationDirectory,
