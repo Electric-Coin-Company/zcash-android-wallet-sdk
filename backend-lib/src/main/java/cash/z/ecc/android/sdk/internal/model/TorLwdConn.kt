@@ -1,19 +1,29 @@
 package cash.z.ecc.android.sdk.internal.model
 
+import cash.z.wallet.sdk.internal.rpc.Service
 import cash.z.wallet.sdk.internal.rpc.Service.BlockID
 import cash.z.wallet.sdk.internal.rpc.Service.LightdInfo
 import cash.z.wallet.sdk.internal.rpc.Service.TreeState
+import co.electriccoin.Networking
+import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.BlockIDUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
+import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
+import co.electriccoin.lightwallet.client.model.Response
+import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 import co.electriccoin.lightwallet.client.model.TreeStateUnsafe
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
+/**
+ * TODO document [Response] use
+ */
+
 class TorLwdConn private constructor(
     private var nativeHandle: Long?,
-) {
+): Networking {
     private val accessMutex = Mutex()
 
     suspend fun dispose() =
@@ -27,14 +37,23 @@ class TorLwdConn private constructor(
     /**
      * Returns information about this lightwalletd instance and the blockchain.
      */
-    suspend fun getServerInfo(): LightWalletEndpointInfoUnsafe =
+    override suspend fun getServerInfo(): Response<LightWalletEndpointInfoUnsafe> =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 checkNotNull(nativeHandle) { "TorLwdConn is disposed" }
-                LightWalletEndpointInfoUnsafe.new(
-                    LightdInfo.parseFrom(
-                        getServerInfo(nativeHandle!!)
-                    )
+                runCatching {
+                    getServerInfo(nativeHandle!!)
+                }.fold(
+                    onSuccess = { value ->
+                        Response.Success(
+                            LightWalletEndpointInfoUnsafe.new(
+                                LightdInfo.parseFrom(
+                                    value
+                                )
+                            )
+                        )
+                    },
+                    onFailure = { throwable -> Response.Failure.OverTor(throwable.message) }
                 )
             }
         }
@@ -42,13 +61,15 @@ class TorLwdConn private constructor(
     /**
      * Returns information about the latest block in the network.
      */
-    suspend fun getLatestBlock(): BlockIDUnsafe =
+    override suspend fun getLatestBlock(): Response<BlockIDUnsafe> =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 checkNotNull(nativeHandle) { "TorLwdConn is disposed" }
-                BlockIDUnsafe.new(
-                    BlockID.parseFrom(
-                        getLatestBlock(nativeHandle!!)
+                Response.Success(
+                    BlockIDUnsafe.new(
+                        BlockID.parseFrom(
+                            getLatestBlock(nativeHandle!!)
+                        )
                     )
                 )
             }
@@ -57,35 +78,52 @@ class TorLwdConn private constructor(
     /**
      * Fetches the transaction with the given ID.
      */
-    suspend fun fetchTransaction(txId: ByteArray) =
+    override suspend fun fetchTransaction(txId: ByteArray): Response<RawTransactionUnsafe> =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 checkNotNull(nativeHandle) { "TorLwdConn is disposed" }
-                fetchTransaction(nativeHandle!!, txId)
+                Response.Success(
+                    RawTransactionUnsafe.new(
+                        Service.RawTransaction.parseFrom(
+                            fetchTransaction(nativeHandle!!, txId)
+                        )
+                    )
+                )
             }
         }
 
     /**
      * Submits a transaction to the Zcash network via the given lightwalletd connection.
      */
-    suspend fun submitTransaction(tx: ByteArray) =
+    override suspend fun submitTransaction(tx: ByteArray): Response<SendResponseUnsafe> =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 checkNotNull(nativeHandle) { "TorLwdConn is disposed" }
-                submitTransaction(nativeHandle!!, tx)
+                Response.Success(
+                    // TODO fix parsing the data
+                    SendResponseUnsafe(
+                        -1,
+                        ""
+                        // Service.SendResponse.parseFrom(
+                        //    submitTransaction(nativeHandle!!, tx)
+                        // )
+                    )
+                )
             }
         }
 
     /**
      * Fetches the note commitment tree state corresponding to the given block height.
      */
-    suspend fun getTreeState(height: Long): TreeStateUnsafe =
+    override suspend fun getTreeState(height: BlockHeightUnsafe): Response<TreeStateUnsafe> =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 checkNotNull(nativeHandle) { "TorLwdConn is disposed" }
-                TreeStateUnsafe.new(
-                    TreeState.parseFrom(
-                        getTreeState(nativeHandle!!, height)
+                Response.Success(
+                    TreeStateUnsafe.new(
+                        TreeState.parseFrom(
+                            getTreeState(nativeHandle!!, height.value)
+                        )
                     )
                 )
             }

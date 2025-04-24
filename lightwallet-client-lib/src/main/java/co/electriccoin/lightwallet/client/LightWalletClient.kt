@@ -1,6 +1,7 @@
 package co.electriccoin.lightwallet.client
 
 import android.content.Context
+import co.electriccoin.Networking
 import co.electriccoin.lightwallet.client.internal.AndroidChannelFactory
 import co.electriccoin.lightwallet.client.internal.LightWalletClientImpl
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
@@ -23,11 +24,11 @@ import kotlin.time.Duration.Companion.seconds
  * Client for interacting with lightwalletd.
  */
 @Suppress("TooManyFunctions")
-interface LightWalletClient : Closeable {
+interface LightWalletClient : Networking, Closeable {
     /**
      * @return the full transaction info.
      */
-    suspend fun fetchTransaction(txId: ByteArray): Response<RawTransactionUnsafe>
+    override suspend fun fetchTransaction(txId: ByteArray): Response<RawTransactionUnsafe>
 
     /**
      * @param tAddresses the array containing the transparent addresses to use.
@@ -60,7 +61,7 @@ interface LightWalletClient : Closeable {
     /**
      * @return useful server details.
      */
-    suspend fun getServerInfo(): Response<LightWalletEndpointInfoUnsafe>
+    override suspend fun getServerInfo(): Response<LightWalletEndpointInfoUnsafe>
 
     /**
      * Gets all the transactions for a given t-address over the given range.  In practice, this is
@@ -96,7 +97,7 @@ interface LightWalletClient : Closeable {
     /**
      * @return the latest block height known to the service.
      */
-    suspend fun getTreeState(height: BlockHeightUnsafe): Response<TreeStateUnsafe>
+    override suspend fun getTreeState(height: BlockHeightUnsafe): Response<TreeStateUnsafe>
 
     /**
      * Reconnect to the same or a different server. This is useful when the connection is
@@ -114,7 +115,7 @@ interface LightWalletClient : Closeable {
      *
      * @return the response from the server.
      */
-    suspend fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe>
+    override suspend fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe>
 
     companion object
 }
