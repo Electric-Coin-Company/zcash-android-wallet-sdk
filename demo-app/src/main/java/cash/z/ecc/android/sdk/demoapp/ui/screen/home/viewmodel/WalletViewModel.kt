@@ -540,6 +540,8 @@ private fun Synchronizer.toWalletSnapshot() =
         // 4
         progress,
         // 5
+        areFundsSpendable,
+        // 6
         toCommonError()
     ) { flows ->
         val exchangeRateUsd = flows[3] as ObserveFiatCurrencyResult
@@ -551,6 +553,7 @@ private fun Synchronizer.toWalletSnapshot() =
             flows[2] as Map<AccountUuid, AccountBalance>,
             exchangeRateUsd.currencyConversion?.priceOfZec?.toBigDecimal(),
             progressPercentDecimal,
-            flows[5] as SynchronizerError?
+            flows[5] as Boolean,
+            flows[6] as SynchronizerError?
         )
     }

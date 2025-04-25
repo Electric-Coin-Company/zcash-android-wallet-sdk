@@ -315,12 +315,19 @@ class SdkSynchronizer private constructor(
     override val status = _status.asStateFlow()
 
     /**
-     * Indicates the download progress of the Synchronizer. When progress reaches `PercentDecimal.ONE_HUNDRED_PERCENT`,
-     * that signals that the Synchronizer is in sync with the network. Balances should be considered
-     * inaccurate and outbound transactions should be prevented until this sync is complete. It is
-     * a simplified version of [processorInfo].
+     * Indicates the download progress of the Synchronizer.
+     *
+     * When progress reaches `PercentDecimal.ONE_HUNDRED_PERCENT`, it signals that the Synchronizer
+     * is up-to-date with the network's current chain tip. Balances should be considered inaccurate
+     * and outbound transactions should be prevented until this sync is complete.
      */
     override val progress: Flow<PercentDecimal> = processor.progress
+
+    /**
+     * Indicates whether are the shielded wallet balances spendable or not during the block synchronization process.
+     */
+    override val areFundsSpendable: Flow<Boolean> =
+        processor.scanProgress.map { it == PercentDecimal.ONE_HUNDRED_PERCENT }
 
     /**
      * Indicates the latest information about the blocks that have been processed by the SDK. This
