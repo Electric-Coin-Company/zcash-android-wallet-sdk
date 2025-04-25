@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package cash.z.ecc.android.sdk.tool
 
 import android.content.Context
@@ -10,9 +12,12 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import java.io.BufferedReader
 import java.io.IOException
 import java.util.Locale
+import kotlin.math.abs
 
 /**
  * Tool for loading checkpoints for the wallet, based on the height at which the wallet was born.
@@ -54,6 +59,14 @@ internal object CheckpointTool {
             )
         }
     }
+
+    /**
+     * Load tha last know checkpoint for the given network.
+     */
+    suspend fun loadLast(
+        context: Context,
+        network: ZcashNetwork,
+    ) = loadNearest(context, network, null)
 
     // Converting this to suspending will then propagate
     @Throws(IOException::class)
@@ -177,5 +190,142 @@ internal object CheckpointTool {
         }
 
         throw lastException!!
+    }
+
+    // These two come values from the Zcash Swift SDK. The average time between 2500 blocks during last 10
+    // checkpoints (estimated March 31, 2025) is 52.33 hours for mainnet. And the average time between 10,000 blocks
+    // during last 10 checkpoints (estimated March 31, 2025) is 134.93 hours for testnet.
+    private const val AVG_INTERVAL_TIME_MAINNET = 52.33f
+    private const val AVG_INTERVAL_TIME_TESTNET = 134.93f
+
+    private const val CHECKPOINT_BLOCK_INTERVAL_MAINNET = 2_500
+    private const val CHECKPOINT_BLOCK_INTERVAL_TESTNET = 10_000
+
+    private const val MILLIS_IN_HOUR = 3_600_000
+
+    /**
+     * This API takes a given date and finds out the closes checkpoint's height for it. Each block checkpoint has a
+     * timestamp stored that is used for this calculation.
+     *
+     * @param context
+     * @param date The given date to find the closest checkpoint for.
+     * @param network The network to use for the calculation.
+     * @return The height of the closest checkpoint for the given date, or the latest checkpoint height if the given
+     * date is over it. It returns the sapling activation height if the given date is before it.
+     */
+    @Suppress("ReturnCount")
+    internal suspend fun estimateBirthdayHeight(
+        context: Context,
+        date: Instant,
+        network: ZcashNetwork,
+    ): BlockHeight {
+        val avgIntervalTime =
+            if (network == ZcashNetwork.Mainnet) {
+                AVG_INTERVAL_TIME_MAINNET
+            } else {
+                AVG_INTERVAL_TIME_TESTNET
+            }
+        val blockInterval =
+            if (network == ZcashNetwork.Mainnet) {
+                CHECKPOINT_BLOCK_INTERVAL_MAINNET
+            } else {
+                CHECKPOINT_BLOCK_INTERVAL_TESTNET
+            }
+        val saplingActivationHeight =
+            if (network == ZcashNetwork.Mainnet) {
+                ZcashNetwork.Mainnet.saplingActivationHeight
+            } else {
+                ZcashNetwork.Testnet.saplingActivationHeight
+            }
+
+        val latestCheckpoint = loadLast(context, network)
+        val latestCheckpointTime = latestCheckpoint.epochTimeMillis
+
+        // If above the latest checkpoint, return the checkpoint height
+        if (date.toEpochMilliseconds() >= latestCheckpointTime) {
+            return latestCheckpoint.height
+        }
+
+        // Phase 1, estimate possible height
+        val nowTimeIntervalSince1970 = Clock.System.now().toEpochMilliseconds()
+        val timeDiff =
+            (nowTimeIntervalSince1970 - date.toEpochMilliseconds()) -
+                (nowTimeIntervalSince1970 - latestCheckpointTime)
+        val blockDiffHours = ((timeDiff / MILLIS_IN_HOUR) / avgIntervalTime) * blockInterval
+
+        val heightToLookAround = (
+            (latestCheckpoint.height.value - blockDiffHours.toInt()) /
+                blockInterval * blockInterval
+        )
+
+        // If bellow the sapling activation height, return the sapling activation height
+        if (heightToLookAround <= saplingActivationHeight.value) {
+            return saplingActivationHeight
+        }
+
+        return loadCheckpointAndEstimate(
+            avgIntervalTime = avgIntervalTime,
+            blockInterval = blockInterval,
+            context = context,
+            date = date,
+            lookAround = heightToLookAround,
+            network = network,
+            saplingActivationHeight = saplingActivationHeight
+        )
+    }
+
+    @Suppress("LongParameterList", "ReturnCount")
+    private suspend fun loadCheckpointAndEstimate(
+        avgIntervalTime: Float,
+        blockInterval: Int,
+        context: Context,
+        date: Instant,
+        lookAround: Long,
+        network: ZcashNetwork,
+        saplingActivationHeight: BlockHeight
+    ): BlockHeight {
+        var heightToLookAround = lookAround
+
+        // Phase 2, load checkpoint and evaluate against the given date
+        val loadedCheckpoint =
+            loadNearest(
+                context,
+                network,
+                BlockHeight(heightToLookAround),
+            )
+
+        // The loaded checkpoint is exactly the one
+        var hoursApart = (loadedCheckpoint.epochTimeMillis - date.toEpochMilliseconds()) / MILLIS_IN_HOUR
+        if (hoursApart < 0 && abs(hoursApart) < avgIntervalTime) {
+            return loadedCheckpoint.height
+        }
+
+        if (hoursApart < 0) {
+            // The loaded checkpoint is lower, increase until reached the one
+            var closestHeight = loadedCheckpoint.height
+            while (abs(hoursApart) > avgIntervalTime) {
+                heightToLookAround += blockInterval
+                val newCheckpoint = loadNearest(context, network, BlockHeight.new(heightToLookAround))
+                hoursApart = (newCheckpoint.epochTimeMillis - date.toEpochMilliseconds()) / MILLIS_IN_HOUR
+                if (hoursApart < 0 && abs(hoursApart) < avgIntervalTime) {
+                    return newCheckpoint.height
+                } else if (hoursApart >= 0) {
+                    return closestHeight
+                }
+                closestHeight = newCheckpoint.height
+            }
+        } else {
+            // The loaded checkpoint is higher, decrease until reached the one
+            while (hoursApart > 0) {
+                heightToLookAround -= blockInterval
+                val newCheckpoint = loadNearest(context, network, BlockHeight.new(heightToLookAround))
+                hoursApart = (newCheckpoint.epochTimeMillis - date.toEpochMilliseconds()) / MILLIS_IN_HOUR
+                if (hoursApart < 0) {
+                    return newCheckpoint.height
+                }
+            }
+        }
+
+        return saplingActivationHeight
     }
 }

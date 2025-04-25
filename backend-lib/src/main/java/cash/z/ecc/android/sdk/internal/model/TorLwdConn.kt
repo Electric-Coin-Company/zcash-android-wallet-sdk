@@ -1,5 +1,11 @@
 package cash.z.ecc.android.sdk.internal.model
 
+import cash.z.wallet.sdk.internal.rpc.Service.BlockID
+import cash.z.wallet.sdk.internal.rpc.Service.LightdInfo
+import cash.z.wallet.sdk.internal.rpc.Service.TreeState
+import co.electriccoin.lightwallet.client.model.BlockIDUnsafe
+import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
+import co.electriccoin.lightwallet.client.model.TreeStateUnsafe
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -15,6 +21,36 @@ class TorLwdConn private constructor(
             withContext(Dispatchers.IO) {
                 nativeHandle?.let { freeLightwalletdConnection(it) }
                 nativeHandle = null
+            }
+        }
+
+    /**
+     * Returns information about this lightwalletd instance and the blockchain.
+     */
+    suspend fun getServerInfo(): LightWalletEndpointInfoUnsafe =
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorLwdConn is disposed" }
+                LightWalletEndpointInfoUnsafe.new(
+                    LightdInfo.parseFrom(
+                        getServerInfo(nativeHandle!!)
+                    )
+                )
+            }
+        }
+
+    /**
+     * Returns information about the latest block in the network.
+     */
+    suspend fun getLatestBlock(): BlockIDUnsafe =
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorLwdConn is disposed" }
+                BlockIDUnsafe.new(
+                    BlockID.parseFrom(
+                        getLatestBlock(nativeHandle!!)
+                    )
+                )
             }
         }
 
@@ -40,6 +76,21 @@ class TorLwdConn private constructor(
             }
         }
 
+    /**
+     * Fetches the note commitment tree state corresponding to the given block height.
+     */
+    suspend fun getTreeState(height: Long): TreeStateUnsafe =
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorLwdConn is disposed" }
+                TreeStateUnsafe.new(
+                    TreeState.parseFrom(
+                        getTreeState(nativeHandle!!, height)
+                    )
+                )
+            }
+        }
+
     companion object {
         internal suspend fun new(nativeHandle: Long): TorLwdConn = TorLwdConn(nativeHandle = nativeHandle)
 
@@ -49,6 +100,20 @@ class TorLwdConn private constructor(
 
         @JvmStatic
         private external fun freeLightwalletdConnection(nativeHandle: Long)
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        private external fun getServerInfo(nativeHandle: Long): ByteArray
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        private external fun getLatestBlock(nativeHandle: Long): ByteArray
 
         /**
          * @throws RuntimeException as a common indicator of the operation failure
@@ -69,5 +134,15 @@ class TorLwdConn private constructor(
             nativeHandle: Long,
             tx: ByteArray
         )
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        private external fun getTreeState(
+            nativeHandle: Long,
+            fromHeight: Long
+        ): ByteArray
     }
 }
