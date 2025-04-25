@@ -62,7 +62,9 @@
     </string>
     <string name="home_status">Status: <xliff:g id="status" example="Syncing">%1$s</xliff:g></string>
     <string name="home_progress">Progress: <xliff:g id="percentage" example="15%">%1$.2f</xliff:g>%%</string>
-    <string name="home_is_spendable">Can wallet spend: <xliff:g id="spendable" example="true">%1$s</xliff:g></string>
+    <string name="home_are_funds_spendable">
+        Can wallet spend: <xliff:g id="spendable" example="true">%1$s</xliff:g>
+    </string>
 
     <string name="balance_transparent">Transparent</string>
     <string name="balance_sapling">Sapling</string>

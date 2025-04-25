@@ -15,7 +15,7 @@ import java.math.BigDecimal
 object WalletSnapshotFixture {
     val STATUS = Synchronizer.Status.SYNCED
     val PROGRESS = PercentDecimal.ZERO_PERCENT
-    const val IS_SPENDABLE = false
+    const val ARE_FUNDS_SPENDABLE = false
     val EXCHANGE_RATE_USD: BigDecimal = BigDecimal(37.4850)
     val ACCOUNT = AccountFixture.new()
     val WALLET_BALANCES: Map<AccountUuid, AccountBalance> =
@@ -36,7 +36,7 @@ object WalletSnapshotFixture {
         walletBalances: Map<AccountUuid, AccountBalance> = WALLET_BALANCES,
         exchangeRateUsd: BigDecimal? = EXCHANGE_RATE_USD,
         progress: PercentDecimal = PROGRESS,
-        isSpendable: Boolean = IS_SPENDABLE,
+        areFundsSpendable: Boolean = ARE_FUNDS_SPENDABLE,
         synchronizerError: SynchronizerError? = null
     ) = WalletSnapshot(
         status = status,
@@ -44,7 +44,7 @@ object WalletSnapshotFixture {
         walletBalances = walletBalances,
         exchangeRateUsd = exchangeRateUsd,
         progress = progress,
-        isSpendable = isSpendable,
+        areFundsSpendable = areFundsSpendable,
         synchronizerError = synchronizerError
     )
 }
