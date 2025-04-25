@@ -14,6 +14,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - The base sapling params download URL has been changed to `https://download.z.cash/downloads/`
+- Checkpoints update
 
 ### Fixed
 - As part of the sapling params download URL change, the extra `/` character has been removed from the result path
