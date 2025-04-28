@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.12] - 2025-04-28
+
 ### Added
 - `Synchronizer.areFundsSpendable` that indicates whether are the shielded wallet balances spendable or not during 
   the block synchronization process.
