@@ -41,7 +41,9 @@ import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.metrics.TraceScope
 import cash.z.ecc.android.sdk.internal.model.BlockBatch
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.RecoveryProgress
 import cash.z.ecc.android.sdk.internal.model.RewindResult
+import cash.z.ecc.android.sdk.internal.model.ScanProgress
 import cash.z.ecc.android.sdk.internal.model.ScanRange
 import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.SuggestScanRangePriority
@@ -83,6 +85,7 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.Locale
@@ -163,6 +166,8 @@ class CompactBlockProcessor internal constructor(
 
     private val _state: MutableStateFlow<State> = MutableStateFlow(State.Initializing)
     private val _progress = MutableStateFlow(PercentDecimal.ZERO_PERCENT)
+    private val _scanProgress = MutableStateFlow(PercentDecimal.ZERO_PERCENT)
+    private val _recoveryProgress = MutableStateFlow<PercentDecimal?>(null)
     private val _processorInfo = MutableStateFlow(ProcessorInfo(null, null, null))
     private val _networkHeight = MutableStateFlow<BlockHeight?>(null)
     private val _fullyScannedHeight = MutableStateFlow<BlockHeight?>(null)
@@ -186,10 +191,20 @@ class CompactBlockProcessor internal constructor(
     val state = _state.asStateFlow()
 
     /**
-     * The flow of progress values so that a wallet can monitor how much downloading remains
+     * The flow of the general progress values so that a wallet can monitor how much downloading remains
      * without needing to poll.
      */
     val progress = _progress.asStateFlow()
+
+    /**
+     * The flow of the scan progress. Currently unused in public API.
+     */
+    val scanProgress = _scanProgress.asStateFlow()
+
+    /**
+     * The flow of the recovery progress. Currently unused in public API.
+     */
+    val recoveryProgress = _recoveryProgress.asStateFlow()
 
     /**
      * The flow of detailed processorInfo like the range of blocks that shall be downloaded and
@@ -764,9 +779,10 @@ class CompactBlockProcessor internal constructor(
     internal suspend fun refreshWalletSummary(): Pair<UInt, UInt> {
         when (val result = getWalletSummary(backend)) {
             is GetWalletSummaryResult.Success -> {
-                val resultProgress = result.scanProgressPercentDecimal()
-                Twig.info { "Progress from rust: ${resultProgress.decimal}" }
-                setProgress(resultProgress)
+                val scanProgress = result.walletSummary.scanProgress
+                val recoveryProgress = result.walletSummary.recoveryProgress
+                Twig.info { "Progress from rust: scan progress: $scanProgress, recovery progress: $recoveryProgress" }
+                setProgress(scanProgress, recoveryProgress)
                 setFullyScannedHeight(result.walletSummary.fullyScannedHeight)
                 updateAllBalances(result.walletSummary)
                 return Pair(
@@ -777,6 +793,7 @@ class CompactBlockProcessor internal constructor(
             else -> {
                 // Do not report the progress and balances in case of any error, and
                 // tell the caller to fetch all subtree roots.
+                Twig.info { "Progress from rust: no progress information available, progress type: $result" }
                 return Pair(UInt.MIN_VALUE, UInt.MIN_VALUE)
             }
         }
@@ -2230,12 +2247,31 @@ class CompactBlockProcessor internal constructor(
     }
 
     /**
-     * Sets the progress for this [CompactBlockProcessor].
+     * Sets the scan progress for this [CompactBlockProcessor].
      *
-     * @param progress the block syncing progress of type [PercentDecimal] in the range of [0, 1]
+     * @param scanProgress the block syncing progress of type TODO in the range of [0, 1]
+     * @param recoveryProgress the block syncing progress of type TODO in the range of [0, 1]
      */
-    private fun setProgress(progress: PercentDecimal = _progress.value) {
-        _progress.value = progress
+    private fun setProgress(
+        scanProgress: ScanProgress,
+        recoveryProgress: RecoveryProgress? = null
+    ) {
+        _scanProgress.update { PercentDecimal(scanProgress.getSafeRatio()) }
+        _recoveryProgress.update {
+            recoveryProgress?.getSafeRatio()?.let { PercentDecimal(it) } ?: PercentDecimal.ZERO_PERCENT
+        }
+
+        // [_progress] is calculated as sum numerator divided by denominators if [recoveryProgress] is not null
+        _progress.value =
+            PercentDecimal(
+                if (recoveryProgress == null) {
+                    scanProgress.numerator.toFloat() /
+                        scanProgress.denominator.toFloat()
+                } else {
+                    (scanProgress.numerator.toFloat() + recoveryProgress.numerator.toFloat()) /
+                        (scanProgress.denominator.toFloat() + recoveryProgress.denominator.toFloat())
+                }
+            )
     }
 
     /**
@@ -2304,7 +2340,7 @@ class CompactBlockProcessor internal constructor(
                         downloader.rewindToHeight(it.height)
                         Twig.info { "Rewound to ${it.height} successfully" }
                         setState(newState = State.Syncing)
-                        setProgress(progress = PercentDecimal.ZERO_PERCENT)
+                        setProgress(scanProgress = ScanProgress.newMin())
                         setProcessorInfo(overallSyncRange = null)
                         it.height
                     }

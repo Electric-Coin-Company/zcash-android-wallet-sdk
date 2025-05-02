@@ -6,15 +6,20 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.12] - 2025-04-28
+
+### Added
+- `Synchronizer.areFundsSpendable` that indicates whether are the shielded wallet balances spendable or not during 
+  the block synchronization process.
+- `SdkSynchronizer.estimateBirthdayHeight(date: Date)` has been added to get an estimated height for a given date, 
+  typically used for estimating birthday.
+
 ### Changed
 - The base sapling params download URL has been changed to `https://download.z.cash/downloads/`
+- Checkpoints update
 
 ### Fixed
 - As part of the sapling params download URL change, the extra `/` character has been removed from the result path
-
-### Added
-- `SdkSynchronizer.estimateBirthdayHeight(date: Date)` has been added to get an estimated height for a given date,
-  typically used for estimating birthday.
 
 ## [2.2.11] - 2025-04-04
 

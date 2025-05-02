@@ -63,12 +63,18 @@ interface Synchronizer {
     val status: Flow<Status>
 
     /**
-     * A flow of progress values, typically corresponding to this Synchronizer downloading blocks.
-     * Typically, any non-zero value below `PercentDecimal.ONE_HUNDRED_PERCENT` indicates that progress indicators can
-     * be shown and a value of `PercentDecimal.ONE_HUNDRED_PERCENT` signals that progress is complete and any progress
-     * indicators can be hidden.
+     * Indicates the download progress of the Synchronizer.
+     *
+     * When progress reaches `PercentDecimal.ONE_HUNDRED_PERCENT`, it signals that the Synchronizer
+     * is up-to-date with the network's current chain tip. Balances should be considered inaccurate
+     * and outbound transactions should be prevented until this sync is complete.
      */
     val progress: Flow<PercentDecimal>
+
+    /**
+     * Indicates whether are the shielded wallet balances spendable or not during the block synchronization process.
+     */
+    val areFundsSpendable: Flow<Boolean>
 
     /**
      * A flow of processor details, updated every time blocks are processed to include the latest
