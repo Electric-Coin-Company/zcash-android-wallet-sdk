@@ -1,16 +1,15 @@
 package cash.z.ecc.android.sdk.internal
 
-import android.content.Context
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import co.electriccoin.lightwallet.client.LightWalletClient
+import cash.z.ecc.android.sdk.util.WalletClientFactory
+import co.electriccoin.lightwallet.client.BaseWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
-import co.electriccoin.lightwallet.client.new
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -32,19 +31,17 @@ import kotlin.time.measureTime
 
 internal class FastestServerFetcher(
     private val backend: TypesafeBackend,
-    private val network: ZcashNetwork
+    private val network: ZcashNetwork,
+    private val walletClientFactory: WalletClientFactory,
 ) {
-    suspend operator fun invoke(
-        context: Context,
-        servers: List<LightWalletEndpoint>,
-    ): Flow<FastestServersResult> =
+    operator fun invoke(servers: List<LightWalletEndpoint>, ): Flow<FastestServersResult> =
         flow {
             emit(FastestServersResult.Measuring)
 
             val serversByRpcMeanLatency =
                 servers
                     .parallelMapNotNull {
-                        validateServerEndpointAndMeasure(context, it)
+                        validateServerEndpointAndMeasure(it)
                     }.sortedBy {
                         it.meanDuration
                     }.mapIndexedNotNull { index, result ->
@@ -94,10 +91,7 @@ internal class FastestServerFetcher(
         }.flowOn(Dispatchers.Default)
 
     @Suppress("LongMethod", "ReturnCount")
-    private suspend fun validateServerEndpointAndMeasure(
-        context: Context,
-        endpoint: LightWalletEndpoint
-    ): ValidateServerResult? {
+    private suspend fun validateServerEndpointAndMeasure(endpoint: LightWalletEndpoint): ValidateServerResult? {
         fun logRuledOut(
             reason: String,
             throwable: Throwable? = null
@@ -113,12 +107,7 @@ internal class FastestServerFetcher(
             }
         }
 
-        val lightWalletClient =
-            LightWalletClient.new(
-                context = context,
-                lightWalletEndpoint = endpoint,
-                singleRequestTimeout = FETCH_THRESHOLD
-            )
+        val lightWalletClient = kotlin.runCatching { walletClientFactory.create(endpoint) }.getOrNull() ?: return null
 
         val remoteInfo: LightWalletEndpointInfoUnsafe?
         val getServerInfoDuration =
@@ -226,7 +215,7 @@ internal class FastestServerFetcher(
 
 data class ValidateServerResult(
     val remoteInfo: LightWalletEndpointInfoUnsafe,
-    val lightWalletClient: LightWalletClient,
+    val lightWalletClient: BaseWalletClient,
     val endpoint: LightWalletEndpoint,
     val getServerInfoDuration: Duration,
     val getLatestBlockHeightDuration: Duration,

@@ -21,6 +21,7 @@ import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.TypesafeBackendImpl
+import cash.z.ecc.android.sdk.util.WalletClientFactory
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
@@ -30,6 +31,7 @@ import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
+import cash.z.ecc.android.sdk.internal.model.TorClient
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
@@ -74,10 +76,9 @@ import cash.z.ecc.android.sdk.type.AddressType.Transparent
 import cash.z.ecc.android.sdk.type.AddressType.Unified
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.ecc.android.sdk.type.ServerValidation
-import co.electriccoin.lightwallet.client.LightWalletClient
+import co.electriccoin.lightwallet.client.BaseWalletClient
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
-import co.electriccoin.lightwallet.client.new
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -113,7 +114,6 @@ import java.io.File
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * A Synchronizer that attempts to remain operational, despite any number of errors that can occur.
@@ -140,6 +140,8 @@ class SdkSynchronizer private constructor(
     private val fetchFastestServers: FastestServerFetcher,
     private val fetchExchangeChangeUsd: UsdExchangeRateFetcher,
     private val preferenceProvider: PreferenceProvider,
+    private val torClient: TorClient,
+    private val walletClientFactory: WalletClientFactory
 ) : CloseableSynchronizer {
     companion object {
         private sealed class InstanceState {
@@ -176,23 +178,25 @@ class SdkSynchronizer private constructor(
             fastestServerFetcher: FastestServerFetcher,
             fetchExchangeChangeUsd: UsdExchangeRateFetcher,
             preferenceProvider: PreferenceProvider,
+            torClient: TorClient,
+            walletClientFactory: WalletClientFactory
         ): CloseableSynchronizer {
             val synchronizerKey = SynchronizerKey(zcashNetwork, alias)
-
             return mutex.withLock {
                 waitForShutdown(synchronizerKey)
                 checkForExistingSynchronizers(synchronizerKey)
-
                 SdkSynchronizer(
-                    context,
-                    synchronizerKey,
-                    repository,
-                    txManager,
-                    processor,
-                    backend,
-                    fastestServerFetcher,
-                    fetchExchangeChangeUsd,
-                    preferenceProvider
+                    context = context,
+                    synchronizerKey = synchronizerKey,
+                    storage = repository,
+                    txManager = txManager,
+                    processor = processor,
+                    backend = backend,
+                    fetchFastestServers = fastestServerFetcher,
+                    fetchExchangeChangeUsd = fetchExchangeChangeUsd,
+                    preferenceProvider = preferenceProvider,
+                    torClient = torClient,
+                    walletClientFactory = walletClientFactory
                 ).apply {
                     instances[synchronizerKey] = InstanceState.Active
                     start()
@@ -402,7 +406,7 @@ class SdkSynchronizer private constructor(
     override suspend fun getFastestServers(
         context: Context,
         servers: List<LightWalletEndpoint>
-    ): Flow<FastestServersResult> = fetchFastestServers(context, servers)
+    ): Flow<FastestServersResult> = fetchFastestServers(servers)
 
     internal fun start() {
         coroutineScope.onReady()
@@ -416,7 +420,7 @@ class SdkSynchronizer private constructor(
             coroutineScope.launch {
                 Twig.info { "Stopping synchronizer $synchronizerKey…" }
                 processor.stop()
-                fetchExchangeChangeUsd.dispose()
+                torClient.dispose()
             }
 
         instances[synchronizerKey] = InstanceState.ShuttingDown(shutdownJob)
@@ -588,6 +592,7 @@ class SdkSynchronizer private constructor(
                             onScanComplete()
                             SYNCED
                         }
+
                         is Stopped -> STOPPED
                         is Disconnected -> DISCONNECTED
                         is Syncing -> SYNCING
@@ -733,6 +738,7 @@ class SdkSynchronizer private constructor(
                     Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
                     runCatching { response.result.toBlockHeight() }.getOrNull()
                 }
+
                 is Response.Failure -> {
                     Twig.error {
                         "Chain tip fetch for recovery until failed with: ${response.toThrowable()}"
@@ -989,13 +995,8 @@ class SdkSynchronizer private constructor(
         // Create a dedicated light wallet client for the validation
         // The single request timeout is changed from default to 5 seconds to speed up a possible custom server
         // endpoint validation
-
-        LightWalletClient
-            .new(
-                context = context,
-                lightWalletEndpoint = endpoint,
-                singleRequestTimeout = 5.seconds
-            ).use { lightWalletClient ->
+        walletClientFactory.create(endpoint = endpoint)
+            .use { lightWalletClient ->
                 val remoteInfo =
                     when (val response = lightWalletClient.getServerInfo()) {
                         is Response.Success -> response.result
@@ -1136,11 +1137,6 @@ internal object DefaultSynchronizerFactory {
             backend
         )
 
-    fun defaultService(
-        context: Context,
-        lightWalletEndpoint: LightWalletEndpoint
-    ): LightWalletClient = LightWalletClient.new(context, lightWalletEndpoint)
-
     internal fun defaultEncoder(
         backend: TypesafeBackend,
         saplingParamTool: SaplingParamTool,
@@ -1148,18 +1144,14 @@ internal object DefaultSynchronizerFactory {
     ): TransactionEncoder = TransactionEncoderImpl(backend, saplingParamTool, repository)
 
     fun defaultDownloader(
-        service: LightWalletClient,
+        walletClient: BaseWalletClient,
         blockStore: CompactBlockRepository
-    ): CompactBlockDownloader = CompactBlockDownloader(service, blockStore)
+    ): CompactBlockDownloader = CompactBlockDownloader(walletClient, blockStore)
 
     internal fun defaultTxManager(
         encoder: TransactionEncoder,
-        service: LightWalletClient
-    ): OutboundTransactionManager =
-        OutboundTransactionManagerImpl.new(
-            encoder,
-            service
-        )
+        service: BaseWalletClient
+    ): OutboundTransactionManager = OutboundTransactionManagerImpl.new(encoder, service)
 
     internal fun defaultProcessor(
         backend: TypesafeBackend,

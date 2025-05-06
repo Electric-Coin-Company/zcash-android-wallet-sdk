@@ -44,8 +44,6 @@ sealed class Response<T> {
             }
         }
 
-
-
         /**
          * The server did respond and returned an error.
          */

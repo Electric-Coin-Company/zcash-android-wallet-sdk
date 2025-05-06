@@ -2727,7 +2727,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_getExchan
 ///
 /// Each connection returned by this method is isolated from any other Tor usage.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_connectToLightwalletd<
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_IsolatedTorWalletClient_connectToLightwalletd<
     'local,
 >(
     mut env: JNIEnv<'local>,
@@ -2755,7 +2755,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_connectTo
 
 /// Frees a lightwalletd connection.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_freeLightwalletdConnection<
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_freeLightwalletdConnection<
     'local,
 >(
     _: JNIEnv<'local>,
@@ -2771,7 +2771,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_freeLigh
 
 /// Returns information about this lightwalletd instance and the blockchain.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_getServerInfo<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getServerInfo<'local>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,
@@ -2790,7 +2790,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_getServe
 
 /// Returns information about this lightwalletd instance and the blockchain.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_getLatestBlock<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getLatestBlock<'local>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,
@@ -2809,7 +2809,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_getLates
 
 /// Fetches the transaction with the given ID.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_fetchTransaction<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_fetchTransaction<'local>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,
@@ -2833,7 +2833,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_fetchTra
 
 /// Submits a transaction to the Zcash network via the given lightwalletd connection.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_submitTransaction<
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_submitTransaction<
     'local,
 >(
     mut env: JNIEnv<'local>,
@@ -2855,7 +2855,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_submitTr
 
 /// Fetches the note commitment tree state corresponding to the given block height.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_getTreeState<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getTreeState<'local>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,

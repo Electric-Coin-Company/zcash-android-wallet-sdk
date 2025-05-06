@@ -5,15 +5,11 @@ import cash.z.ecc.android.sdk.internal.model.TorClient
 import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.FiatCurrencyConversion
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
-import java.io.File
 
 internal class UsdExchangeRateFetcher(
-    torDir: File
+    private val torClient: TorClient,
 ) {
-    private val torHolder = TorClientHolder(torDir)
 
     @Suppress("TooGenericExceptionCaught", "ReturnCount")
     suspend operator fun invoke(): FetchFiatCurrencyResult {
@@ -21,7 +17,7 @@ internal class UsdExchangeRateFetcher(
             val rate =
                 try {
                     Twig.info { "[USD] Fetch start" }
-                    torHolder { it.getExchangeRateUsd() }
+                    torClient.getExchangeRateUsd()
                 } catch (e: Exception) {
                     Twig.error(e) { "[USD] Fetch failed" }
                     return FetchFiatCurrencyResult.Error(e)
@@ -37,10 +33,6 @@ internal class UsdExchangeRateFetcher(
                     )
             )
         }
-    }
-
-    suspend fun dispose() {
-        torHolder.dispose()
     }
 
     /**
@@ -65,25 +57,4 @@ internal class UsdExchangeRateFetcher(
         }
         return block() // last attempt
     }
-}
-
-private class TorClientHolder(
-    private val torDir: File
-) {
-    private val mutex = Mutex()
-    private var torClient: TorClient? = null
-
-    suspend operator fun <T> invoke(block: suspend (TorClient) -> T): T =
-        mutex.withLock {
-            if (torClient == null) {
-                torClient = TorClient.new(torDir)
-            }
-            return block(torClient!!)
-        }
-
-    suspend fun dispose() =
-        mutex.withLock {
-            torClient?.dispose()
-            torClient = null
-        }
 }
