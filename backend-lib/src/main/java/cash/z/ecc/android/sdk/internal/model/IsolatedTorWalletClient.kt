@@ -34,12 +34,14 @@ class IsolatedTorWalletClient private constructor(
     ): Response<T> = semaphore.withLock {
         var client: TorWalletClient? = null
         try {
-            client = TorWalletClient.new(
-                connectToLightwalletd(
-                    nativeHandle = nativeHandle,
-                    endpoint = endpoint
+            client = withContext(Dispatchers.IO) {
+                TorWalletClient.new(
+                    connectToLightwalletd(
+                        nativeHandle = nativeHandle,
+                        endpoint = endpoint
+                    )
                 )
-            )
+            }
             block(client)
         } catch (e: RuntimeException) {
             Response.Failure.OverTor(e.message)
