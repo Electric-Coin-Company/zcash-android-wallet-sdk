@@ -76,7 +76,7 @@ import cash.z.ecc.android.sdk.type.AddressType.Transparent
 import cash.z.ecc.android.sdk.type.AddressType.Unified
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.ecc.android.sdk.type.ServerValidation
-import co.electriccoin.lightwallet.client.BaseWalletClient
+import co.electriccoin.lightwallet.client.WalletClient
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -1144,13 +1144,13 @@ internal object DefaultSynchronizerFactory {
     ): TransactionEncoder = TransactionEncoderImpl(backend, saplingParamTool, repository)
 
     fun defaultDownloader(
-        walletClient: BaseWalletClient,
+        walletClient: WalletClient,
         blockStore: CompactBlockRepository
     ): CompactBlockDownloader = CompactBlockDownloader(walletClient, blockStore)
 
     internal fun defaultTxManager(
         encoder: TransactionEncoder,
-        service: BaseWalletClient
+        service: WalletClient
     ): OutboundTransactionManager = OutboundTransactionManagerImpl.new(encoder, service)
 
     internal fun defaultProcessor(

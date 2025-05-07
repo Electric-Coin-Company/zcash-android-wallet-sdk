@@ -380,6 +380,22 @@ fn encode_usk<'a>(
     )
 }
 
+fn encode_transaction<'a>(
+    env: &mut JNIEnv<'a>,
+    height: u64,
+    txid_bytes: Vec<u8>,
+) -> jni::errors::Result<JObject<'a>> {
+    let java_byte_array = env.byte_array_from_slice(&txid_bytes)?;
+    env.new_object(
+        "cash/z/ecc/android/sdk/internal/model/JniTransaction",
+        "(J[B)V",
+        &[
+            JValue::Long(height as jlong),
+            (&java_byte_array).into(),
+        ],
+    )
+}
+
 fn decode_usk(env: &JNIEnv, usk: JByteArray) -> anyhow::Result<UnifiedSpendingKey> {
     let usk_bytes = secret_from_jni(env, usk)?;
 
@@ -2814,7 +2830,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_fet
     _: JClass<'local>,
     lwd_conn: jlong,
     txid_bytes: JByteArray<'local>,
-) -> jbyteArray {
+) -> jobject {
     let res = catch_unwind(&mut env, |env| {
         let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
         let lwd_conn = unsafe { lwd_conn.as_mut() }
@@ -2824,9 +2840,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_fet
         // we may as well confirm we were actually passed something shaped correctly.
         let txid = parse_txid(env, txid_bytes)?;
 
-        let (tx, _height) = lwd_conn.get_transaction(txid)?;
+        let (tx, height) = lwd_conn.get_transaction(txid)?;
 
-        Ok(utils::rust_bytes_to_java(env, &tx)?.into_raw())
+        Ok(encode_transaction(env, height, tx)?.into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }

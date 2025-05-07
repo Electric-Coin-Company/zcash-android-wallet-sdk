@@ -7,7 +7,7 @@ import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-interface LightWalletClient : BaseWalletClient {
+interface LightWalletClient : WalletClient {
     companion object {
         fun new(
             context: Context,

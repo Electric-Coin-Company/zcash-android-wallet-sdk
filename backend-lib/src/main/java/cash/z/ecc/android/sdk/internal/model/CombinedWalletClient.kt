@@ -1,9 +1,9 @@
 package cash.z.ecc.android.sdk.internal.model
 
-import co.electriccoin.lightwallet.client.BasicWalletClient
+import co.electriccoin.lightwallet.client.PartialWalletClient
 import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.BaseTorWalletClient
-import co.electriccoin.lightwallet.client.BaseWalletClient
+import co.electriccoin.lightwallet.client.WalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
@@ -13,19 +13,19 @@ import kotlinx.coroutines.sync.withLock
 class CombinedWalletClient(
     private val lightWalletClient: LightWalletClient,
     private val torWalletClient: BaseTorWalletClient,
-) : BaseWalletClient {
+) : WalletClient {
 
     private val semaphore = Mutex()
 
-    override suspend fun fetchTransaction(txId: ByteArray) = executeTorOrGrpc { it.fetchTransaction(txId) }
+    override suspend fun fetchTransaction(txId: ByteArray) = executeOverTorOrDefault { it.fetchTransaction(txId) }
 
-    override suspend fun getServerInfo() = executeTorOrGrpc { it.getServerInfo() }
+    override suspend fun getServerInfo() = executeOverTorOrDefault { it.getServerInfo() }
 
-    override suspend fun getLatestBlockHeight() = executeTorOrGrpc { it.getLatestBlockHeight() }
+    override suspend fun getLatestBlockHeight() = executeOverTorOrDefault { it.getLatestBlockHeight() }
 
-    override suspend fun submitTransaction(tx: ByteArray) = executeTorOrGrpc { it.submitTransaction(tx) }
+    override suspend fun submitTransaction(tx: ByteArray) = executeOverTorOrDefault { it.submitTransaction(tx) }
 
-    override suspend fun getTreeState(height: BlockHeightUnsafe) = executeTorOrGrpc { it.getTreeState(height) }
+    override suspend fun getTreeState(height: BlockHeightUnsafe) = executeOverTorOrDefault { it.getTreeState(height) }
 
     override suspend fun fetchUtxos(
         tAddresses: List<String>,
@@ -53,8 +53,8 @@ class CombinedWalletClient(
 
     override fun close() = lightWalletClient.close()
 
-    private suspend inline fun <reified T> executeTorOrGrpc(
-        block: (BasicWalletClient) -> Response<T>,
+    private suspend inline fun <reified T> executeOverTorOrDefault(
+        block: (PartialWalletClient) -> Response<T>,
     ): Response<T> {
         return semaphore.withLock {
             val torResult = block(torWalletClient)

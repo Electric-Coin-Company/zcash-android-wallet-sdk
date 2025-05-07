@@ -10,6 +10,7 @@ import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 import co.electriccoin.lightwallet.client.model.TreeStateUnsafe
+import com.google.protobuf.kotlin.toByteString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -25,16 +26,24 @@ class TorWalletClient private constructor(
     }
 
     override suspend fun getServerInfo(): Response<LightWalletEndpointInfoUnsafe> = execute {
-        LightWalletEndpointInfoUnsafe.new(Service.LightdInfo.parseFrom(getServerInfo(it)))
+        val serverInfo = getServerInfo(it)
+        LightWalletEndpointInfoUnsafe.new(Service.LightdInfo.parseFrom(serverInfo))
     }
 
     override suspend fun getLatestBlockHeight(): Response<BlockHeightUnsafe> = execute {
-        val blockId = BlockIDUnsafe.new(Service.BlockID.parseFrom(getLatestBlock(it)))
+        val latestBlock = getLatestBlock(it)
+        val blockId = BlockIDUnsafe.new(Service.BlockID.parseFrom(latestBlock))
         BlockHeightUnsafe(blockId.height)
     }
 
     override suspend fun fetchTransaction(txId: ByteArray): Response<RawTransactionUnsafe> = execute {
-        RawTransactionUnsafe.new(Service.RawTransaction.parseFrom(fetchTransaction(it, txId)))
+        val transaction = fetchTransaction(it, txId)
+        RawTransactionUnsafe.new(
+            Service.RawTransaction.newBuilder()
+                .setData(transaction.data.toByteString())
+                .setHeight(transaction.height)
+                .build()
+        )
     }
 
     override suspend fun submitTransaction(tx: ByteArray): Response<SendResponseUnsafe> = execute {
@@ -43,7 +52,8 @@ class TorWalletClient private constructor(
     }
 
     override suspend fun getTreeState(height: BlockHeightUnsafe): Response<TreeStateUnsafe> = execute {
-        TreeStateUnsafe.new(Service.TreeState.parseFrom(getTreeState(it, height.value)))
+        val treeState = getTreeState(it, height.value)
+        TreeStateUnsafe.new(Service.TreeState.parseFrom(treeState))
     }
 
     private suspend fun <T> execute(
@@ -89,7 +99,7 @@ class TorWalletClient private constructor(
          */
         @JvmStatic
         @Throws(RuntimeException::class)
-        private external fun fetchTransaction(nativeHandle: Long, txId: ByteArray): ByteArray
+        private external fun fetchTransaction(nativeHandle: Long, txId: ByteArray): JniTransaction
 
         /**
          * @throws RuntimeException as a common indicator of the operation failure

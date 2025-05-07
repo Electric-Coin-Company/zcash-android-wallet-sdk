@@ -14,7 +14,7 @@ import java.io.Closeable
  * Client for interacting with lightwalletd.
  */
 @Suppress("TooManyFunctions")
-interface BaseWalletClient : BasicWalletClient, Closeable {
+interface WalletClient : PartialWalletClient, Closeable {
 
     /**
      * @param tAddresses the array containing the transparent addresses to use.

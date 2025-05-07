@@ -5,7 +5,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.util.WalletClientFactory
-import co.electriccoin.lightwallet.client.BaseWalletClient
+import co.electriccoin.lightwallet.client.WalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
@@ -215,7 +215,7 @@ internal class FastestServerFetcher(
 
 data class ValidateServerResult(
     val remoteInfo: LightWalletEndpointInfoUnsafe,
-    val lightWalletClient: BaseWalletClient,
+    val lightWalletClient: WalletClient,
     val endpoint: LightWalletEndpoint,
     val getServerInfoDuration: Duration,
     val getLatestBlockHeightDuration: Duration,

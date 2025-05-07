@@ -10,13 +10,13 @@ import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
-import co.electriccoin.lightwallet.client.BaseWalletClient
+import co.electriccoin.lightwallet.client.WalletClient
 import co.electriccoin.lightwallet.client.model.Response
 
 @Suppress("TooManyFunctions")
 internal class OutboundTransactionManagerImpl(
     internal val encoder: TransactionEncoder,
-    private val service: BaseWalletClient
+    private val service: WalletClient
 ) : OutboundTransactionManager {
     /**
      * Creates a proposal for transferring funds from a ZIP-321 compliant payment URI
@@ -135,7 +135,7 @@ internal class OutboundTransactionManagerImpl(
     companion object {
         fun new(
             encoder: TransactionEncoder,
-            lightWalletClient: BaseWalletClient,
+            lightWalletClient: WalletClient,
         ): OutboundTransactionManager =
             OutboundTransactionManagerImpl(
                 encoder,

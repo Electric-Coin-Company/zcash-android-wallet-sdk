@@ -5,7 +5,7 @@ import cash.z.ecc.android.sdk.internal.model.CombinedWalletClient
 import cash.z.ecc.android.sdk.internal.model.TorClient
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.LightWalletClient
-import co.electriccoin.lightwallet.client.BaseWalletClient
+import co.electriccoin.lightwallet.client.WalletClient
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 
 class WalletClientFactory(
@@ -14,13 +14,13 @@ class WalletClientFactory(
     private val torClient: TorClient,
     private val network: ZcashNetwork
 ) {
-    suspend fun create(endpoint: LightWalletEndpoint): BaseWalletClient {
+    suspend fun create(endpoint: LightWalletEndpoint): WalletClient {
         val lightWalletClient = LightWalletClient.new(context, endpoint)
         return if (isTorEnabled) {
             CombinedWalletClient(
                 lightWalletClient = lightWalletClient,
                 torWalletClient = torClient.createWalletClient(
-                    "http://${network.networkName}.${endpoint.host}:${endpoint.port}"
+                    "https://${network.networkName}.${endpoint.host}:${endpoint.port}"
                 ),
             )
         } else {

@@ -8,9 +8,8 @@ import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.io.path.createTempDirectory
-import kotlin.test.Ignore
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class TorClientTest {
     @OptIn(ExperimentalStdlibApi::class)
@@ -41,15 +40,13 @@ class TorClientTest {
                 "9e309d29a99f06e6dcc7aee91dca23c0efc2cf5083cc483463ddbee19c1fadf1".hexToByteArray().reversedArray()
             val tx = (lwdConn.fetchTransaction(txId) as Response.Success<RawTransactionUnsafe>).result
 
-            // We should fail to resubmit the already-mined transaction.
-            val exception =
-                assertFailsWith<RuntimeException> {
-                    lwdConn.submitTransaction(tx.data)
-                }
+            val submit = lwdConn.submitTransaction(tx.data)
+
+            assertTrue(submit is Response.Failure.OverTor)
             assertEquals(
                 "Failed to submit transaction (-25): failed to validate tx: transaction::Hash(\"private\"), " +
                     "error: transaction is already in state",
-                exception.message
+                submit.description
             )
         }
 }

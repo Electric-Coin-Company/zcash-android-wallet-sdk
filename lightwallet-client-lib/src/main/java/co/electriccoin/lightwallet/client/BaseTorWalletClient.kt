@@ -1,3 +1,3 @@
 package co.electriccoin.lightwallet.client
 
-interface BaseTorWalletClient : BasicWalletClient
+interface BaseTorWalletClient : PartialWalletClient
