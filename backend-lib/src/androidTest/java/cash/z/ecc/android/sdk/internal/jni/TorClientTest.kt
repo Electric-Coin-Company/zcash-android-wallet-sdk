@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.jni
 
 import cash.z.ecc.android.sdk.internal.model.TorClient
+import cash.z.ecc.android.sdk.internal.model.TorDormantMode
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
@@ -50,5 +51,8 @@ class TorClientTest {
                     "error: transaction is already in state",
                 submit.description
             )
+
+            // We can background the Tor client.
+            torClient.setDormant(TorDormantMode.SOFT)
         }
 }

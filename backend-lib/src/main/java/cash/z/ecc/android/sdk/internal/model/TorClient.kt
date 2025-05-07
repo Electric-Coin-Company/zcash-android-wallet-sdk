@@ -51,6 +51,21 @@ class TorClient private constructor(
             TorClient(nativeHandle = isolatedClient(nativeHandle!!))
         }
 
+    /**
+     * Changes the client's current dormant mode, putting background tasks to sleep or waking
+     * them up as appropriate.
+     *
+     * This can be used to conserve CPU usage if you aren’t planning on using the client for
+     * a while, especially on mobile platforms.
+     */
+    suspend fun setDormant(mode: TorDormantMode) =
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorClient is disposed" }
+                setDormant(nativeHandle!!, mode.ordinal)
+            }
+        }
+
     suspend fun getExchangeRateUsd(): BigDecimal =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
@@ -135,6 +150,13 @@ class TorClient private constructor(
          */
         @JvmStatic
         @Throws(RuntimeException::class)
+        private external fun setDormant(nativeHandle: Long, mode: Int)
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
         private external fun getExchangeRateUsd(nativeHandle: Long): BigDecimal
 
         /**
@@ -144,4 +166,22 @@ class TorClient private constructor(
         @Throws(RuntimeException::class)
         private external fun connectToLightwalletd(nativeHandle: Long, endpoint: String): Long
     }
+}
+
+/**
+ * What level of sleep to put a Tor client into.
+ */
+// The order of the enum constants MUST match the order in `parse_tor_dormant_mode()` in
+// `backend-lib/src/main/rust/lib.rs`.
+enum class TorDormantMode {
+    /**
+     * The client functions as normal, and background tasks run periodically.
+     */
+    NORMAL,
+
+    /**
+     * Background tasks are suspended, conserving CPU usage. Attempts to use the
+     * client will wake it back up again.
+     */
+    SOFT,
 }
