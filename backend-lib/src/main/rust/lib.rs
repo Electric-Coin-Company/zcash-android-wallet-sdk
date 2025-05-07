@@ -390,10 +390,7 @@ fn encode_transaction<'a>(
     env.new_object(
         "cash/z/ecc/android/sdk/internal/model/JniTransaction",
         "(J[B)V",
-        &[
-            JValue::Long(height as jlong),
-            (&java_byte_array).into(),
-        ],
+        &[JValue::Long(height as jlong), (&java_byte_array).into()],
     )
 }
 
@@ -2880,7 +2877,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_fre
 
 /// Returns information about this lightwalletd instance and the blockchain.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getServerInfo<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getServerInfo<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,
@@ -2899,7 +2898,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_get
 
 /// Returns information about this lightwalletd instance and the blockchain.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getLatestBlock<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getLatestBlock<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,
@@ -2918,7 +2919,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_get
 
 /// Fetches the transaction with the given ID.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_fetchTransaction<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_fetchTransaction<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,
@@ -2964,7 +2967,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_sub
 
 /// Fetches the note commitment tree state corresponding to the given block height.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getTreeState<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getTreeState<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,

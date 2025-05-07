@@ -49,7 +49,7 @@ uuid = "1"
 bitflags = "2"
 
 # lightwalletd
-tonic = "0.12"
+tonic = "0.13"
 
 # Logging
 log-panics = "2.0.0"
@@ -62,11 +62,21 @@ dlopen2 = "0.7"
 libc = "0.2"
 
 # Tor
-fs-mistrust = "0.8"
-tor-rtcompat = "0.23"
+fs-mistrust = "0.9"
+tor-rtcompat = "0.28"
 rust_decimal = { version = "1", default-features = false, features = ["c-repr"] }
 # - The "static" feature is required for the "compression" default feature of arti-client.
 xz2 = { version = "0.1", features = ["static"] }
+
+[patch.crates-io]
+pczt = { git = "https://github.com/zcash/librustzcash.git", rev = "d0b4717c7964ce842154681db0dbd1a2f7da71f0" }
+transparent = { package = "zcash_transparent", git = "https://github.com/zcash/librustzcash.git", rev = "d0b4717c7964ce842154681db0dbd1a2f7da71f0" }
+zcash_address = { git = "https://github.com/zcash/librustzcash.git", rev = "d0b4717c7964ce842154681db0dbd1a2f7da71f0" }
+zcash_client_backend = { git = "https://github.com/zcash/librustzcash.git", rev = "d0b4717c7964ce842154681db0dbd1a2f7da71f0" }
+zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash.git", rev = "d0b4717c7964ce842154681db0dbd1a2f7da71f0" }
+zcash_primitives = { git = "https://github.com/zcash/librustzcash.git", rev = "d0b4717c7964ce842154681db0dbd1a2f7da71f0" }
+zcash_proofs = { git = "https://github.com/zcash/librustzcash.git", rev = "d0b4717c7964ce842154681db0dbd1a2f7da71f0" }
+zcash_protocol = { git = "https://github.com/zcash/librustzcash.git", rev = "d0b4717c7964ce842154681db0dbd1a2f7da71f0" }
 
 ## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]
