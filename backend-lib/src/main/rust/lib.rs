@@ -37,6 +37,7 @@ use zcash_client_backend::data_api::{
 use zcash_client_backend::fees::zip317::MultiOutputChangeStrategy;
 use zcash_client_backend::fees::{SplitPolicy, StandardFeeRule};
 use zcash_client_backend::keys::UnifiedAddressRequest;
+use zcash_client_backend::tor::DormantMode;
 use zcash_client_backend::{
     address::{Address, UnifiedAddress},
     data_api::{
@@ -2681,6 +2682,37 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_isolatedC
     unwrap_exc_or(&mut env, res, -1)
 }
 
+/// Changes the client's current dormant mode, putting background tasks to sleep or waking
+/// them up as appropriate.
+///
+/// This can be used to conserve CPU usage if you aren’t planning on using the client for
+/// a while, especially on mobile platforms.
+///
+/// The `mode` argument specifies what level of sleep to put a Tor client into:
+/// - 0: Normal - The client functions as normal, and background tasks run periodically.
+/// - 1: Soft - Background tasks are suspended, conserving CPU usage. Attempts to use the
+///   client will wake it back up again.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_setDormant<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    tor_runtime: jlong,
+    mode: jint,
+) {
+    let res = panic::catch_unwind(|| {
+        let tor_runtime =
+            ptr::with_exposed_provenance_mut::<crate::tor::TorRuntime>(tor_runtime as usize);
+        let tor_runtime =
+            unsafe { tor_runtime.as_mut() }.ok_or_else(|| anyhow!("A Tor runtime is required"))?;
+        let mode = parse_tor_dormant_mode(mode as u32)?;
+
+        tor_runtime.set_dormant(mode);
+
+        Ok(())
+    });
+    unwrap_exc_or(&mut env, res, ())
+}
+
 /// Fetches the current ZEC-USD exchange rate over Tor.
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_getExchangeRateUsd<
@@ -2966,5 +2998,15 @@ fn parse_ua(env: &mut JNIEnv, ua: JString) -> anyhow::Result<(NetworkType, Unifi
             .map_err(|e| anyhow!("Not a Unified Address: {}", e))
             .map(|(network, ua)| (network, ua.0)),
         Err(e) => return Err(anyhow!("Invalid Zcash address: {}", e)),
+    }
+}
+
+fn parse_tor_dormant_mode(value: u32) -> anyhow::Result<DormantMode> {
+    match value {
+        0 => Ok(DormantMode::Normal),
+        1 => Ok(DormantMode::Soft),
+        _ => Err(anyhow!(
+            "Invalid Tor dormant mode: {value}. Expected either 0 for Normal or 1 for Soft."
+        )),
     }
 }
