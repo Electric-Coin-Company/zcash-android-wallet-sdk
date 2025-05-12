@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use std::ptr;
 
 use anyhow::anyhow;
+use bitflags::bitflags;
 use jni::objects::{JByteArray, JObject, JObjectArray, JValue};
 use jni::{
     objects::{JClass, JString},
@@ -36,7 +37,7 @@ use zcash_client_backend::data_api::{
 };
 use zcash_client_backend::fees::zip317::MultiOutputChangeStrategy;
 use zcash_client_backend::fees::{SplitPolicy, StandardFeeRule};
-use zcash_client_backend::keys::UnifiedAddressRequest;
+use zcash_client_backend::keys::{ReceiverRequirement, UnifiedAddressRequest};
 use zcash_client_backend::{
     address::{Address, UnifiedAddress},
     data_api::{
@@ -618,6 +619,98 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getCurren
                 Ok(output.into_raw())
             }
             Ok(None) => Err(anyhow!("{:?} is not known to the wallet", account_uuid)),
+            Err(e) => Err(anyhow!("Error while fetching address: {}", e)),
+        }
+    });
+
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+bitflags! {
+    /// A set of bitflags used to specify the types of receivers a unified address can contain.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    struct ReceiverFlags: u32 {
+        /// The requested address can receive transparent p2pkh outputs.
+        const P2PKH = 0b00000001;
+        /// The requested address can receive Sapling outputs.
+        const SAPLING = 0b00000100;
+        /// The requested address can receive Orchard outputs.
+        const ORCHARD = 0b00001000;
+    }
+}
+
+impl ReceiverFlags {
+    fn to_address_request(&self) -> Result<UnifiedAddressRequest, ()> {
+        UnifiedAddressRequest::custom(
+            if self.contains(ReceiverFlags::ORCHARD) {
+                ReceiverRequirement::Require
+            } else {
+                ReceiverRequirement::Omit
+            },
+            if self.contains(ReceiverFlags::SAPLING) {
+                ReceiverRequirement::Require
+            } else {
+                ReceiverRequirement::Omit
+            },
+            if self.contains(ReceiverFlags::P2PKH) {
+                ReceiverRequirement::Require
+            } else {
+                ReceiverRequirement::Omit
+            },
+        )
+    }
+}
+
+/// Returns a newly-generated unified payment address for the specified account, with the next
+/// available diversifier and the specified set of receivers.
+///
+/// The set of receivers to include in the generated address is specified by a byte which may have
+/// any of the following bits set:
+/// * P2PKH = 0b00000001
+/// * SAPLING = 0b00000100
+/// * ORCHARD = 0b00001000
+///
+/// Note that at present, p2pkh-only unified addresses are not supported.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getNextAvailableAddress<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    account_uuid: JByteArray<'local>,
+    network_id: jint,
+    receiver_flags: jint,
+) -> jstring {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.getNextAvailableAddress").entered();
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+        let account_uuid = account_id_from_jni(&env, account_uuid)?;
+
+        let receiver_flags = <u32>::try_from(receiver_flags)
+            .ok()
+            .and_then(ReceiverFlags::from_bits)
+            .ok_or_else(|| anyhow!("Invalid unified address receiver flags {}", receiver_flags))?;
+        let address_request = receiver_flags.to_address_request().map_err(|_| {
+            anyhow!(
+                "Could not generate a valid unified address for flags {}",
+                receiver_flags.bits()
+            )
+        })?;
+
+        match db_data.get_next_available_address(account_uuid, address_request) {
+            Ok(Some((ua, _))) => {
+                let addr_str = ua.encode(&network);
+                let output = env
+                    .new_string(addr_str)
+                    .expect("Couldn't create Java string!");
+                Ok(output.into_raw())
+            }
+            Ok(None) => Err(anyhow!(
+                "No payment address was available for account {:?}",
+                account_uuid
+            )),
             Err(e) => Err(anyhow!("Error while fetching address: {}", e)),
         }
     });

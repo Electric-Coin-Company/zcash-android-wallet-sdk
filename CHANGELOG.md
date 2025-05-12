@@ -6,6 +6,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `Synchronizer.getCustomUnifiedAddress` allows the caller to obtain a newly-generated
+  unified address with user-specified receiver types.
+
 ## [2.2.12] - 2025-04-28
 
 ### Added

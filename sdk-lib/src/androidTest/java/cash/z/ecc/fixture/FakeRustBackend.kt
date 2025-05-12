@@ -10,6 +10,7 @@ import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
+import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 
 internal class FakeRustBackend(
     override val networkId: Int,
@@ -203,6 +204,13 @@ internal class FakeRustBackend(
     }
 
     override suspend fun getCurrentAddress(accountUuid: ByteArray): String {
+        error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun getNextAvailableAddress(
+        accountUuid: ByteArray,
+        receiverFlags: Int
+    ): String {
         error("Intentionally not implemented yet.")
     }
 

@@ -64,6 +64,7 @@ import cash.z.ecc.android.sdk.model.TransactionPool
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
+import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.tool.CheckpointTool
@@ -796,6 +797,13 @@ class SdkSynchronizer private constructor(
         CompactBlockProcessor.getCurrentAddress(
             backend,
             account
+        )
+
+    override suspend fun getCustomUnifiedAddress(account: Account, request: UnifiedAddressRequest): String =
+        CompactBlockProcessor.getNextAvailableAddress(
+            backend,
+            account,
+            request
         )
 
     /**

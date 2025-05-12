@@ -16,6 +16,7 @@ import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
 import cash.z.ecc.android.sdk.internal.model.RustLogging
 import cash.z.ecc.android.sdk.internal.model.isNotLoggingInProduction
+import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -158,6 +159,19 @@ class RustBackend private constructor(
                 networkId = networkId
             )
         }
+
+    override suspend fun getNextAvailableAddress(
+        accountUuid: ByteArray,
+        receiverFlags: Int
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
+            getNextAvailableAddress(
+                dataDbFile.absolutePath,
+                accountUuid,
+                networkId = networkId,
+                receiverFlags
+            )
+        }
+
 
     override fun getTransparentReceiver(ua: String) = getTransparentReceiverForUnifiedAddress(ua)
 
@@ -615,6 +629,14 @@ class RustBackend private constructor(
             dbDataPath: String,
             accountUuid: ByteArray,
             networkId: Int
+        ): String
+
+        @JvmStatic
+        private external fun getNextAvailableAddress(
+            dbDataPath: String,
+            accountUuid: ByteArray,
+            networkId: Int,
+            receiverFlags: Int
         ): String
 
         @JvmStatic

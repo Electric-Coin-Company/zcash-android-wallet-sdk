@@ -25,6 +25,7 @@ import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
+import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import kotlinx.coroutines.withContext
 
 @Suppress("TooManyFunctions")
@@ -180,6 +181,16 @@ internal class TypesafeBackendImpl(
             backend.getCurrentAddress(account.accountUuid.value)
         }.onFailure {
             Twig.warn(it) { "Currently unable to get current address" }
+        }.getOrElse { throw RustLayerException.GetAddressException(it) }
+
+    override suspend fun getNextAvailableAddress(
+        account: Account,
+        request: UnifiedAddressRequest
+    ): String =
+        runCatching {
+            backend.getNextAvailableAddress(account.accountUuid.value, request.flags)
+        }.onFailure {
+            Twig.warn(it) { "Currently unable to get next available address" }
         }.getOrElse { throw RustLayerException.GetAddressException(it) }
 
     override suspend fun listTransparentReceivers(account: Account): List<String> =
