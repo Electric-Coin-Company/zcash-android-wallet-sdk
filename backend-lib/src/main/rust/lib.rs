@@ -679,8 +679,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getNextAv
     _: JClass<'local>,
     db_data: JString<'local>,
     account_uuid: JByteArray<'local>,
-    network_id: jint,
     receiver_flags: jint,
+    network_id: jint,
 ) -> jstring {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.getNextAvailableAddress").entered();

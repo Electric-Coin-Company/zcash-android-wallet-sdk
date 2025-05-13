@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.model
 
 data class UnifiedAddressRequest(val flags: Int) {
   init {
-    require(flags - ALL == 0) {
+    require(flags and ALL.inv() == 0) {
       "Invalid bits set; only bits 0, 2, and 3 (P2PKH, SAPLING, and ORCHARD respectively) may be set."
     }
   }
