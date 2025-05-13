@@ -7,7 +7,7 @@ use tonic::transport::{Channel, Uri};
 use tor_rtcompat::{BlockOn, PreferredRuntime};
 use zcash_client_backend::{
     proto::service::{self, compact_tx_streamer_client::CompactTxStreamerClient},
-    tor::Client,
+    tor::{Client, DormantMode},
 };
 use zcash_protocol::{consensus::BlockHeight, TxId};
 
@@ -59,6 +59,17 @@ impl TorRuntime {
             runtime: self.runtime.clone(),
             client: self.client.isolated_client(),
         }
+    }
+
+    /// Changes the client's current dormant mode, putting background tasks to sleep or
+    /// waking them up as appropriate.
+    ///
+    /// This can be used to conserve CPU usage if you aren’t planning on using the client
+    /// for a while, especially on mobile platforms.
+    ///
+    /// See the [`ffi::TorDormantMode`] documentation for more details.
+    pub(crate) fn set_dormant(&self, mode: DormantMode) {
+        self.client.set_dormant(mode);
     }
 
     /// Connects to the lightwalletd server at the given endpoint.

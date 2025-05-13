@@ -15,6 +15,7 @@ import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
+import cash.z.ecc.android.sdk.internal.model.TorClient
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.storage.preference.StandardPreferenceProvider
 import cash.z.ecc.android.sdk.model.Account
@@ -248,7 +249,7 @@ interface Synchronizer {
     /**
      * Refreshes [exchangeRateUsd].
      */
-    suspend fun refreshExchangeRateUsd()
+    fun refreshExchangeRateUsd()
 
     /**
      * Creates a proposal for transferring funds to the given recipient.
@@ -579,6 +580,10 @@ interface Synchronizer {
      */
     suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<TransactionOverview>>
 
+    fun onBackground()
+
+    fun onForeground()
+
     //
     // Error Handling
     //
@@ -808,6 +813,9 @@ interface Synchronizer {
 
             val standardPreferenceProvider = StandardPreferenceProvider(context)
 
+            val torDir = Files.getTorDir(context)
+            val torClient = TorClient.new(torDir)
+
             return SdkSynchronizer.new(
                 context = context.applicationContext,
                 zcashNetwork = zcashNetwork,
@@ -817,11 +825,9 @@ interface Synchronizer {
                 processor = processor,
                 backend = backend,
                 fastestServerFetcher = FastestServerFetcher(backend = backend, network = processor.network),
-                fetchExchangeChangeUsd =
-                    UsdExchangeRateFetcher(
-                        torDir = Files.getTorDir(context)
-                    ),
-                preferenceProvider = standardPreferenceProvider()
+                fetchExchangeChangeUsd = UsdExchangeRateFetcher(torClient),
+                preferenceProvider = standardPreferenceProvider(),
+                torClient = torClient
             )
         }
 
