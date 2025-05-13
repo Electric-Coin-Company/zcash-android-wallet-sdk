@@ -1,7 +1,7 @@
 package cash.z.ecc.android.sdk.internal.model
 
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
-import co.electriccoin.lightwallet.client.BaseTorWalletClient
+import co.electriccoin.lightwallet.client.PartialTorWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +15,7 @@ import kotlinx.coroutines.withContext
 class IsolatedTorWalletClient private constructor(
     private val endpoint: String,
     private val nativeHandle: Long
-) : BaseTorWalletClient {
+) : PartialTorWalletClient {
 
     private val semaphore = Mutex()
 
@@ -30,7 +30,7 @@ class IsolatedTorWalletClient private constructor(
     override suspend fun getTreeState(height: BlockHeightUnsafe) = executeAndDispose { it.getTreeState(height) }
 
     private suspend fun <T> executeAndDispose(
-        block: suspend (BaseTorWalletClient) -> Response<T>
+        block: suspend (PartialTorWalletClient) -> Response<T>
     ): Response<T> = semaphore.withLock {
         var client: TorWalletClient? = null
         try {
@@ -52,10 +52,7 @@ class IsolatedTorWalletClient private constructor(
 
     companion object {
 
-        suspend fun new(
-            endpoint: String,
-            nativeHandle: Long,
-        ): IsolatedTorWalletClient = withContext(Dispatchers.IO) {
+        suspend fun new(endpoint: String, nativeHandle: Long) = withContext(Dispatchers.IO) {
             RustBackend.loadLibrary()
             IsolatedTorWalletClient(endpoint, nativeHandle)
         }

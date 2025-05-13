@@ -3,7 +3,7 @@ package cash.z.ecc.android.sdk.internal.model
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
-import co.electriccoin.lightwallet.client.BaseTorWalletClient
+import co.electriccoin.lightwallet.client.PartialTorWalletClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -58,7 +58,7 @@ class TorClient private constructor(
      *
      * Each connection returned by this method is isolated from any other Tor usage.
      */
-    suspend fun createWalletClient(endpoint: String): BaseTorWalletClient =
+    suspend fun createWalletClient(endpoint: String): PartialTorWalletClient =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 checkNotNull(nativeHandle) { "TorClient is disposed" }

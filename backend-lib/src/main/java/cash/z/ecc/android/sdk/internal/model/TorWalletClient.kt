@@ -2,7 +2,7 @@ package cash.z.ecc.android.sdk.internal.model
 
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.wallet.sdk.internal.rpc.Service
-import co.electriccoin.lightwallet.client.BaseTorWalletClient
+import co.electriccoin.lightwallet.client.PartialTorWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.BlockIDUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
 
 class TorWalletClient private constructor(
     private var nativeHandle: Long?,
-) : BaseTorWalletClient {
+) : PartialTorWalletClient {
 
     suspend fun dispose() {
         execute {

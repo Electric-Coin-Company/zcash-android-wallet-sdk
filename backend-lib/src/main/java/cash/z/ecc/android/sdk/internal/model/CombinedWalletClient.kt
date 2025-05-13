@@ -1,31 +1,25 @@
 package cash.z.ecc.android.sdk.internal.model
 
-import co.electriccoin.lightwallet.client.PartialWalletClient
+import co.electriccoin.lightwallet.client.PartialTorWalletClient
 import co.electriccoin.lightwallet.client.LightWalletClient
-import co.electriccoin.lightwallet.client.BaseTorWalletClient
 import co.electriccoin.lightwallet.client.WalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
-import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 class CombinedWalletClient(
     private val lightWalletClient: LightWalletClient,
-    private val torWalletClient: BaseTorWalletClient,
+    private val torWalletClient: PartialTorWalletClient,
 ) : WalletClient {
 
-    private val semaphore = Mutex()
+    override suspend fun fetchTransaction(txId: ByteArray) = torWalletClient.fetchTransaction(txId)
 
-    override suspend fun fetchTransaction(txId: ByteArray) = executeOverTorOrDefault { it.fetchTransaction(txId) }
+    override suspend fun getServerInfo() = torWalletClient.getServerInfo()
 
-    override suspend fun getServerInfo() = executeOverTorOrDefault { it.getServerInfo() }
+    override suspend fun getLatestBlockHeight() = torWalletClient.getLatestBlockHeight()
 
-    override suspend fun getLatestBlockHeight() = executeOverTorOrDefault { it.getLatestBlockHeight() }
+    override suspend fun submitTransaction(tx: ByteArray) = torWalletClient.submitTransaction(tx)
 
-    override suspend fun submitTransaction(tx: ByteArray) = executeOverTorOrDefault { it.submitTransaction(tx) }
-
-    override suspend fun getTreeState(height: BlockHeightUnsafe) = executeOverTorOrDefault { it.getTreeState(height) }
+    override suspend fun getTreeState(height: BlockHeightUnsafe) = torWalletClient.getTreeState(height)
 
     override suspend fun fetchUtxos(
         tAddresses: List<String>,
@@ -52,17 +46,4 @@ class CombinedWalletClient(
     override fun shutdown() = lightWalletClient.shutdown()
 
     override fun close() = lightWalletClient.close()
-
-    private suspend inline fun <reified T> executeOverTorOrDefault(
-        block: (PartialWalletClient) -> Response<T>,
-    ): Response<T> {
-        return semaphore.withLock {
-            val torResult = block(torWalletClient)
-            if (torResult is Response.Failure.OverTor) {
-                block(lightWalletClient)
-            } else {
-                torResult
-            }
-        }
-    }
 }
