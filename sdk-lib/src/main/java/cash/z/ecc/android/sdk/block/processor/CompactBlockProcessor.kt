@@ -41,6 +41,7 @@ import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.metrics.TraceScope
 import cash.z.ecc.android.sdk.internal.model.BlockBatch
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.OutputStatusFilter
 import cash.z.ecc.android.sdk.internal.model.RecoveryProgress
 import cash.z.ecc.android.sdk.internal.model.RewindResult
 import cash.z.ecc.android.sdk.internal.model.ScanProgress
@@ -49,6 +50,7 @@ import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.SuggestScanRangePriority
 import cash.z.ecc.android.sdk.internal.model.TransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.TransactionStatus
+import cash.z.ecc.android.sdk.internal.model.TransactionStatusFilter
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ext.from
@@ -1874,7 +1876,7 @@ class CompactBlockProcessor internal constructor(
                                     // We intentionally do not terminate the batch enhancing here, just reporting it
                                 }
                             }
-                            is TransactionDataRequest.SpendsFromAddress -> {
+                            is TransactionDataRequest.TransactionsInvolvingAddress -> {
                                 val processTaddrTxidsResult =
                                     processTransparentAddressTxids(
                                         transactionRequest = it,
@@ -1898,7 +1900,7 @@ class CompactBlockProcessor internal constructor(
             }
 
         private suspend fun processTransparentAddressTxids(
-            transactionRequest: TransactionDataRequest.SpendsFromAddress,
+            transactionRequest: TransactionDataRequest.TransactionsInvolvingAddress,
             backend: TypesafeBackend,
             downloader: CompactBlockDownloader
         ): SyncingResult {
@@ -1918,6 +1920,16 @@ class CompactBlockProcessor internal constructor(
                 )
             }
 
+            // TODO: [#1757] Support this.
+            if (transactionRequest.requestAt != null) {
+                return SyncingResult.EnhanceSuccess
+            }
+
+            // TODO: [#1758] Support the OutputStatusFilter.
+            if (transactionRequest.outputStatusFilter == OutputStatusFilter.Unspent) {
+                return SyncingResult.EnhanceSuccess
+            }
+
             val traceScope = TraceScope("CompactBlockProcessor.processTransparentAddressTxids")
             val result =
                 try {
@@ -1926,6 +1938,16 @@ class CompactBlockProcessor internal constructor(
                         transactionRequest = transactionRequest,
                         downloader = downloader
                     ).onEach { rawTransactionUnsafe ->
+                        val rawTransaction = RawTransaction.new(rawTransactionUnsafe = rawTransactionUnsafe)
+
+                        // Ignore transactions that don't match the status filter.
+                        if (
+                            (transactionRequest.txStatusFilter == TransactionStatusFilter.Mined && rawTransaction.height == null) ||
+                            (transactionRequest.txStatusFilter == TransactionStatusFilter.Mempool && rawTransaction.height != null)
+                        ) {
+                            return@onEach
+                        }
+
                         // Decrypting and storing transaction is run just once, since we consider it more stable
                         Twig.verbose { "Decrypting and storing rawTransactionUnsafe" }
                         decryptTransaction(
@@ -1946,7 +1968,7 @@ class CompactBlockProcessor internal constructor(
 
         @Throws(EnhanceTxDownloadError::class)
         private suspend fun getTransparentAddressTransactions(
-            transactionRequest: TransactionDataRequest.SpendsFromAddress,
+            transactionRequest: TransactionDataRequest.TransactionsInvolvingAddress,
             downloader: CompactBlockDownloader,
         ): Flow<RawTransactionUnsafe> {
             val traceScope = TraceScope("CompactBlockProcessor.getTransparentAddressTransactions")
