@@ -2203,6 +2203,7 @@ class CompactBlockProcessor internal constructor(
             account: Account,
             request: UnifiedAddressRequest
         ) = backend.getNextAvailableAddress(account, request)
+
         /**
          * Get the legacy Sapling address corresponding to the current unified address for the given wallet account.
          *

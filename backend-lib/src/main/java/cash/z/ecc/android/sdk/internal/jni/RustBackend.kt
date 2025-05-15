@@ -163,14 +163,13 @@ class RustBackend private constructor(
         accountUuid: ByteArray,
         receiverFlags: Int
     ) = withContext(SdkDispatchers.DATABASE_IO) {
-            getNextAvailableAddress(
-                dataDbFile.absolutePath,
-                accountUuid,
-                receiverFlags,
-                networkId = networkId
-            )
-        }
-
+        getNextAvailableAddress(
+            dataDbFile.absolutePath,
+            accountUuid,
+            receiverFlags,
+            networkId = networkId
+        )
+    }
 
     override fun getTransparentReceiver(ua: String) = getTransparentReceiverForUnifiedAddress(ua)
 
