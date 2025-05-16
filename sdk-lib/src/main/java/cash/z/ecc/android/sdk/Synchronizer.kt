@@ -230,7 +230,8 @@ interface Synchronizer {
      *
      * @return the current unified address for the given account.
      *
-     * @throws RustLayerException.GetAddressException in case of the operation
+     * @throws RustLayerException.GetAddressException if the account cannot create an address with the requested
+     * receivers.
      */
     @Throws(RustLayerException.GetAddressException::class)
     suspend fun getCustomUnifiedAddress(account: Account, request: UnifiedAddressRequest): String
