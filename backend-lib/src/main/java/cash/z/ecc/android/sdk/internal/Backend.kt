@@ -195,6 +195,12 @@ interface Backend {
     @Throws(RuntimeException::class)
     suspend fun getCurrentAddress(accountUuid: ByteArray): String
 
+    @Throws(RuntimeException::class)
+    suspend fun getNextAvailableAddress(
+        accountUuid: ByteArray,
+        receiverFlags: Int
+    ): String
+
     fun getTransparentReceiver(ua: String): String?
 
     fun getSaplingReceiver(ua: String): String?

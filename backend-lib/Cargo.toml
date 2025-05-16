@@ -46,6 +46,7 @@ rayon = "1.7"
 anyhow = "1"
 jni = { version = "0.21", default-features = false }
 uuid = "1"
+bitflags = "2"
 
 # lightwalletd
 tonic = "0.12"

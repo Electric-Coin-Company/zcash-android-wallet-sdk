@@ -33,6 +33,7 @@ import cash.z.ecc.android.sdk.model.TransactionOutput
 import cash.z.ecc.android.sdk.model.TransactionOverview
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
+import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
 import cash.z.ecc.android.sdk.model.ZcashNetwork
@@ -220,6 +221,20 @@ interface Synchronizer {
      */
     @Throws(RustLayerException.GetAddressException::class)
     suspend fun getUnifiedAddress(account: Account): String
+
+    /**
+     * Gets a new unified address that conforms to the specified request.
+     *
+     * @param account the account whose address is of interest.
+     * @param request a description of the receivers to create in the newly generated address.
+     *
+     * @return the current unified address for the given account.
+     *
+     * @throws RustLayerException.GetAddressException if the account cannot create an address with the requested
+     * receivers.
+     */
+    @Throws(RustLayerException.GetAddressException::class)
+    suspend fun getCustomUnifiedAddress(account: Account, request: UnifiedAddressRequest): String
 
     /**
      * Gets the legacy Sapling address corresponding to the current unified address for the given account.
