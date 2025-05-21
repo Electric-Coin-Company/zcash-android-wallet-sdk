@@ -13,10 +13,12 @@ class JniWalletSummaryTest {
                 accountBalances = arrayOf(JniAccountBalanceFixture.new()),
                 chainTipHeight = 0,
                 fullyScannedHeight = 0,
-                progressNumerator = 1L,
-                progressDenominator = 100L,
+                scanProgressNumerator = 1L,
+                scanProgressDenominator = 100L,
                 nextSaplingSubtreeIndex = 0L,
-                nextOrchardSubtreeIndex = 0L
+                nextOrchardSubtreeIndex = 0L,
+                recoveryProgressNumerator = 1L,
+                recoveryProgressDenominator = 100L
             )
         assertIs<JniWalletSummary>(instance)
     }
@@ -28,10 +30,12 @@ class JniWalletSummaryTest {
                 accountBalances = arrayOf(JniAccountBalanceFixture.new()),
                 chainTipHeight = -1,
                 fullyScannedHeight = 0,
-                progressNumerator = 1L,
-                progressDenominator = 100L,
+                scanProgressNumerator = 1L,
+                scanProgressDenominator = 100L,
                 nextSaplingSubtreeIndex = 0L,
-                nextOrchardSubtreeIndex = 0
+                nextOrchardSubtreeIndex = 0,
+                recoveryProgressNumerator = 1L,
+                recoveryProgressDenominator = 100L
             )
         }
     }
@@ -43,10 +47,12 @@ class JniWalletSummaryTest {
                 accountBalances = arrayOf(JniAccountBalanceFixture.new()),
                 chainTipHeight = 0,
                 fullyScannedHeight = 0,
-                progressNumerator = -1L,
-                progressDenominator = 100L,
+                scanProgressNumerator = -1L,
+                scanProgressDenominator = 100L,
                 nextSaplingSubtreeIndex = 0L,
-                nextOrchardSubtreeIndex = 0L
+                nextOrchardSubtreeIndex = 0L,
+                recoveryProgressNumerator = 1L,
+                recoveryProgressDenominator = 100L
             )
         }
     }
@@ -58,10 +64,12 @@ class JniWalletSummaryTest {
                 accountBalances = arrayOf(JniAccountBalanceFixture.new()),
                 chainTipHeight = 0,
                 fullyScannedHeight = 0,
-                progressNumerator = 1L,
-                progressDenominator = 0L,
+                scanProgressNumerator = 1L,
+                scanProgressDenominator = -1L,
                 nextSaplingSubtreeIndex = 0L,
-                nextOrchardSubtreeIndex = 0L
+                nextOrchardSubtreeIndex = 0L,
+                recoveryProgressNumerator = 1L,
+                recoveryProgressDenominator = 100L
             )
         }
     }
@@ -73,10 +81,12 @@ class JniWalletSummaryTest {
                 accountBalances = arrayOf(JniAccountBalanceFixture.new()),
                 chainTipHeight = 0,
                 fullyScannedHeight = 0,
-                progressNumerator = 100L,
-                progressDenominator = 1L,
+                scanProgressNumerator = 100L,
+                scanProgressDenominator = 1L,
                 nextSaplingSubtreeIndex = 0L,
-                nextOrchardSubtreeIndex = 0L
+                nextOrchardSubtreeIndex = 0L,
+                recoveryProgressNumerator = 100L,
+                recoveryProgressDenominator = 1L
             )
         }
     }
@@ -88,10 +98,12 @@ class JniWalletSummaryTest {
                 accountBalances = arrayOf(JniAccountBalanceFixture.new()),
                 chainTipHeight = 0,
                 fullyScannedHeight = 0,
-                progressNumerator = 1L,
-                progressDenominator = 100L,
+                scanProgressNumerator = 1L,
+                scanProgressDenominator = 100L,
                 nextSaplingSubtreeIndex = -1L,
-                nextOrchardSubtreeIndex = -1L
+                nextOrchardSubtreeIndex = -1L,
+                recoveryProgressNumerator = 1L,
+                recoveryProgressDenominator = 100L
             )
         }
     }

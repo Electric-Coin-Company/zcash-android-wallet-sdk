@@ -6,6 +6,13 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.13] - 2025-05-16
+
+### Added
+- `Synchronizer.getCustomUnifiedAddress` allows the caller to obtain a newly-generated
+  unified address with user-specified `UnifiedAddressRequest` of type `P2PKH`, `Sapling` and `Orchard` supporting 
+  the ability to combine these using an infix `and` function.
+
 ## [2.2.12] - 2025-04-28
 
 ### Added

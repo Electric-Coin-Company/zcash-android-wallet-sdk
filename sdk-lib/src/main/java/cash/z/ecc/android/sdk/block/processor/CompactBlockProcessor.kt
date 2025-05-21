@@ -63,6 +63,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.RawTransaction
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
+import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import cash.z.ecc.android.sdk.model.Zatoshi
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
@@ -2191,6 +2192,17 @@ class CompactBlockProcessor internal constructor(
             backend: TypesafeBackend,
             account: Account
         ) = backend.getCurrentAddress(account)
+
+        /**
+         * Get the current unified address for the given wallet account.
+         *
+         * @return the current unified address of this account.
+         */
+        internal suspend fun getNextAvailableAddress(
+            backend: TypesafeBackend,
+            account: Account,
+            request: UnifiedAddressRequest
+        ) = backend.getNextAvailableAddress(account, request)
 
         /**
          * Get the legacy Sapling address corresponding to the current unified address for the given wallet account.

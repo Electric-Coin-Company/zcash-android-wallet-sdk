@@ -5789,6 +5789,7 @@ name = "zcash-android-wallet-sdk"
 version = "2.2.10"
 dependencies = [
  "anyhow",
+ "bitflags 2.8.0",
  "dlopen2",
  "fs-mistrust",
  "jni",
