@@ -32,7 +32,7 @@ class WalletClientFactory(
                 lightWalletClient = lightWalletClient,
                 torWalletClient =
                     torClient.createWalletClient(
-                        "https://${network.networkName}.${endpoint.host}:${endpoint.port}"
+                        "https://${endpoint.host}:${endpoint.port}"
                     ),
             )
         } else {
