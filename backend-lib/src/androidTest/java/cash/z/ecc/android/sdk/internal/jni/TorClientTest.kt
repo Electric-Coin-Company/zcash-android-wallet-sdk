@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
 class TorClientTest {
     @OptIn(ExperimentalStdlibApi::class)
     @Test
-    // @Ignore("requires network access")
+    @Ignore("requires network access")
     fun tor_lwd_can_fetch_and_submit_tx() =
         runTest {
             // Spin up a new Tor client.
