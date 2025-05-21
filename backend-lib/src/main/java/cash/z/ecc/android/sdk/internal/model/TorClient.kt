@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import co.electriccoin.lightwallet.client.PartialTorWalletClient
+import co.electriccoin.lightwallet.client.util.Disposable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -13,10 +14,10 @@ import java.math.BigDecimal
 
 class TorClient private constructor(
     private var nativeHandle: Long?,
-) {
+) : Disposable {
     private val accessMutex = Mutex()
 
-    suspend fun dispose() =
+    override suspend fun dispose() =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 nativeHandle?.let { freeTorRuntime(it) }
@@ -37,12 +38,12 @@ class TorClient private constructor(
      * Calling this method is usually preferable to creating a completely separate
      * `TorClient` instance, since it can share its internals with the existing `TorClient`.
      */
-    suspend fun isolatedClient(): TorClient =
-        accessMutex.withLock {
-            withContext(Dispatchers.IO) {
-                checkNotNull(nativeHandle) { "TorClient is disposed" }
-                TorClient(nativeHandle = isolatedClient(nativeHandle!!))
-            }
+    suspend fun isolatedClient(): TorClient = accessMutex.withLock { isolatedClientInternal() }
+
+    private suspend fun isolatedClientInternal() =
+        withContext(Dispatchers.IO) {
+            checkNotNull(nativeHandle) { "TorClient is disposed" }
+            TorClient(nativeHandle = isolatedClient(nativeHandle!!))
         }
 
     suspend fun getExchangeRateUsd(): BigDecimal =
@@ -62,7 +63,18 @@ class TorClient private constructor(
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 checkNotNull(nativeHandle) { "TorClient is disposed" }
-                IsolatedTorWalletClient.new(endpoint, nativeHandle!!)
+                IsolatedTorWalletClient.new(
+                    isolatedTorClient = isolatedClientInternal(),
+                    endpoint = endpoint
+                )
+            }
+        }
+
+    suspend fun connectToLightwalletd(endpoint: String): Long =
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorClient is disposed" }
+                connectToLightwalletd(nativeHandle!!, endpoint)
             }
         }
 
@@ -107,5 +119,9 @@ class TorClient private constructor(
         @JvmStatic
         @Throws(RuntimeException::class)
         private external fun getExchangeRateUsd(nativeHandle: Long): BigDecimal
+
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        private external fun connectToLightwalletd(nativeHandle: Long, endpoint: String): Long
     }
 }

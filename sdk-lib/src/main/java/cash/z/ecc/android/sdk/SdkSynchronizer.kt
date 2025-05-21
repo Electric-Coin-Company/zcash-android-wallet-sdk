@@ -21,7 +21,6 @@ import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.TypesafeBackendImpl
-import cash.z.ecc.android.sdk.util.WalletClientFactory
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.db.derived.DbDerivedDataRepository
@@ -77,9 +76,11 @@ import cash.z.ecc.android.sdk.type.AddressType.Transparent
 import cash.z.ecc.android.sdk.type.AddressType.Unified
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.ecc.android.sdk.type.ServerValidation
+import cash.z.ecc.android.sdk.util.WalletClientFactory
 import co.electriccoin.lightwallet.client.WalletClient
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
+import co.electriccoin.lightwallet.client.util.use
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -142,7 +143,8 @@ class SdkSynchronizer private constructor(
     private val fetchExchangeChangeUsd: UsdExchangeRateFetcher,
     private val preferenceProvider: PreferenceProvider,
     private val torClient: TorClient,
-    private val walletClientFactory: WalletClientFactory
+    private val walletClient: WalletClient,
+    private val walletClientFactory: WalletClientFactory,
 ) : CloseableSynchronizer {
     companion object {
         private sealed class InstanceState {
@@ -180,6 +182,7 @@ class SdkSynchronizer private constructor(
             fetchExchangeChangeUsd: UsdExchangeRateFetcher,
             preferenceProvider: PreferenceProvider,
             torClient: TorClient,
+            walletClient: WalletClient,
             walletClientFactory: WalletClientFactory
         ): CloseableSynchronizer {
             val synchronizerKey = SynchronizerKey(zcashNetwork, alias)
@@ -197,6 +200,7 @@ class SdkSynchronizer private constructor(
                     fetchExchangeChangeUsd = fetchExchangeChangeUsd,
                     preferenceProvider = preferenceProvider,
                     torClient = torClient,
+                    walletClient = walletClient,
                     walletClientFactory = walletClientFactory
                 ).apply {
                     instances[synchronizerKey] = InstanceState.Active
@@ -422,6 +426,8 @@ class SdkSynchronizer private constructor(
                 Twig.info { "Stopping synchronizer $synchronizerKey…" }
                 processor.stop()
                 torClient.dispose()
+                walletClient.dispose()
+                fetchExchangeChangeUsd.dispose()
             }
 
         instances[synchronizerKey] = InstanceState.ShuttingDown(shutdownJob)
@@ -445,6 +451,8 @@ class SdkSynchronizer private constructor(
                 coroutineScope.launch {
                     Twig.info { "Stopping synchronizer $synchronizerKey…" }
                     processor.stop()
+                    walletClient.dispose()
+                    fetchExchangeChangeUsd.dispose()
                 }
 
             instances[synchronizerKey] = InstanceState.ShuttingDown(shutdownJob)
@@ -1003,7 +1011,8 @@ class SdkSynchronizer private constructor(
         // Create a dedicated light wallet client for the validation
         // The single request timeout is changed from default to 5 seconds to speed up a possible custom server
         // endpoint validation
-        walletClientFactory.create(endpoint = endpoint)
+        walletClientFactory
+            .create(endpoint = endpoint)
             .use { lightWalletClient ->
                 val remoteInfo =
                     when (val response = lightWalletClient.getServerInfo()) {

@@ -8,7 +8,6 @@ import co.electriccoin.lightwallet.client.model.SendResponseUnsafe
 import co.electriccoin.lightwallet.client.model.TreeStateUnsafe
 
 interface PartialWalletClient {
-
     /**
      * @return useful server details.
      */

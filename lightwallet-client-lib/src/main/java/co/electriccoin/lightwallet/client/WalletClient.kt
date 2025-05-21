@@ -7,15 +7,16 @@ import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
 import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
+import co.electriccoin.lightwallet.client.util.Disposable
 import kotlinx.coroutines.flow.Flow
-import java.io.Closeable
 
 /**
  * Client for interacting with lightwalletd.
  */
 @Suppress("TooManyFunctions")
-interface WalletClient : PartialWalletClient, Closeable {
-
+interface WalletClient :
+    PartialWalletClient,
+    Disposable {
     /**
      * @param tAddresses the array containing the transparent addresses to use.
      * @param startHeight the starting height to use.
@@ -75,9 +76,4 @@ interface WalletClient : PartialWalletClient, Closeable {
      * unrecoverable. That might be time to switch to a mirror or just reconnect.
      */
     fun reconnect()
-
-    /**
-     * Cleanup any connections when the service is shutting down and not going to be used again.
-     */
-    fun shutdown()
 }

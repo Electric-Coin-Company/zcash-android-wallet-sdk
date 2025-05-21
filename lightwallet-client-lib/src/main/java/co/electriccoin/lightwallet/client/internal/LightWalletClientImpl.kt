@@ -126,7 +126,7 @@ internal class LightWalletClientImpl(
         }
     }
 
-    override fun close() {
+    override suspend fun dispose() {
         shutdown()
     }
 
@@ -260,7 +260,7 @@ internal class LightWalletClientImpl(
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
 
-    override fun shutdown() {
+    private fun shutdown() {
         channel.shutdown()
     }
 

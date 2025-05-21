@@ -138,7 +138,7 @@ open class CompactBlockDownloader private constructor(
      */
     suspend fun stop() {
         withContext(IO) {
-            lightWalletClient.shutdown()
+            lightWalletClient.dispose()
         }
     }
 

@@ -1,3 +1,7 @@
 package co.electriccoin.lightwallet.client
 
-interface PartialTorWalletClient : PartialWalletClient
+import co.electriccoin.lightwallet.client.util.Disposable
+
+interface PartialTorWalletClient :
+    PartialWalletClient,
+    Disposable

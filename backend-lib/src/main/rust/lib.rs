@@ -2836,7 +2836,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_getExchan
 ///
 /// Each connection returned by this method is isolated from any other Tor usage.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_IsolatedTorWalletClient_connectToLightwalletd<
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_connectToLightwalletd<
     'local,
 >(
     mut env: JNIEnv<'local>,

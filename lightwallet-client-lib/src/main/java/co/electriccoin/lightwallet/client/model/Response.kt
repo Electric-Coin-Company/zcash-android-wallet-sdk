@@ -4,6 +4,7 @@ internal const val CONNECTION_ERROR_CODE = 3100
 internal const val CONNECTION_ERROR_DESCRIPTION = "Missing internet connection." // NON-NLS
 
 internal const val OVER_TOR_COMMUNICATION_ERROR_CODE = 3200
+
 // NON-NLS
 internal const val OVER_TOR_COMMUNICATION_ERROR_DESCRIPTION = "Request over Tor failed with no specific error message."
 

@@ -8,6 +8,7 @@ import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.io.path.createTempDirectory
+import kotlin.test.Ignore
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -42,6 +43,7 @@ class TorClientTest {
 
             val submit = lwdConn.submitTransaction(tx.data)
 
+            // We should fail to resubmit the already-mined transaction.
             assertTrue(submit is Response.Failure.OverTor)
             assertEquals(
                 "Failed to submit transaction (-25): failed to validate tx: transaction::Hash(\"private\"), " +

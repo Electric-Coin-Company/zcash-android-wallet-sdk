@@ -777,12 +777,13 @@ interface Synchronizer {
             val torDir = Files.getTorDir(context)
             val torClient = TorClient.new(torDir)
 
-            val walletClientFactory = WalletClientFactory(
-                context = applicationContext,
-                torClient = torClient,
-                isTorEnabled = true,
-                network = zcashNetwork
-            )
+            val walletClientFactory =
+                WalletClientFactory(
+                    context = applicationContext,
+                    torClient = torClient,
+                    isTorEnabled = true,
+                    network = zcashNetwork
+                )
 
             val walletClient = walletClientFactory.create(endpoint = lightWalletEndpoint)
             val downloader = DefaultSynchronizerFactory.defaultDownloader(walletClient, blockStore)
@@ -842,14 +843,16 @@ interface Synchronizer {
                 txManager = txManager,
                 processor = processor,
                 backend = backend,
-                fastestServerFetcher = FastestServerFetcher(
-                    backend = backend,
-                    network = processor.network,
-                    walletClientFactory = walletClientFactory
-                ),
-                fetchExchangeChangeUsd = UsdExchangeRateFetcher(torClient = torClient),
+                fastestServerFetcher =
+                    FastestServerFetcher(
+                        backend = backend,
+                        network = processor.network,
+                        walletClientFactory = walletClientFactory
+                    ),
+                fetchExchangeChangeUsd = UsdExchangeRateFetcher(isolatedTorClient = torClient.isolatedClient()),
                 preferenceProvider = standardPreferenceProvider(),
                 torClient = torClient,
+                walletClient = walletClient,
                 walletClientFactory = walletClientFactory
             )
         }
