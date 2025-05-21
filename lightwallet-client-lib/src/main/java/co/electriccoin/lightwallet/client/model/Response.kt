@@ -3,6 +3,11 @@ package co.electriccoin.lightwallet.client.model
 internal const val CONNECTION_ERROR_CODE = 3100
 internal const val CONNECTION_ERROR_DESCRIPTION = "Missing internet connection." // NON-NLS
 
+internal const val OVER_TOR_COMMUNICATION_ERROR_CODE = 3200
+
+// NON-NLS
+internal const val OVER_TOR_COMMUNICATION_ERROR_DESCRIPTION = "Request over Tor failed with no specific error message."
+
 sealed class Response<T> {
     data class Success<T>(
         val result: T
@@ -25,6 +30,18 @@ sealed class Response<T> {
         ) : Failure<T>(CONNECTION_ERROR_CODE, description) {
             override fun toString(): String {
                 return "Connection Error(code='$code', description='$description')" // NON-NLS
+            }
+        }
+
+        /**
+         * This exception comes from the failed communication with server using the Rust internal networking
+         * communication over Tor.
+         */
+        class OverTor<T>(
+            override val description: String? = OVER_TOR_COMMUNICATION_ERROR_DESCRIPTION
+        ) : Failure<T>(OVER_TOR_COMMUNICATION_ERROR_CODE, description) {
+            override fun toString(): String {
+                return "Over Tor communication error(code='$code', description='$description')" // NON-NLS
             }
         }
 

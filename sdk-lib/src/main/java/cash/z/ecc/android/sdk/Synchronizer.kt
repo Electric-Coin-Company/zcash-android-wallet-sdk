@@ -15,6 +15,7 @@ import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
 import cash.z.ecc.android.sdk.internal.exchange.UsdExchangeRateFetcher
+import cash.z.ecc.android.sdk.internal.model.TorClient
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.internal.storage.preference.StandardPreferenceProvider
 import cash.z.ecc.android.sdk.model.Account
@@ -41,6 +42,7 @@ import cash.z.ecc.android.sdk.tool.CheckpointTool
 import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.ecc.android.sdk.type.ServerValidation
+import cash.z.ecc.android.sdk.util.WalletClientFactory
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.flow.Flow
@@ -751,9 +753,9 @@ interface Synchronizer {
 
             val loadedCheckpoint =
                 CheckpointTool.loadNearest(
-                    applicationContext,
-                    zcashNetwork,
-                    birthday ?: zcashNetwork.saplingActivationHeight
+                    context = applicationContext,
+                    network = zcashNetwork,
+                    birthdayHeight = birthday ?: zcashNetwork.saplingActivationHeight
                 )
 
             val coordinator = DatabaseCoordinator.getInstance(context)
@@ -772,17 +774,29 @@ interface Synchronizer {
                 DefaultSynchronizerFactory
                     .defaultCompactBlockRepository(coordinator.fsBlockDbRoot(zcashNetwork, alias), backend)
 
-            val service = DefaultSynchronizerFactory.defaultService(applicationContext, lightWalletEndpoint)
-            val downloader = DefaultSynchronizerFactory.defaultDownloader(service, blockStore)
+            val torDir = Files.getTorDir(context)
+            val torClient = TorClient.new(torDir)
+
+            val walletClientFactory =
+                WalletClientFactory(
+                    context = applicationContext,
+                    torClient = torClient,
+                    isTorEnabled = true,
+                    network = zcashNetwork
+                )
+
+            val walletClient = walletClientFactory.create(endpoint = lightWalletEndpoint)
+            val downloader = DefaultSynchronizerFactory.defaultDownloader(walletClient, blockStore)
 
             val chainTip =
                 when (walletInitMode) {
-                    is WalletInitMode.RestoreWallet -> {
+                    is RestoreWallet -> {
                         when (val response = downloader.getLatestBlockHeight()) {
                             is Response.Success -> {
                                 Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
                                 runCatching { response.result.toBlockHeight() }.getOrNull()
                             }
+
                             is Response.Failure -> {
                                 Twig.error {
                                     "Chain tip fetch for recovery until failed with: ${response.toThrowable()}"
@@ -791,6 +805,7 @@ interface Synchronizer {
                             }
                         }
                     }
+
                     else -> {
                         null
                     }
@@ -807,11 +822,8 @@ interface Synchronizer {
                 )
 
             val encoder = DefaultSynchronizerFactory.defaultEncoder(backend, saplingParamTool, repository)
-            val txManager =
-                DefaultSynchronizerFactory.defaultTxManager(
-                    encoder,
-                    service
-                )
+
+            val txManager = DefaultSynchronizerFactory.defaultTxManager(encoder, walletClient)
             val processor =
                 DefaultSynchronizerFactory.defaultProcessor(
                     backend = backend,
@@ -831,12 +843,17 @@ interface Synchronizer {
                 txManager = txManager,
                 processor = processor,
                 backend = backend,
-                fastestServerFetcher = FastestServerFetcher(backend = backend, network = processor.network),
-                fetchExchangeChangeUsd =
-                    UsdExchangeRateFetcher(
-                        torDir = Files.getTorDir(context)
+                fastestServerFetcher =
+                    FastestServerFetcher(
+                        backend = backend,
+                        network = processor.network,
+                        walletClientFactory = walletClientFactory
                     ),
-                preferenceProvider = standardPreferenceProvider()
+                fetchExchangeChangeUsd = UsdExchangeRateFetcher(isolatedTorClient = torClient.isolatedClient()),
+                preferenceProvider = standardPreferenceProvider(),
+                torClient = torClient,
+                walletClient = walletClient,
+                walletClientFactory = walletClientFactory
             )
         }
 

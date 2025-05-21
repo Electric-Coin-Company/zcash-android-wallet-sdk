@@ -7,7 +7,7 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.model.BlockHeight
-import co.electriccoin.lightwallet.client.LightWalletClient
+import co.electriccoin.lightwallet.client.WalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
@@ -33,13 +33,13 @@ import kotlinx.coroutines.withContext
 open class CompactBlockDownloader private constructor(
     val compactBlockRepository: CompactBlockRepository
 ) {
-    private lateinit var lightWalletClient: LightWalletClient
+    private lateinit var lightWalletClient: WalletClient
 
     constructor(
-        lightWalletClient: LightWalletClient,
+        walletClient: WalletClient,
         compactBlockRepository: CompactBlockRepository
     ) : this(compactBlockRepository) {
-        this.lightWalletClient = lightWalletClient
+        this.lightWalletClient = walletClient
     }
 
     /**
@@ -138,7 +138,7 @@ open class CompactBlockDownloader private constructor(
      */
     suspend fun stop() {
         withContext(IO) {
-            lightWalletClient.shutdown()
+            lightWalletClient.dispose()
         }
     }
 

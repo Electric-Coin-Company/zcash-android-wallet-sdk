@@ -40,11 +40,11 @@ import kotlin.time.Duration.Companion.seconds
  * now.
  */
 @Suppress("TooManyFunctions")
-internal class LightWalletClientImpl private constructor(
+internal class LightWalletClientImpl(
     private val channelFactory: ChannelFactory,
     private val lightWalletEndpoint: LightWalletEndpoint,
-    private val singleRequestTimeout: Duration,
-    private val streamingRequestTimeout: Duration
+    private val singleRequestTimeout: Duration = 10.seconds,
+    private val streamingRequestTimeout: Duration = 90.seconds
 ) : LightWalletClient {
     private var channel = channelFactory.newChannel(lightWalletEndpoint)
 
@@ -126,7 +126,7 @@ internal class LightWalletClientImpl private constructor(
         }
     }
 
-    override fun close() {
+    override suspend fun dispose() {
         shutdown()
     }
 
@@ -260,7 +260,7 @@ internal class LightWalletClientImpl private constructor(
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
 
-    override fun shutdown() {
+    private fun shutdown() {
         channel.shutdown()
     }
 
@@ -282,21 +282,6 @@ internal class LightWalletClientImpl private constructor(
             }
         channel.resetConnectBackoff()
         return channel
-    }
-
-    companion object {
-        fun new(
-            channelFactory: ChannelFactory,
-            lightWalletEndpoint: LightWalletEndpoint,
-            singleRequestTimeout: Duration = 10.seconds,
-            streamingRequestTimeout: Duration = 90.seconds
-        ): LightWalletClientImpl =
-            LightWalletClientImpl(
-                channelFactory = channelFactory,
-                lightWalletEndpoint = lightWalletEndpoint,
-                singleRequestTimeout = singleRequestTimeout,
-                streamingRequestTimeout = streamingRequestTimeout
-            )
     }
 }
 
