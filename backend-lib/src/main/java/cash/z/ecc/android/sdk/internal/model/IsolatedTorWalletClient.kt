@@ -8,7 +8,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * A tor wallet client that uses tor connection for each individual RPC method query.
+ * A Tor wallet client that uses an isolated Tor connection for each individual RPC method query.
  */
 class IsolatedTorWalletClient private constructor(
     private val isolatedTorClient: TorClient,
