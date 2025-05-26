@@ -23,7 +23,7 @@ class TorClientTest {
             val torClient = TorClient.new(torDir)
 
             // Connect to a testnet lightwalletd server.
-            val lwdConn = torClient.createWalletClient("https://testnet.zec.rocks:443")
+            val lwdConn = torClient.createIsolatedWalletClient("https://testnet.zec.rocks:443")
 
             // Confirm that it is on testnet.
             val info = (lwdConn.getServerInfo() as Response.Success<LightWalletEndpointInfoUnsafe>).result

@@ -11,12 +11,12 @@ import kotlinx.coroutines.sync.withLock
  * A Tor wallet client that uses an isolated Tor connection for each individual RPC method query.
  */
 class IsolatedTorWalletClient private constructor(
-    private val isolatedTorClient: TorClient,
+    private val torClient: TorClient,
     private val endpoint: String,
 ) : PartialTorWalletClient {
     private val semaphore = Mutex()
 
-    override suspend fun dispose() = semaphore.withLock { isolatedTorClient.dispose() }
+    override suspend fun dispose() = semaphore.withLock { torClient.dispose() }
 
     override suspend fun getServerInfo() = executeAndDispose { it.getServerInfo() }
 
@@ -34,8 +34,8 @@ class IsolatedTorWalletClient private constructor(
     ): Response<T> =
         semaphore.withLock {
             try {
-                TorWalletClient
-                    .new(nativeHandle = isolatedTorClient.connectToLightwalletd(endpoint = endpoint))
+                torClient
+                    .createWalletClient(endpoint)
                     .use {
                         block(it)
                     }

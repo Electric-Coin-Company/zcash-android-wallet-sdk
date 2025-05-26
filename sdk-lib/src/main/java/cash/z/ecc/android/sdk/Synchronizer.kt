@@ -207,10 +207,7 @@ interface Synchronizer {
      *
      * @return a [Flow] of fastest servers which updates it's state during measurement stages
      */
-    suspend fun getFastestServers(
-        context: Context,
-        servers: List<LightWalletEndpoint>
-    ): Flow<FastestServersResult>
+    suspend fun getFastestServers(servers: List<LightWalletEndpoint>): Flow<FastestServersResult>
 
     /**
      * Gets the current unified address for the given account.
@@ -780,9 +777,7 @@ interface Synchronizer {
             val walletClientFactory =
                 WalletClientFactory(
                     context = applicationContext,
-                    torClient = torClient,
-                    isTorEnabled = true,
-                    network = zcashNetwork
+                    torClient = torClient
                 )
 
             val walletClient = walletClientFactory.create(endpoint = lightWalletEndpoint)
@@ -849,7 +844,7 @@ interface Synchronizer {
                         network = processor.network,
                         walletClientFactory = walletClientFactory
                     ),
-                fetchExchangeChangeUsd = UsdExchangeRateFetcher(isolatedTorClient = torClient.isolatedClient()),
+                fetchExchangeChangeUsd = UsdExchangeRateFetcher(isolatedTorClient = torClient.isolatedTorClient()),
                 preferenceProvider = standardPreferenceProvider(),
                 torClient = torClient,
                 walletClient = walletClient,

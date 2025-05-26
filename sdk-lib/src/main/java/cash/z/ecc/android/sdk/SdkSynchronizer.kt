@@ -51,7 +51,6 @@ import cash.z.ecc.android.sdk.model.AccountImportSetup
 import cash.z.ecc.android.sdk.model.AccountUsk
 import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
-import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.FetchFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
@@ -408,10 +407,7 @@ class SdkSynchronizer private constructor(
     override val latestBirthdayHeight
         get() = processor.birthdayHeight
 
-    override suspend fun getFastestServers(
-        context: Context,
-        servers: List<LightWalletEndpoint>
-    ): Flow<FastestServersResult> = fetchFastestServers(servers)
+    override suspend fun getFastestServers(servers: List<LightWalletEndpoint>) = fetchFastestServers(servers)
 
     internal fun start() {
         coroutineScope.onReady()

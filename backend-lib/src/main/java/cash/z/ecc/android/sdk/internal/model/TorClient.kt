@@ -38,9 +38,14 @@ class TorClient private constructor(
      * Calling this method is usually preferable to creating a completely separate
      * `TorClient` instance, since it can share its internals with the existing `TorClient`.
      */
-    suspend fun isolatedClient(): TorClient = accessMutex.withLock { isolatedClientInternal() }
+    suspend fun isolatedTorClient(): TorClient = accessMutex.withLock { isolatedTorClientInternal() }
 
-    private suspend fun isolatedClientInternal() =
+    /**
+     * Acquiring a lock when calling this function MUST be handled by the caller.
+     *
+     * @return a new isolated `TorClient` handle.
+     */
+    private suspend fun isolatedTorClientInternal() =
         withContext(Dispatchers.IO) {
             checkNotNull(nativeHandle) { "TorClient is disposed" }
             TorClient(nativeHandle = isolatedClient(nativeHandle!!))
@@ -59,22 +64,31 @@ class TorClient private constructor(
      *
      * Each connection returned by this method is isolated from any other Tor usage.
      */
+    suspend fun createIsolatedWalletClient(endpoint: String): PartialTorWalletClient =
+        accessMutex.withLock {
+            checkNotNull(nativeHandle) { "TorClient is disposed" }
+            IsolatedTorWalletClient.new(
+                isolatedTorClient = isolatedTorClientInternal(),
+                endpoint = endpoint
+            )
+        }
+
+    /**
+     * Connects to the lightwalletd server at the given endpoint.
+     *
+     * Connections used by this client are not isolated from any other Tor usage.
+     */
     suspend fun createWalletClient(endpoint: String): PartialTorWalletClient =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 checkNotNull(nativeHandle) { "TorClient is disposed" }
-                IsolatedTorWalletClient.new(
-                    isolatedTorClient = isolatedClientInternal(),
-                    endpoint = endpoint
+                TorWalletClient.new(
+                    nativeHandle =
+                        connectToLightwalletd(
+                            nativeHandle = nativeHandle!!,
+                            endpoint = endpoint
+                        )
                 )
-            }
-        }
-
-    suspend fun connectToLightwalletd(endpoint: String): Long =
-        accessMutex.withLock {
-            withContext(Dispatchers.IO) {
-                checkNotNull(nativeHandle) { "TorClient is disposed" }
-                connectToLightwalletd(nativeHandle!!, endpoint)
             }
         }
 
