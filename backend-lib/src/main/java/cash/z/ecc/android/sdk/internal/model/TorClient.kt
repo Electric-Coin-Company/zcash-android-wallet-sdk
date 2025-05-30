@@ -41,7 +41,7 @@ class TorClient private constructor(
     suspend fun isolatedTorClient(): TorClient = accessMutex.withLock { isolatedTorClientInternal() }
 
     /**
-     * Acquiring a lock when calling this function MUST be handled by the caller.
+     * The caller MUST acquire `accessMutex` before calling this function.
      *
      * @return a new isolated `TorClient` handle.
      */
