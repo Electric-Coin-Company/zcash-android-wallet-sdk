@@ -3,7 +3,7 @@ package co.electriccoin.lightwallet.client.util
 import java.io.IOException
 
 /**
- * A [Disposable] is a source or destination of data that can be closed/disposed.
+ * A [Disposable] is an object that can be closed/disposed.
  * The dispose method is invoked to release resources that the object is holding (such as open files).
  */
 interface Disposable {
