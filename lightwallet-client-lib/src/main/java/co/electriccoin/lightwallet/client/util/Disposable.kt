@@ -23,11 +23,11 @@ interface Disposable {
 }
 
 /**
- * Executes the given [block] function on this resource and then closes it down correctly whether an exception
+ * Executes the given [block] function on this object and then closes it down correctly whether an exception
  * is thrown or not.
  *
- * @param block a function to process this [Disposable] resource.
- * @return the result of [block] function invoked on this resource.
+ * @param block a function to process this [Disposable] object.
+ * @return the result of [block] function invoked on this object.
  */
 suspend inline fun <T : Disposable?, R> T.use(block: (T) -> R): R {
     try {
