@@ -8,8 +8,8 @@ import java.io.IOException
  */
 interface Disposable {
     /**
-     * Closes this stream and releases any system resources associated
-     * with it. If the stream is already closed then invoking this
+     * Closes this object and releases any system resources associated
+     * with it. If the object is already closed then invoking this
      * method has no effect.
      *
      * In cases where the close may fail require careful attention. It is strongly advised
