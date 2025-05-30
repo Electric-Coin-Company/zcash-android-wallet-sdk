@@ -62,7 +62,9 @@ class TorClient private constructor(
     /**
      * Connects to the lightwalletd server at the given endpoint.
      *
-     * Each connection returned by this method is isolated from any other Tor usage.
+     * This client is isolated from any other Tor usage, and queries made with this client
+     * are isolated from each other (but may still be correlatable by the server through
+     * request timing, if the caller does not mitigate timing attacks).
      */
     suspend fun createIsolatedWalletClient(endpoint: String): PartialTorWalletClient =
         accessMutex.withLock {
