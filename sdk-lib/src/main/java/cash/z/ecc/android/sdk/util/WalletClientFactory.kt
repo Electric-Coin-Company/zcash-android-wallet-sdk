@@ -16,7 +16,7 @@ class WalletClientFactory(
     private val torClient: TorClient
 ) {
     /**
-     * Creates a [CombinedWalletClient] which will leverage tor for lightwalletd connection for functions specified
+     * Creates a [CombinedWalletClient] which will leverage Tor for lightwalletd connection for functions specified
      * in [PartialTorWalletClient].
      * Other functions specified in [WalletClient] will use regular lightwalletd connection using [LightWalletClient].
      *
