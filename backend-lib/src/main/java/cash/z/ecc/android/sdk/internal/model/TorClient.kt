@@ -137,6 +137,9 @@ class TorClient private constructor(
         @Throws(RuntimeException::class)
         private external fun getExchangeRateUsd(nativeHandle: Long): BigDecimal
 
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
         @JvmStatic
         @Throws(RuntimeException::class)
         private external fun connectToLightwalletd(nativeHandle: Long, endpoint: String): Long

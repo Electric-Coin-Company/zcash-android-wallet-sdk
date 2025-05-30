@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `Synchronizer.getFastestServers` function signature changed and does not require `Context` parameter anymore
+
 ## [2.2.13] - 2025-05-16
 
 ### Added
