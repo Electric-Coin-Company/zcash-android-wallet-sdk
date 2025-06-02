@@ -1,16 +1,17 @@
 package cash.z.ecc.android.sdk.internal
 
-import android.content.Context
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.ZcashNetwork
-import co.electriccoin.lightwallet.client.LightWalletClient
+import cash.z.ecc.android.sdk.util.WalletClientFactory
+import co.electriccoin.lightwallet.client.WalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
-import co.electriccoin.lightwallet.client.new
+import co.electriccoin.lightwallet.client.util.Disposable
+import co.electriccoin.lightwallet.client.util.use
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -23,7 +24,6 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withTimeoutOrNull
-import java.io.Closeable
 import java.util.Locale
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -32,19 +32,17 @@ import kotlin.time.measureTime
 
 internal class FastestServerFetcher(
     private val backend: TypesafeBackend,
-    private val network: ZcashNetwork
+    private val network: ZcashNetwork,
+    private val walletClientFactory: WalletClientFactory,
 ) {
-    suspend operator fun invoke(
-        context: Context,
-        servers: List<LightWalletEndpoint>,
-    ): Flow<FastestServersResult> =
+    operator fun invoke(servers: List<LightWalletEndpoint>): Flow<FastestServersResult> =
         flow {
             emit(FastestServersResult.Measuring)
 
             val serversByRpcMeanLatency =
                 servers
                     .parallelMapNotNull {
-                        validateServerEndpointAndMeasure(context, it)
+                        validateServerEndpointAndMeasure(it)
                     }.sortedBy {
                         it.meanDuration
                     }.mapIndexedNotNull { index, result ->
@@ -94,10 +92,7 @@ internal class FastestServerFetcher(
         }.flowOn(Dispatchers.Default)
 
     @Suppress("LongMethod", "ReturnCount")
-    private suspend fun validateServerEndpointAndMeasure(
-        context: Context,
-        endpoint: LightWalletEndpoint
-    ): ValidateServerResult? {
+    private suspend fun validateServerEndpointAndMeasure(endpoint: LightWalletEndpoint): ValidateServerResult? {
         fun logRuledOut(
             reason: String,
             throwable: Throwable? = null
@@ -113,12 +108,7 @@ internal class FastestServerFetcher(
             }
         }
 
-        val lightWalletClient =
-            LightWalletClient.new(
-                context = context,
-                lightWalletEndpoint = endpoint,
-                singleRequestTimeout = FETCH_THRESHOLD
-            )
+        val lightWalletClient = kotlin.runCatching { walletClientFactory.create(endpoint) }.getOrNull() ?: return null
 
         val remoteInfo: LightWalletEndpointInfoUnsafe?
         val getServerInfoDuration =
@@ -137,14 +127,14 @@ internal class FastestServerFetcher(
             }
 
         if (remoteInfo == null) {
-            lightWalletClient.close()
+            lightWalletClient.dispose()
             return null
         }
 
         // Check network type
         if (!remoteInfo.matchingNetwork(network.networkName)) {
             logRuledOut("matchingNetwork failed")
-            lightWalletClient.close()
+            lightWalletClient.dispose()
             return null
         }
 
@@ -153,12 +143,12 @@ internal class FastestServerFetcher(
             val remoteSaplingActivationHeight = remoteInfo.saplingActivationHeightUnsafe.toBlockHeight()
             if (network.saplingActivationHeight != remoteSaplingActivationHeight) {
                 logRuledOut("invalid saplingActivationHeight")
-                lightWalletClient.close()
+                lightWalletClient.dispose()
                 return null
             }
         }.getOrElse {
             logRuledOut("saplingActivationHeight failed", it)
-            lightWalletClient.close()
+            lightWalletClient.dispose()
             return null
         }
 
@@ -170,14 +160,14 @@ internal class FastestServerFetcher(
                         is Response.Success -> {
                             runCatching { response.result.toBlockHeight() }.getOrElse {
                                 logRuledOut("toBlockHeight failed", it)
-                                lightWalletClient.close()
+                                lightWalletClient.dispose()
                                 return null
                             }
                         }
 
                         is Response.Failure -> {
                             logRuledOut("getLatestBlockHeight failed", response.toThrowable())
-                            lightWalletClient.close()
+                            lightWalletClient.dispose()
                             return null
                         }
                     }
@@ -191,19 +181,19 @@ internal class FastestServerFetcher(
                 )
             }.getOrElse {
                 logRuledOut("getBranchIdForHeight failed", it)
-                lightWalletClient.close()
+                lightWalletClient.dispose()
                 return null
             }
 
         if (!remoteInfo.consensusBranchId.equals(sdkBranchId, true)) {
             logRuledOut("consensusBranchId does not match")
-            lightWalletClient.close()
+            lightWalletClient.dispose()
             return null
         }
 
         if (remoteInfo.estimatedHeight >= remoteInfo.blockHeightUnsafe.value + SYNCED_THRESHOLD_BLOCKS) {
             logRuledOut("estimatedHeight does not match")
-            lightWalletClient.close()
+            lightWalletClient.dispose()
             return null
         }
 
@@ -224,17 +214,17 @@ internal class FastestServerFetcher(
             .filterNotNull()
 }
 
-data class ValidateServerResult(
+private data class ValidateServerResult(
     val remoteInfo: LightWalletEndpointInfoUnsafe,
-    val lightWalletClient: LightWalletClient,
+    val lightWalletClient: WalletClient,
     val endpoint: LightWalletEndpoint,
     val getServerInfoDuration: Duration,
     val getLatestBlockHeightDuration: Duration,
-) : Closeable {
+) : Disposable {
     val meanDuration = (getServerInfoDuration + getLatestBlockHeightDuration) / 2
 
-    override fun close() {
-        lightWalletClient.close()
+    override suspend fun dispose() {
+        lightWalletClient.dispose()
     }
 }
 

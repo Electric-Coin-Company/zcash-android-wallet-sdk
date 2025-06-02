@@ -3,6 +3,8 @@ package cash.z.ecc.android.sdk.internal.model
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
+import co.electriccoin.lightwallet.client.PartialTorWalletClient
+import co.electriccoin.lightwallet.client.util.Disposable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -12,10 +14,10 @@ import java.math.BigDecimal
 
 class TorClient private constructor(
     private var nativeHandle: Long?,
-) {
+) : Disposable {
     private val accessMutex = Mutex()
 
-    suspend fun dispose() =
+    override suspend fun dispose() =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 nativeHandle?.let { freeTorRuntime(it) }
@@ -36,12 +38,17 @@ class TorClient private constructor(
      * Calling this method is usually preferable to creating a completely separate
      * `TorClient` instance, since it can share its internals with the existing `TorClient`.
      */
-    suspend fun isolatedClient(): TorClient =
-        accessMutex.withLock {
-            withContext(Dispatchers.IO) {
-                checkNotNull(nativeHandle) { "TorClient is disposed" }
-                TorClient(nativeHandle = isolatedClient(nativeHandle!!))
-            }
+    suspend fun isolatedTorClient(): TorClient = accessMutex.withLock { isolatedTorClientInternal() }
+
+    /**
+     * The caller MUST acquire `accessMutex` before calling this function.
+     *
+     * @return a new isolated `TorClient` handle.
+     */
+    private suspend fun isolatedTorClientInternal() =
+        withContext(Dispatchers.IO) {
+            checkNotNull(nativeHandle) { "TorClient is disposed" }
+            TorClient(nativeHandle = isolatedClient(nativeHandle!!))
         }
 
     suspend fun getExchangeRateUsd(): BigDecimal =
@@ -55,13 +62,36 @@ class TorClient private constructor(
     /**
      * Connects to the lightwalletd server at the given endpoint.
      *
-     * Each connection returned by this method is isolated from any other Tor usage.
+     * This client is isolated from any other Tor usage, and queries made with this client
+     * are isolated from each other (but may still be correlatable by the server through
+     * request timing, if the caller does not mitigate timing attacks).
      */
-    suspend fun connectToLightwalletd(endpoint: String): TorLwdConn =
+    suspend fun createIsolatedWalletClient(endpoint: String): PartialTorWalletClient =
+        accessMutex.withLock {
+            checkNotNull(nativeHandle) { "TorClient is disposed" }
+            IsolatedTorWalletClient.new(
+                isolatedTorClient = isolatedTorClientInternal(),
+                endpoint = endpoint
+            )
+        }
+
+    /**
+     * Connects to the lightwalletd server at the given endpoint.
+     *
+     * This client is isolated from any other Tor usage. Queries made with this client are
+     * not isolated from each other; use `createIsolatedWalletClient()` if you need this.
+     */
+    suspend fun createWalletClient(endpoint: String): PartialTorWalletClient =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 checkNotNull(nativeHandle) { "TorClient is disposed" }
-                TorLwdConn.new(connectToLightwalletd(nativeHandle!!, endpoint))
+                TorWalletClient.new(
+                    nativeHandle =
+                        connectToLightwalletd(
+                            nativeHandle = nativeHandle!!,
+                            endpoint = endpoint
+                        )
+                )
             }
         }
 
@@ -112,9 +142,6 @@ class TorClient private constructor(
          */
         @JvmStatic
         @Throws(RuntimeException::class)
-        private external fun connectToLightwalletd(
-            nativeHandle: Long,
-            endpoint: String
-        ): Long
+        private external fun connectToLightwalletd(nativeHandle: Long, endpoint: String): Long
     }
 }

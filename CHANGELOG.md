@@ -6,6 +6,12 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `WalletClient.getServerInfo`, `WalletClient.getLatestBlockHeight`, `WalletClient.fetchTransaction`, 
+  `WalletClient.submitTransaction` and `WalletClient.getTreeState` queries have been moved to execute over Tor. 
+  Because of this fact custom lightwalletd servers over VPNs like Tailscape might stop working.
+- `Synchronizer.getFastestServers` function signature changed and does not require `Context` parameter anymore
+
 ## [2.2.13] - 2025-05-16
 
 ### Added

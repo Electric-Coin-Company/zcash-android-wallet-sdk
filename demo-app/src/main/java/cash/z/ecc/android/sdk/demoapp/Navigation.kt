@@ -17,7 +17,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
@@ -202,8 +201,6 @@ internal fun ComposeActivity.Navigation() {
 
             val synchronizer = walletViewModel.synchronizer.collectAsStateWithLifecycle().value
 
-            val context = LocalContext.current
-
             Twig.info { "Current secrets state: $secretState" }
 
             if (synchronizer == null || secretState !is SecretState.Ready) {
@@ -230,7 +227,6 @@ internal fun ComposeActivity.Navigation() {
                 LaunchedEffect(Unit) {
                     synchronizer
                         .getFastestServers(
-                            context = context,
                             servers =
                                 buildList {
                                     if (ZcashNetwork.fromResources(application) == ZcashNetwork.Mainnet) {

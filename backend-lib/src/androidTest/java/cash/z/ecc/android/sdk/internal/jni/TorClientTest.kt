@@ -2,12 +2,15 @@ package cash.z.ecc.android.sdk.internal.jni
 
 import cash.z.ecc.android.sdk.internal.model.TorClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
+import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
+import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
+import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Ignore
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class TorClientTest {
     @OptIn(ExperimentalStdlibApi::class)
@@ -20,33 +23,32 @@ class TorClientTest {
             val torClient = TorClient.new(torDir)
 
             // Connect to a testnet lightwalletd server.
-            val lwdConn = torClient.connectToLightwalletd("https://testnet.zec.rocks:443")
+            val lwdConn = torClient.createIsolatedWalletClient("https://testnet.zec.rocks:443")
 
             // Confirm that it is on testnet.
-            val info = lwdConn.getServerInfo()
+            val info = (lwdConn.getServerInfo() as Response.Success<LightWalletEndpointInfoUnsafe>).result
             assertEquals("test", info.chainName)
             assertEquals(BlockHeightUnsafe(280000), info.saplingActivationHeightUnsafe)
 
             // Confirm that it has the block containing the known testnet transaction.
             val txHeight = BlockHeightUnsafe(1234567)
             assert(info.blockHeightUnsafe >= txHeight)
-            val latest = lwdConn.getLatestBlock()
-            assert(latest.height >= txHeight.value)
+            val latest = (lwdConn.getLatestBlockHeight() as Response.Success<BlockHeightUnsafe>).result
+            assert(latest.value >= txHeight.value)
 
             // Fetch a known testnet transaction.
             val txId =
                 "9e309d29a99f06e6dcc7aee91dca23c0efc2cf5083cc483463ddbee19c1fadf1".hexToByteArray().reversedArray()
-            val tx = lwdConn.fetchTransaction(txId)
+            val tx = (lwdConn.fetchTransaction(txId) as Response.Success<RawTransactionUnsafe>).result
+
+            val submit = lwdConn.submitTransaction(tx.data)
 
             // We should fail to resubmit the already-mined transaction.
-            val exception =
-                assertFailsWith<RuntimeException> {
-                    lwdConn.submitTransaction(tx)
-                }
+            assertTrue(submit is Response.Failure.OverTor)
             assertEquals(
                 "Failed to submit transaction (-25): failed to validate tx: transaction::Hash(\"private\"), " +
                     "error: transaction is already in state",
-                exception.message
+                submit.description
             )
         }
 }
