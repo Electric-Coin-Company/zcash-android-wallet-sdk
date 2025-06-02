@@ -3089,15 +3089,17 @@ fn parse_ufvk(
         .map_err(|e| anyhow!("Value \"{ufvk_string}\" did not decode as a valid UFVK: {e}"))
 }
 
-struct UnifiedAddressParser(UnifiedAddress);
+struct UnifiedAddressParser((NetworkType, UnifiedAddress));
 
-impl zcash_address::TryFromRawAddress for UnifiedAddressParser {
+impl zcash_address::TryFromAddress for UnifiedAddressParser {
     type Error = anyhow::Error;
 
-    fn try_from_raw_unified(
+    fn try_from_unified(
+        net: NetworkType,
         data: zcash_address::unified::Address,
     ) -> Result<Self, zcash_address::ConversionError<Self::Error>> {
         data.try_into()
+            .map(|ua| (net, ua))
             .map(UnifiedAddressParser)
             .map_err(|e| anyhow!("Invalid Unified Address: {}", e).into())
     }
@@ -3107,9 +3109,9 @@ fn parse_ua(env: &mut JNIEnv, ua: JString) -> anyhow::Result<(NetworkType, Unifi
     let ua_str = utils::java_string_to_rust(env, &ua)?;
     match ZcashAddress::try_from_encoded(&ua_str) {
         Ok(addr) => addr
-            .convert::<(_, UnifiedAddressParser)>()
+            .convert::<UnifiedAddressParser>()
             .map_err(|e| anyhow!("Not a Unified Address: {}", e))
-            .map(|(network, ua)| (network, ua.0)),
+            .map(|ua| ua.0),
         Err(e) => return Err(anyhow!("Invalid Zcash address: {}", e)),
     }
 }
