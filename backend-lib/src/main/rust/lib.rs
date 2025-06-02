@@ -35,9 +35,6 @@ use zcash_client_backend::data_api::{
     AccountPurpose, BirthdayError, OutputStatusFilter, TransactionDataRequest, TransactionStatus,
     Zip32Derivation,
 };
-use zcash_client_backend::fees::zip317::MultiOutputChangeStrategy;
-use zcash_client_backend::fees::{SplitPolicy, StandardFeeRule};
-use zcash_client_backend::keys::{ReceiverRequirement, UnifiedAddressRequest};
 use zcash_client_backend::{
     address::{Address, UnifiedAddress},
     data_api::{
@@ -52,10 +49,13 @@ use zcash_client_backend::{
         WalletCommitmentTrees, WalletRead, WalletSummary, WalletWrite,
     },
     encoding::AddressCodec,
-    fees::DustOutputPolicy,
-    keys::{DecodingError, Era, UnifiedFullViewingKey, UnifiedSpendingKey},
+    fees::{zip317::MultiOutputChangeStrategy, DustOutputPolicy, SplitPolicy, StandardFeeRule},
+    keys::{
+        DecodingError, Era, ReceiverRequirement, UnifiedAddressRequest, UnifiedFullViewingKey,
+        UnifiedSpendingKey,
+    },
     proto::{proposal::Proposal, service::TreeState},
-    tor::http::cryptex,
+    tor::{http::cryptex, DormantMode},
     wallet::{NoteId, OvkPolicy, WalletTransparentOutput},
     zip321::{Payment, TransactionRequest},
 };
@@ -390,10 +390,7 @@ fn encode_transaction<'a>(
     env.new_object(
         "cash/z/ecc/android/sdk/internal/model/JniTransaction",
         "(J[B)V",
-        &[
-            JValue::Long(height as jlong),
-            (&java_byte_array).into(),
-        ],
+        &[JValue::Long(height as jlong), (&java_byte_array).into()],
     )
 }
 
@@ -2790,6 +2787,37 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_isolatedC
     unwrap_exc_or(&mut env, res, -1)
 }
 
+/// Changes the client's current dormant mode, putting background tasks to sleep or waking
+/// them up as appropriate.
+///
+/// This can be used to conserve CPU usage if you aren’t planning on using the client for
+/// a while, especially on mobile platforms.
+///
+/// The `mode` argument specifies what level of sleep to put a Tor client into:
+/// - 0: Normal - The client functions as normal, and background tasks run periodically.
+/// - 1: Soft - Background tasks are suspended, conserving CPU usage. Attempts to use the
+///   client will wake it back up again.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_setDormant<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    tor_runtime: jlong,
+    mode: jint,
+) {
+    let res = panic::catch_unwind(|| {
+        let tor_runtime =
+            ptr::with_exposed_provenance_mut::<crate::tor::TorRuntime>(tor_runtime as usize);
+        let tor_runtime =
+            unsafe { tor_runtime.as_mut() }.ok_or_else(|| anyhow!("A Tor runtime is required"))?;
+        let mode = parse_tor_dormant_mode(mode as u32)?;
+
+        tor_runtime.set_dormant(mode);
+
+        Ok(())
+    });
+    unwrap_exc_or(&mut env, res, ())
+}
+
 /// Fetches the current ZEC-USD exchange rate over Tor.
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_getExchangeRateUsd<
@@ -2880,7 +2908,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_fre
 
 /// Returns information about this lightwalletd instance and the blockchain.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getServerInfo<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getServerInfo<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,
@@ -2899,7 +2929,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_get
 
 /// Returns information about this lightwalletd instance and the blockchain.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getLatestBlock<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getLatestBlock<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,
@@ -2918,7 +2950,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_get
 
 /// Fetches the transaction with the given ID.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_fetchTransaction<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_fetchTransaction<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,
@@ -2964,7 +2998,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_sub
 
 /// Fetches the note commitment tree state corresponding to the given block height.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getTreeState<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getTreeState<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,
@@ -3053,15 +3089,17 @@ fn parse_ufvk(
         .map_err(|e| anyhow!("Value \"{ufvk_string}\" did not decode as a valid UFVK: {e}"))
 }
 
-struct UnifiedAddressParser(UnifiedAddress);
+struct UnifiedAddressParser((NetworkType, UnifiedAddress));
 
-impl zcash_address::TryFromRawAddress for UnifiedAddressParser {
+impl zcash_address::TryFromAddress for UnifiedAddressParser {
     type Error = anyhow::Error;
 
-    fn try_from_raw_unified(
+    fn try_from_unified(
+        net: NetworkType,
         data: zcash_address::unified::Address,
     ) -> Result<Self, zcash_address::ConversionError<Self::Error>> {
         data.try_into()
+            .map(|ua| (net, ua))
             .map(UnifiedAddressParser)
             .map_err(|e| anyhow!("Invalid Unified Address: {}", e).into())
     }
@@ -3071,9 +3109,19 @@ fn parse_ua(env: &mut JNIEnv, ua: JString) -> anyhow::Result<(NetworkType, Unifi
     let ua_str = utils::java_string_to_rust(env, &ua)?;
     match ZcashAddress::try_from_encoded(&ua_str) {
         Ok(addr) => addr
-            .convert::<(_, UnifiedAddressParser)>()
+            .convert::<UnifiedAddressParser>()
             .map_err(|e| anyhow!("Not a Unified Address: {}", e))
-            .map(|(network, ua)| (network, ua.0)),
+            .map(|ua| ua.0),
         Err(e) => return Err(anyhow!("Invalid Zcash address: {}", e)),
+    }
+}
+
+fn parse_tor_dormant_mode(value: u32) -> anyhow::Result<DormantMode> {
+    match value {
+        0 => Ok(DormantMode::Normal),
+        1 => Ok(DormantMode::Soft),
+        _ => Err(anyhow!(
+            "Invalid Tor dormant mode: {value}. Expected either 0 for Normal or 1 for Soft."
+        )),
     }
 }

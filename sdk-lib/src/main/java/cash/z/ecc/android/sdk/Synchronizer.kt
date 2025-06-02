@@ -262,7 +262,7 @@ interface Synchronizer {
     /**
      * Refreshes [exchangeRateUsd].
      */
-    suspend fun refreshExchangeRateUsd()
+    fun refreshExchangeRateUsd()
 
     /**
      * Creates a proposal for transferring funds to the given recipient.
@@ -592,6 +592,10 @@ interface Synchronizer {
      * @return Flow of transactions by the given account UUID
      */
     suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<TransactionOverview>>
+
+    fun onBackground()
+
+    fun onForeground()
 
     //
     // Error Handling

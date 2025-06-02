@@ -1,6 +1,7 @@
 package cash.z.ecc.android.sdk.internal.jni
 
 import cash.z.ecc.android.sdk.internal.model.TorClient
+import cash.z.ecc.android.sdk.internal.model.TorDormantMode
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
@@ -11,6 +12,7 @@ import kotlin.io.path.createTempDirectory
 import kotlin.test.Ignore
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.fail
 
 class TorClientTest {
     @OptIn(ExperimentalStdlibApi::class)
@@ -26,20 +28,32 @@ class TorClientTest {
             val lwdConn = torClient.createIsolatedWalletClient("https://testnet.zec.rocks:443")
 
             // Confirm that it is on testnet.
-            val info = (lwdConn.getServerInfo() as Response.Success<LightWalletEndpointInfoUnsafe>).result
+            val info =
+                when (val res = lwdConn.getServerInfo()) {
+                    is Response.Success<LightWalletEndpointInfoUnsafe> -> res.result
+                    is Response.Failure -> fail("getServerInfo failed (${res.code}): ${res.description}")
+                }
             assertEquals("test", info.chainName)
             assertEquals(BlockHeightUnsafe(280000), info.saplingActivationHeightUnsafe)
 
             // Confirm that it has the block containing the known testnet transaction.
             val txHeight = BlockHeightUnsafe(1234567)
             assert(info.blockHeightUnsafe >= txHeight)
-            val latest = (lwdConn.getLatestBlockHeight() as Response.Success<BlockHeightUnsafe>).result
+            val latest =
+                when (val res = lwdConn.getLatestBlockHeight()) {
+                    is Response.Success<BlockHeightUnsafe> -> res.result
+                    is Response.Failure -> fail("getLatestBlockHeight failed (${res.code}): ${res.description}")
+                }
             assert(latest.value >= txHeight.value)
 
             // Fetch a known testnet transaction.
             val txId =
                 "9e309d29a99f06e6dcc7aee91dca23c0efc2cf5083cc483463ddbee19c1fadf1".hexToByteArray().reversedArray()
-            val tx = (lwdConn.fetchTransaction(txId) as Response.Success<RawTransactionUnsafe>).result
+            val tx =
+                when (val res = lwdConn.fetchTransaction(txId)) {
+                    is Response.Success<RawTransactionUnsafe> -> res.result
+                    is Response.Failure -> fail("fetchTransaction failed (${res.code}): ${res.description}")
+                }
 
             val submit = lwdConn.submitTransaction(tx.data)
 
@@ -50,5 +64,8 @@ class TorClientTest {
                     "error: transaction is already in state",
                 submit.description
             )
+
+            // We can background the Tor client.
+            torClient.setDormant(TorDormantMode.SOFT)
         }
 }

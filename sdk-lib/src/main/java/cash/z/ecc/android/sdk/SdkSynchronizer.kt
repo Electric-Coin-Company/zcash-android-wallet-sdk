@@ -31,6 +31,7 @@ import cash.z.ecc.android.sdk.internal.ext.tryNull
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.TorClient
+import cash.z.ecc.android.sdk.internal.model.TorDormantMode
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
@@ -531,6 +532,14 @@ class SdkSynchronizer private constructor(
                 .map { it.checkAndFillInTime(storage) }
         }
 
+    override fun onBackground() {
+        coroutineScope.launch { torClient.setDormant(TorDormantMode.SOFT) }
+    }
+
+    override fun onForeground() {
+        coroutineScope.launch { torClient.setDormant(TorDormantMode.NORMAL) }
+    }
+
     //
     // Storage APIs
     //
@@ -553,10 +562,8 @@ class SdkSynchronizer private constructor(
         processor.refreshWalletSummary()
     }
 
-    override suspend fun refreshExchangeRateUsd() {
-        coroutineScope.launch {
-            refreshExchangeRateUsd.emit(Unit)
-        }
+    override fun refreshExchangeRateUsd() {
+        coroutineScope.launch { refreshExchangeRateUsd.emit(Unit) }
     }
 
     suspend fun isValidAddress(address: String): Boolean = !validateAddress(address).isNotValid
