@@ -1,5 +1,6 @@
 use std::convert::{Infallible, TryFrom, TryInto};
 use std::error::Error;
+use std::io;
 use std::num::{NonZeroU32, NonZeroUsize};
 use std::panic;
 use std::path::PathBuf;
@@ -7,6 +8,8 @@ use std::ptr;
 
 use anyhow::anyhow;
 use bitflags::bitflags;
+use bytes::Bytes;
+use http_body_util::BodyExt;
 use jni::objects::{JByteArray, JObject, JObjectArray, JValue};
 use jni::{
     objects::{JClass, JString},
@@ -35,6 +38,7 @@ use zcash_client_backend::data_api::{
     AccountPurpose, BirthdayError, OutputStatusFilter, TransactionDataRequest, TransactionStatus,
     Zip32Derivation,
 };
+use zcash_client_backend::tor::http::HttpError;
 use zcash_client_backend::{
     address::{Address, UnifiedAddress},
     data_api::{
@@ -2818,6 +2822,163 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_setDorman
     unwrap_exc_or(&mut env, res, ())
 }
 
+const JNI_HTTP_HEADER: &str = "cash/z/ecc/android/sdk/internal/model/JniHttpHeader";
+
+fn encode_http_header<'a>(
+    env: &mut JNIEnv<'a>,
+    name: &http::HeaderName,
+    value: &str,
+) -> jni::errors::Result<JObject<'a>> {
+    let name = JObject::from(env.new_string(name.as_str())?);
+    let value = JObject::from(env.new_string(value)?);
+
+    env.new_object(
+        JNI_HTTP_HEADER,
+        "(Ljava/lang/String;Ljava/lang/String;)V",
+        &[(&name).into(), (&value).into()],
+    )
+}
+
+fn encode_http_response_bytes<'a>(
+    env: &mut JNIEnv<'a>,
+    response: http::Response<Bytes>,
+) -> anyhow::Result<JObject<'a>> {
+    let (parts, body) = response.into_parts();
+
+    let version = JObject::from(env.new_string(format!("{:?}", parts.version))?);
+
+    let headers = parts
+        .headers
+        .iter()
+        .map(|(name, value)| {
+            value
+                .to_str()
+                .map_err(|e| anyhow!(e))
+                .map(|value| (name, value))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let headers = utils::rust_vec_to_java(env, headers, JNI_HTTP_HEADER, |env, (name, value)| {
+        encode_http_header(env, name, value)
+    })?;
+
+    Ok(env.new_object(
+        "cash/z/ecc/android/sdk/internal/model/JniHttpResponseBytes",
+        &format!("(ILjava/lang/String;[L{};[B)V", JNI_HTTP_HEADER),
+        &[
+            JValue::Int(parts.status.as_u16().into()),
+            (&version).into(),
+            (&headers).into(),
+            (&env.byte_array_from_slice(&body)?).into(),
+        ],
+    )?)
+}
+
+/// Makes an HTTP GET request over Tor.
+///
+/// `retry_limit` is the maximum number of times that a failed request should be retried.
+/// You can disable retries by setting this to 0.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_httpGet<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    tor_runtime: jlong,
+    url: JString<'local>,
+    headers: JObjectArray<'local>,
+    retry_limit: jint,
+) -> jobject {
+    let res = catch_unwind(&mut env, |env| {
+        let tor_runtime =
+            std::ptr::with_exposed_provenance_mut::<crate::tor::TorRuntime>(tor_runtime as usize);
+        let tor_runtime =
+            unsafe { tor_runtime.as_mut() }.ok_or_else(|| anyhow!("A Tor runtime is required"))?;
+
+        let url = utils::java_string_to_rust(env, &url)?
+            .try_into()
+            .map_err(|e| anyhow!("Invalid URL: {e}"))?;
+        let headers = parse_http_headers(env, headers)?;
+        let retry_limit =
+            u8::try_from(retry_limit).map_err(|e| anyhow!("retryLimit is too large: {e}"))?;
+
+        let response = tor_runtime.runtime().block_on(async {
+            tor_runtime
+                .client()
+                .http_get(
+                    url,
+                    |builder| {
+                        headers
+                            .iter()
+                            .fold(builder, |builder, (key, value)| builder.header(key, value))
+                    },
+                    |body| async { Ok(body.collect().await.map_err(HttpError::from)?.to_bytes()) },
+                    retry_limit,
+                    |res| {
+                        res.is_err()
+                            .then_some(zcash_client_backend::tor::http::Retry::Same)
+                    },
+                )
+                .await
+        })?;
+
+        Ok(encode_http_response_bytes(env, response)?.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Makes an HTTP POST request over Tor.
+///
+/// `retry_limit` is the maximum number of times that a failed request should be retried.
+/// You can disable retries by setting this to 0.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_httpPost<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    tor_runtime: jlong,
+    url: JString<'local>,
+    headers: JObjectArray<'local>,
+    body: JByteArray<'local>,
+    retry_limit: jint,
+) -> jobject {
+    let res = catch_unwind(&mut env, |env| {
+        let tor_runtime =
+            std::ptr::with_exposed_provenance_mut::<crate::tor::TorRuntime>(tor_runtime as usize);
+        let tor_runtime =
+            unsafe { tor_runtime.as_mut() }.ok_or_else(|| anyhow!("A Tor runtime is required"))?;
+
+        let url = utils::java_string_to_rust(env, &url)?
+            .try_into()
+            .map_err(|e| anyhow!("Invalid URL: {e}"))?;
+        let headers = parse_http_headers(env, headers)?;
+        let body = utils::java_bytes_to_rust(env, &body)?;
+        let retry_limit =
+            u8::try_from(retry_limit).map_err(|e| anyhow!("retryLimit is too large: {e}"))?;
+
+        let response = tor_runtime.runtime().block_on(async {
+            tor_runtime
+                .client()
+                .http_post(
+                    url,
+                    |builder| {
+                        headers
+                            .iter()
+                            .fold(builder, |builder, (key, value)| builder.header(key, value))
+                    },
+                    http_body_util::Full::new(io::Cursor::new(body)),
+                    |body| async { Ok(body.collect().await.map_err(HttpError::from)?.to_bytes()) },
+                    retry_limit,
+                    |res| {
+                        res.is_err()
+                            .then_some(zcash_client_backend::tor::http::Retry::Same)
+                    },
+                )
+                .await
+        })?;
+
+        Ok(encode_http_response_bytes(env, response)?.into_raw())
+    });
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
 /// Fetches the current ZEC-USD exchange rate over Tor.
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_getExchangeRateUsd<
@@ -3124,4 +3285,36 @@ fn parse_tor_dormant_mode(value: u32) -> anyhow::Result<DormantMode> {
             "Invalid Tor dormant mode: {value}. Expected either 0 for Normal or 1 for Soft."
         )),
     }
+}
+
+fn parse_http_headers(
+    env: &mut JNIEnv,
+    headers: JObjectArray,
+) -> anyhow::Result<Vec<(String, String)>> {
+    let count = env.get_array_length(&headers)?;
+    (0..count)
+        .scan(env, |env, i| {
+            Some(
+                env.get_object_array_element(&headers, i)
+                    .map_err(|e| e.into())
+                    .and_then(|obj| {
+                        let key = {
+                            let jkey = JString::from(
+                                env.get_field(&obj, "key", "Ljava/lang/String;")?.l()?,
+                            );
+                            utils::java_string_to_rust(env, &jkey)?
+                        };
+
+                        let value = {
+                            let jvalue = JString::from(
+                                env.get_field(&obj, "value", "Ljava/lang/String;")?.l()?,
+                            );
+                            utils::java_string_to_rust(env, &jvalue)?
+                        };
+
+                        Ok((key, value))
+                    }),
+            )
+        })
+        .collect()
 }

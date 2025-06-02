@@ -39,6 +39,11 @@ secrecy = "0.8"
 rand = "0.8"
 nonempty = "0.11"
 
+# HTTP
+bytes = "1"
+http = "1"
+http-body-util = "0.1"
+
 # Initialization
 rayon = "1.7"
 
