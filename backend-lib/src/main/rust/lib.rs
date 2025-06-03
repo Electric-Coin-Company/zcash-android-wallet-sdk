@@ -1518,7 +1518,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getWallet
         match db_data
             .get_wallet_summary(ANCHOR_OFFSET_U32)
             .map_err(|e| anyhow!("Error while fetching scan progress: {}", e))?
-            .filter(|summary| summary.progress().scan().denominator() > &0)
         {
             Some(summary) => Ok(encode_wallet_summary(env, summary)?.into_raw()),
             None => Ok(ptr::null_mut()),
