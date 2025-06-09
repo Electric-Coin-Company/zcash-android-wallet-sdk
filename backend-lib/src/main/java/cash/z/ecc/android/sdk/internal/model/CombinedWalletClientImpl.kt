@@ -85,7 +85,7 @@ class CombinedWalletClientImpl private constructor(
         block: PartialTorWalletClient.() -> T
     ): T =
         if (serviceMode == ServiceMode.UniqueTor) {
-            getOrCreate(serviceMode).use { block(it) }
+            create().use { block(it) }
         } else {
             block(getOrCreate(serviceMode))
         }
@@ -93,11 +93,7 @@ class CombinedWalletClientImpl private constructor(
     private suspend fun getOrCreate(serviceMode: ServiceMode) =
         factorySemaphore.withLock {
             withContext(Dispatchers.Default) {
-                if (serviceMode == ServiceMode.UniqueTor) {
-                    create()
-                } else {
-                    cache.getOrPut(serviceMode) { create() }
-                }
+                cache.getOrPut(serviceMode) { create() }
             }
         }
 
