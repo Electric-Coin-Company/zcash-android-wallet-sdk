@@ -43,6 +43,7 @@ import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.ecc.android.sdk.type.ServerValidation
 import cash.z.ecc.android.sdk.util.WalletClientFactory
+import co.electriccoin.lightwallet.client.ServiceMode
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.flow.Flow
@@ -790,7 +791,8 @@ interface Synchronizer {
             val chainTip =
                 when (walletInitMode) {
                     is RestoreWallet -> {
-                        when (val response = downloader.getLatestBlockHeight()) {
+                        // TODO tor: pick the right service mode
+                        when (val response = downloader.getLatestBlockHeight(ServiceMode.DefaultTor)) {
                             is Response.Success -> {
                                 Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
                                 runCatching { response.result.toBlockHeight() }.getOrNull()

@@ -65,6 +65,7 @@ import cash.z.ecc.android.sdk.model.RawTransaction
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import cash.z.ecc.android.sdk.model.Zatoshi
+import co.electriccoin.lightwallet.client.ServiceMode
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
@@ -874,7 +875,8 @@ class CompactBlockProcessor internal constructor(
             // Reach out to the server to obtain the current server info
             val serverInfo =
                 runCatching {
-                    downloader.getServerInfo()
+                    // TODO tor: pick the right service mode
+                    downloader.getServerInfo(ServiceMode.DefaultTor)
                 }.onFailure {
                     Twig.error { "Unable to obtain server info due to: ${it.message}" }
                 }.getOrElse {
@@ -950,11 +952,12 @@ class CompactBlockProcessor internal constructor(
 
         retryUpToAndThrow(UTXO_FETCH_RETRIES) {
             val tAddresses = backend.listTransparentReceivers(account)
-
+            // TODO tor: pick the right service mode
             downloader
                 .fetchUtxos(
                     tAddresses = tAddresses,
-                    startHeight = BlockHeightUnsafe.from(startHeight)
+                    startHeight = BlockHeightUnsafe.from(startHeight),
+                    ServiceMode.DefaultTor
                 ).onEach { response ->
                     when (response) {
                         is Response.Success -> {
@@ -1110,7 +1113,8 @@ class CompactBlockProcessor internal constructor(
             var latestBlockHeight: BlockHeight? = null
 
             retryUpToAndContinue(FETCH_LATEST_BLOCK_HEIGHT_RETRIES) {
-                when (val response = downloader.getLatestBlockHeight()) {
+                // TODO tor: pick the right service mode
+                when (val response = downloader.getLatestBlockHeight(ServiceMode.DefaultTor)) {
                     is Response.Success -> {
                         Twig.debug { "Latest block height fetched successfully with value: ${response.result.value}" }
                         latestBlockHeight =
@@ -1156,11 +1160,13 @@ class CompactBlockProcessor internal constructor(
             var orchardSubtreeRootList: List<SubtreeRoot> = emptyList()
 
             retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
+                // TODO tor: pick the right service mode
                 downloader
                     .getSubtreeRoots(
                         saplingStartIndex,
+                        shieldedProtocol = ShieldedProtocolEnum.SAPLING,
                         maxEntries = UInt.MIN_VALUE,
-                        shieldedProtocol = ShieldedProtocolEnum.SAPLING
+                        serviceMode = ServiceMode.DefaultTor
                     ).onEach { response ->
                         when (response) {
                             is Response.Success -> {
@@ -1204,11 +1210,13 @@ class CompactBlockProcessor internal constructor(
             }
 
             retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
+                // TODO tor: pick the right service mode
                 downloader
                     .getSubtreeRoots(
                         orchardStartIndex,
+                        shieldedProtocol = ShieldedProtocolEnum.ORCHARD,
                         maxEntries = UInt.MIN_VALUE,
-                        shieldedProtocol = ShieldedProtocolEnum.ORCHARD
+                        serviceMode = ServiceMode.DefaultTor
                     ).onEach { response ->
                         when (response) {
                             is Response.Success -> {
@@ -1702,7 +1710,11 @@ class CompactBlockProcessor internal constructor(
                 } else {
                     Twig.warn { "Retrying to download batch $batch after $failedAttempts failure(s)..." }
                 }
-                downloadedBlocks = downloader.downloadBlockRange(batch.range)
+                // TODO tor: pick the right service mode
+                downloadedBlocks = downloader.downloadBlockRange(
+                    heightRange = batch.range,
+                    serviceMode = ServiceMode.DefaultTor
+                )
             }
             traceScope.end()
             Twig.verbose { "Successfully downloaded batch: $batch of $downloadedBlocks blocks" }
@@ -1730,7 +1742,11 @@ class CompactBlockProcessor internal constructor(
                         "Retrying to fetch tree state for height ${height.value} after $failedAttempts failure(s)..."
                     }
                 }
-                when (val response = downloader.getTreeState(BlockHeightUnsafe(height.value))) {
+                // TODO tor: pick the right service mode
+                when (val response = downloader.getTreeState(
+                    height = BlockHeightUnsafe(height.value),
+                    serviceMode = ServiceMode.DefaultTor
+                )) {
                     is Response.Success -> {
                         return TreeState.new(response.result)
                     }
@@ -1970,10 +1986,12 @@ class CompactBlockProcessor internal constructor(
                 // - 1 for the end height because the GRPC request is end-inclusive whereas we use end-exclusive
                 // ranges everywhere in the Rust code
                 val requestedRange = transactionRequest.startHeight..(transactionRequest.endHeight!! - 1)
+                // TODO tor: pick the right service mode
                 resultFlow =
                     downloader.getTAddressTransactions(
                         transparentAddress = transactionRequest.address,
-                        blockHeightRange = requestedRange
+                        blockHeightRange = requestedRange,
+                        serviceMode = ServiceMode.DefaultTor
                     )
             }
             traceScope.end()
@@ -2076,8 +2094,12 @@ class CompactBlockProcessor internal constructor(
                     }
                 }
 
+                // TODO tor: pick the right service mode
                 transactionResult =
-                    when (val response = downloader.fetchTransaction(transactionRequest.txid)) {
+                    when (val response = downloader.fetchTransaction(
+                        transactionRequest.txid,
+                        ServiceMode.DefaultTor
+                    )) {
                         is Response.Success -> response.result
                         is Response.Failure ->
                             when {
