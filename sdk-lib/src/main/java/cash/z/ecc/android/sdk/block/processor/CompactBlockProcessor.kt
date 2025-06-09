@@ -1711,10 +1711,11 @@ class CompactBlockProcessor internal constructor(
                     Twig.warn { "Retrying to download batch $batch after $failedAttempts failure(s)..." }
                 }
                 // TODO tor: pick the right service mode
-                downloadedBlocks = downloader.downloadBlockRange(
-                    heightRange = batch.range,
-                    serviceMode = ServiceMode.DefaultTor
-                )
+                downloadedBlocks =
+                    downloader.downloadBlockRange(
+                        heightRange = batch.range,
+                        serviceMode = ServiceMode.DefaultTor
+                    )
             }
             traceScope.end()
             Twig.verbose { "Successfully downloaded batch: $batch of $downloadedBlocks blocks" }
@@ -1743,10 +1744,13 @@ class CompactBlockProcessor internal constructor(
                     }
                 }
                 // TODO tor: pick the right service mode
-                when (val response = downloader.getTreeState(
-                    height = BlockHeightUnsafe(height.value),
-                    serviceMode = ServiceMode.DefaultTor
-                )) {
+                when (
+                    val response =
+                        downloader.getTreeState(
+                            height = BlockHeightUnsafe(height.value),
+                            serviceMode = ServiceMode.DefaultTor
+                        )
+                ) {
                     is Response.Success -> {
                         return TreeState.new(response.result)
                     }
@@ -2096,10 +2100,13 @@ class CompactBlockProcessor internal constructor(
 
                 // TODO tor: pick the right service mode
                 transactionResult =
-                    when (val response = downloader.fetchTransaction(
-                        transactionRequest.txid,
-                        ServiceMode.DefaultTor
-                    )) {
+                    when (
+                        val response =
+                            downloader.fetchTransaction(
+                                transactionRequest.txid,
+                                ServiceMode.DefaultTor
+                            )
+                    ) {
                         is Response.Success -> response.result
                         is Response.Failure ->
                             when {

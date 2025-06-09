@@ -126,6 +126,10 @@ interface CombinedWalletClient : Disposable {
 
 sealed interface ServiceMode {
     data object DefaultTor : ServiceMode
+
     data object UniqueTor : ServiceMode
-    data class Group(val group: String) : ServiceMode
+
+    data class Group(
+        val group: String
+    ) : ServiceMode
 }

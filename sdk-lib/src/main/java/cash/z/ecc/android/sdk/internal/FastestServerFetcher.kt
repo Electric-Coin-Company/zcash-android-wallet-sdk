@@ -7,7 +7,6 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.util.WalletClientFactory
 import co.electriccoin.lightwallet.client.CombinedWalletClient
 import co.electriccoin.lightwallet.client.ServiceMode
-import co.electriccoin.lightwallet.client.WalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe

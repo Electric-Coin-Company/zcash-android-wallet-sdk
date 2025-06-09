@@ -976,9 +976,10 @@ class SdkSynchronizer private constructor(
     // TODO [#1405]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1405
     override suspend fun validateConsensusBranch(): ConsensusMatchType {
         // TODO tor: pick the right service mode
-        val serverBranchId = tryNull {
-            processor.downloader.getServerInfo(ServiceMode.DefaultTor)?.consensusBranchId
-        }
+        val serverBranchId =
+            tryNull {
+                processor.downloader.getServerInfo(ServiceMode.DefaultTor)?.consensusBranchId
+            }
 
         // TODO tor: pick the right service mode
         val currentChainTip =

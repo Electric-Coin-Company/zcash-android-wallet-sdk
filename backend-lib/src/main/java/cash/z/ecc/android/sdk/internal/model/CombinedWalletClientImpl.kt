@@ -19,7 +19,6 @@ class CombinedWalletClientImpl private constructor(
     private val torClient: TorClient,
     private val endpoint: LightWalletEndpoint,
 ) : CombinedWalletClient {
-
     private val cache = mutableMapOf<ServiceMode, PartialTorWalletClient>()
 
     private val factorySemaphore = Mutex()
@@ -84,23 +83,23 @@ class CombinedWalletClientImpl private constructor(
     private suspend inline fun <T> execute(
         serviceMode: ServiceMode,
         block: PartialTorWalletClient.() -> T
-    ): T {
-        return if (serviceMode == ServiceMode.UniqueTor) {
+    ): T =
+        if (serviceMode == ServiceMode.UniqueTor) {
             getOrCreate(serviceMode).use { block(it) }
         } else {
             block(getOrCreate(serviceMode))
         }
-    }
 
-    private suspend fun getOrCreate(serviceMode: ServiceMode) = factorySemaphore.withLock {
-        withContext(Dispatchers.Default) {
-            if (serviceMode == ServiceMode.UniqueTor) {
-                create()
-            } else {
-                cache.getOrPut(serviceMode) { create() }
+    private suspend fun getOrCreate(serviceMode: ServiceMode) =
+        factorySemaphore.withLock {
+            withContext(Dispatchers.Default) {
+                if (serviceMode == ServiceMode.UniqueTor) {
+                    create()
+                } else {
+                    cache.getOrPut(serviceMode) { create() }
+                }
             }
         }
-    }
 
     private suspend fun create() = torClient.createWalletClient("https://${endpoint.host}:${endpoint.port}")
 

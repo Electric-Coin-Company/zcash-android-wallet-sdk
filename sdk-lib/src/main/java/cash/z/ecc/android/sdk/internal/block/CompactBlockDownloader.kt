@@ -101,7 +101,7 @@ open class CompactBlockDownloader private constructor(
      * @param height the height to which the data will rewind.
      */
     suspend fun rewindToHeight(height: BlockHeight) =
-    // TODO [#685]: Cancel anything in flight
+        // TODO [#685]: Cancel anything in flight
         // TODO [#685]: https://github.com/zcash/zcash-android-wallet-sdk/issues/685
         compactBlockRepository.rewindTo(height)
 
@@ -110,8 +110,9 @@ open class CompactBlockDownloader private constructor(
      *
      * @return the latest block height.
      */
-    suspend fun getLatestBlockHeight(serviceMode: ServiceMode) = lightWalletClient
-        .getLatestBlockHeight(serviceMode = serviceMode)
+    suspend fun getLatestBlockHeight(serviceMode: ServiceMode) =
+        lightWalletClient
+            .getLatestBlockHeight(serviceMode = serviceMode)
 
     /**
      * Return the latest block height that has been persisted into the [CompactBlockRepository].
@@ -164,10 +165,11 @@ open class CompactBlockDownloader private constructor(
      *
      * @return the full transaction info.
      */
-    suspend fun fetchTransaction(txId: ByteArray, serviceMode: ServiceMode) = lightWalletClient.fetchTransaction(
-        txId = txId,
-        serviceMode = serviceMode
-    )
+    suspend fun fetchTransaction(txId: ByteArray, serviceMode: ServiceMode) =
+        lightWalletClient.fetchTransaction(
+            txId = txId,
+            serviceMode = serviceMode
+        )
 
     /**
      * Get transactions belonging to the given transparent address

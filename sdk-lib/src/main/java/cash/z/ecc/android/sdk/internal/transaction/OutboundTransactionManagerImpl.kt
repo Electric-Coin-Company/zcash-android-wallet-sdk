@@ -70,10 +70,11 @@ internal class OutboundTransactionManagerImpl(
     override suspend fun submit(encodedTransaction: EncodedTransaction): TransactionSubmitResult =
         // TODO tor: pick the right service mode
         when (
-            val response = walletClient.submitTransaction(
-                tx = encodedTransaction.raw.byteArray,
-                serviceMode = ServiceMode.DefaultTor
-            )
+            val response =
+                walletClient.submitTransaction(
+                    tx = encodedTransaction.raw.byteArray,
+                    serviceMode = ServiceMode.DefaultTor
+                )
         ) {
             is Response.Success -> {
                 if (response.result.code == 0) {

@@ -3,9 +3,9 @@ package cash.z.ecc.android.sdk.util
 import android.content.Context
 import cash.z.ecc.android.sdk.internal.model.CombinedWalletClientImpl
 import cash.z.ecc.android.sdk.internal.model.TorClient
+import co.electriccoin.lightwallet.client.CombinedWalletClient
 import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.PartialTorWalletClient
-import co.electriccoin.lightwallet.client.CombinedWalletClient
 import co.electriccoin.lightwallet.client.WalletClient
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 
