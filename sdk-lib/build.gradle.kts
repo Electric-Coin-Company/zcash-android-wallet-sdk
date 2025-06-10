@@ -20,12 +20,11 @@ plugins {
 
 val myVersion = project.property("LIBRARY_VERSION").toString()
 val myArtifactId = "zcash-android-sdk"
-publishing {
-    publications {
-        publications.withType<MavenPublication>().all {
-            artifactId = myArtifactId
-        }
-    }
+
+mavenPublishing {
+    coordinates(
+        artifactId = myArtifactId
+    )
 }
 
 android {

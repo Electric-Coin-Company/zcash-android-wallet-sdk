@@ -67,8 +67,8 @@ jobs:
         timeout-minutes: 8
         env:
           ORG_GRADLE_PROJECT_IS_SNAPSHOT: false
-          ORG_GRADLE_PROJECT_ZCASH_MAVEN_PUBLISH_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-          ORG_GRADLE_PROJECT_ZCASH_MAVEN_PUBLISH_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_ZCASH_ASCII_GPG_KEY: ${{ secrets.MAVEN_SIGNING_KEY_ASCII }}
         run: |
           ./gradlew publishReleasePublicationToMavenCentralRepository --no-parallel
