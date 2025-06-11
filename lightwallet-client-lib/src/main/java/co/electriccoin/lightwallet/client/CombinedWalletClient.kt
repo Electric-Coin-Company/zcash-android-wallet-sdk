@@ -62,7 +62,7 @@ interface CombinedWalletClient : Disposable {
     /**
      * Returns a stream of information about roots of subtrees of the note commitment tree for the specified protocol.
      *
-     * @return a flow of information about roots of subtrees of the Sapling and Orchard note commitment trees.
+     * @return a flow of information about roots of subtrees of the note commitment tree for `shieldedProtocol`.
      *
      * @param startIndex Index identifying where to start returning subtree roots
      * @param shieldedProtocol Shielded protocol to return subtree roots for. See `ShieldedProtocolEnum` enum class.
