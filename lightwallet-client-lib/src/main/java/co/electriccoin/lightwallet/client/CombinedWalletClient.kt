@@ -138,6 +138,9 @@ sealed interface ServiceMode {
      */
     data object UniqueTor : ServiceMode
 
+    /**
+     * Tor connection is used tagged by a given group name (String). Tags are held in memory for the lifetime of the CombinedWalletClient.
+     */
     data class Group(
         val group: String
     ) : ServiceMode
