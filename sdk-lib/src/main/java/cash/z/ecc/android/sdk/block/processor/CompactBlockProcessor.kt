@@ -2104,7 +2104,7 @@ class CompactBlockProcessor internal constructor(
                         val response =
                             downloader.fetchTransaction(
                                 transactionRequest.txid,
-                                ServiceMode.DefaultTor
+                                ServiceMode.Group("fetch-${transactionRequest.txIdString()}")
                             )
                     ) {
                         is Response.Success -> response.result
