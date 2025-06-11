@@ -121,8 +121,7 @@ internal class FastestServerFetcher(
                 // 5 seconds timeout in case server is very unresponsive
                 remoteInfo =
                     withTimeoutOrNull(5.seconds) {
-                        // TODO tor: pick the right service mode
-                        when (val response = lightWalletClient.getServerInfo(ServiceMode.DefaultTor)) {
+                        when (val response = lightWalletClient.getServerInfo(ServiceMode.Group("validateServerEndpointAndMeasure(${endpoint.host}:${endpoint.port})"))) {
                             is Response.Success -> response.result
                             is Response.Failure -> {
                                 logRuledOut("getServerInfo failed", response.toThrowable())
