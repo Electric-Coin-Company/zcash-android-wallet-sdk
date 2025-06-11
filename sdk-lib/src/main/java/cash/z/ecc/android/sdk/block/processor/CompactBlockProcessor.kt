@@ -1714,7 +1714,7 @@ class CompactBlockProcessor internal constructor(
                 downloadedBlocks =
                     downloader.downloadBlockRange(
                         heightRange = batch.range,
-                        serviceMode = ServiceMode.DefaultTor
+                        serviceMode = ServiceMode.Direct
                     )
             }
             traceScope.end()
