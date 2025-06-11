@@ -162,7 +162,7 @@ internal class FastestServerFetcher(
             measureTime {
                 // TODO tor: pick the right service mode
                 currentChainTip =
-                    when (val response = lightWalletClient.getLatestBlockHeight(ServiceMode.DefaultTor)) {
+                    when (val response = lightWalletClient.getLatestBlockHeight(ServiceMode.Group("validateServerEndpointAndMeasure(${endpoint.host}:${endpoint.port})"))) {
                         is Response.Success -> {
                             runCatching { response.result.toBlockHeight() }.getOrElse {
                                 logRuledOut("toBlockHeight failed", it)
