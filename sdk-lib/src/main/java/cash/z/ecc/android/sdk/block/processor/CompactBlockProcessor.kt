@@ -1743,7 +1743,7 @@ class CompactBlockProcessor internal constructor(
                         "Retrying to fetch tree state for height ${height.value} after $failedAttempts failure(s)..."
                     }
                 }
-                // TODO tor: pick the right service mode
+                // Directly correlated with `downloadBatchOfBlocks()` ranges.
                 when (
                     val response =
                         downloader.getTreeState(
