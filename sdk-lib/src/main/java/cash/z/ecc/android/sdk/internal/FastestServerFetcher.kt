@@ -121,7 +121,14 @@ internal class FastestServerFetcher(
                 // 5 seconds timeout in case server is very unresponsive
                 remoteInfo =
                     withTimeoutOrNull(5.seconds) {
-                        when (val response = lightWalletClient.getServerInfo(ServiceMode.Group("validateServerEndpointAndMeasure(${endpoint.host}:${endpoint.port})"))) {
+                        when (
+                            val response =
+                                lightWalletClient.getServerInfo(
+                                    ServiceMode.Group(
+                                        "validateServerEndpointAndMeasure(${endpoint.host}:${endpoint.port})"
+                                    )
+                                )
+                        ) {
                             is Response.Success -> response.result
                             is Response.Failure -> {
                                 logRuledOut("getServerInfo failed", response.toThrowable())
@@ -160,9 +167,16 @@ internal class FastestServerFetcher(
         val currentChainTip: BlockHeight
         val getLatestBlockHeightDuration =
             measureTime {
-                // TODO tor: pick the right service mode
                 currentChainTip =
-                    when (val response = lightWalletClient.getLatestBlockHeight(ServiceMode.Group("validateServerEndpointAndMeasure(${endpoint.host}:${endpoint.port})"))) {
+                    when (
+                        val response =
+                            lightWalletClient.getLatestBlockHeight(
+                                serviceMode =
+                                    ServiceMode.Group(
+                                        "validateServerEndpointAndMeasure(${endpoint.host}:${endpoint.port})"
+                                    )
+                            )
+                    ) {
                         is Response.Success -> {
                             runCatching { response.result.toBlockHeight() }.getOrElse {
                                 logRuledOut("toBlockHeight failed", it)

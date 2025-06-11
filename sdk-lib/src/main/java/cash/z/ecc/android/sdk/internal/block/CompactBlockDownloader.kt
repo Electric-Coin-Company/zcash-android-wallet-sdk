@@ -58,10 +58,12 @@ open class CompactBlockDownloader private constructor(
         heightRange: ClosedRange<BlockHeight>,
         serviceMode: ServiceMode
     ): List<JniBlockMeta> {
+        val from = BlockHeightUnsafe.from(heightRange.start)
+        val to = BlockHeightUnsafe.from(heightRange.endInclusive)
         val filteredFlow =
             lightWalletClient
                 .getBlockRange(
-                    heightRange = BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive),
+                    heightRange = from..to,
                     serviceMode = serviceMode
                 ).onEach { response ->
                     when (response) {
@@ -177,7 +179,7 @@ open class CompactBlockDownloader private constructor(
      * @throws LightWalletException.GetTAddressTransactionsException if any error while getting the transactions occurs
      * @return List of all the transaction belonging to the given transparent address on the given block range
      */
-    fun getTAddressTransactions(
+    suspend fun getTAddressTransactions(
         transparentAddress: String,
         blockHeightRange: ClosedRange<BlockHeight>,
         serviceMode: ServiceMode
@@ -231,7 +233,7 @@ open class CompactBlockDownloader private constructor(
      *
      * @return a flow of information about roots of subtrees of the Sapling and Orchard note commitment trees.
      */
-    fun getSubtreeRoots(
+    suspend fun getSubtreeRoots(
         startIndex: UInt,
         shieldedProtocol: ShieldedProtocolEnum,
         maxEntries: UInt,

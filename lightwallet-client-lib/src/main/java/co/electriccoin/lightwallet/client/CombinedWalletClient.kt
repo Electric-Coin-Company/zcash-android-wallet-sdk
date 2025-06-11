@@ -23,7 +23,7 @@ interface CombinedWalletClient : Disposable {
      *
      * @return a flow of UTXOs for the given addresses from the [startHeight].
      *
-     * @throws IllegalArgumentException when empty argument provided
+     * @throws IllegalArgumentException when empty argument provided or when serviceMode is not [ServiceMode.Direct]
      */
     suspend fun fetchUtxos(
         tAddresses: List<String>,
@@ -37,9 +37,9 @@ interface CombinedWalletClient : Disposable {
      *
      * @return a flow of compact blocks for the given range
      *
-     * @throws IllegalArgumentException when empty argument provided
+     * @throws IllegalArgumentException when empty argument provided or when serviceMode is not [ServiceMode.Direct]
      */
-    fun getBlockRange(
+    suspend fun getBlockRange(
         heightRange: ClosedRange<BlockHeightUnsafe>,
         serviceMode: ServiceMode
     ): Flow<Response<CompactBlockUnsafe>>
@@ -51,9 +51,9 @@ interface CombinedWalletClient : Disposable {
      *
      * @return a flow of transactions that correspond to the given address for the given range.
      *
-     * @throws IllegalArgumentException when empty argument provided
+     * @throws IllegalArgumentException when empty argument provided or when serviceMode is not [ServiceMode.Direct]
      */
-    fun getTAddressTransactions(
+    suspend fun getTAddressTransactions(
         tAddress: String,
         blockHeightRange: ClosedRange<BlockHeightUnsafe>,
         serviceMode: ServiceMode
@@ -68,9 +68,9 @@ interface CombinedWalletClient : Disposable {
      * @param shieldedProtocol Shielded protocol to return subtree roots for. See `ShieldedProtocolEnum` enum class.
      * @param maxEntries Maximum number of entries to return, or 0 for all entries
      *
-     * @throws IllegalArgumentException when empty argument provided
+     * @throws IllegalArgumentException when empty argument provided or when serviceMode is not [ServiceMode.Direct]
      */
-    fun getSubtreeRoots(
+    suspend fun getSubtreeRoots(
         startIndex: UInt,
         shieldedProtocol: ShieldedProtocolEnum,
         maxEntries: UInt,
@@ -128,6 +128,8 @@ interface CombinedWalletClient : Disposable {
  * Mode that determines which connection is used for the lightwalletd networking calls.
  */
 sealed interface ServiceMode {
+    data object Direct : ServiceMode
+
     /**
      * Default Tor connection is used, lives for the lifetime of the CombinedWalletClient.
      */
@@ -139,7 +141,8 @@ sealed interface ServiceMode {
     data object UniqueTor : ServiceMode
 
     /**
-     * Tor connection is used tagged by a given group name (String). Tags are held in memory for the lifetime of the CombinedWalletClient.
+     * Tor connection is used tagged by a given group name (String).
+     * Tags are held in memory for the lifetime of the CombinedWalletClient.
      */
     data class Group(
         val group: String

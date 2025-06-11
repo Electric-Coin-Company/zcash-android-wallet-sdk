@@ -68,7 +68,6 @@ internal class OutboundTransactionManagerImpl(
     ): List<EncodedTransaction> = encoder.createProposedTransactions(proposal, usk)
 
     override suspend fun submit(encodedTransaction: EncodedTransaction): TransactionSubmitResult =
-        // TODO tor: pick the right service mode
         when (
             val response =
                 walletClient.submitTransaction(

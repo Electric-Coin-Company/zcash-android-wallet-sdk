@@ -875,7 +875,6 @@ class CompactBlockProcessor internal constructor(
             // Reach out to the server to obtain the current server info
             val serverInfo =
                 runCatching {
-                    // TODO tor: pick the right service mode
                     downloader.getServerInfo(ServiceMode.DefaultTor)
                 }.onFailure {
                     Twig.error { "Unable to obtain server info due to: ${it.message}" }
@@ -952,12 +951,11 @@ class CompactBlockProcessor internal constructor(
 
         retryUpToAndThrow(UTXO_FETCH_RETRIES) {
             val tAddresses = backend.listTransparentReceivers(account)
-            // TODO tor: pick the right service mode
             downloader
                 .fetchUtxos(
                     tAddresses = tAddresses,
                     startHeight = BlockHeightUnsafe.from(startHeight),
-                    ServiceMode.DefaultTor
+                    serviceMode = ServiceMode.Direct
                 ).onEach { response ->
                     when (response) {
                         is Response.Success -> {
@@ -1113,7 +1111,6 @@ class CompactBlockProcessor internal constructor(
             var latestBlockHeight: BlockHeight? = null
 
             retryUpToAndContinue(FETCH_LATEST_BLOCK_HEIGHT_RETRIES) {
-                // TODO tor: pick the right service mode
                 when (val response = downloader.getLatestBlockHeight(ServiceMode.DefaultTor)) {
                     is Response.Success -> {
                         Twig.debug { "Latest block height fetched successfully with value: ${response.result.value}" }
@@ -1160,13 +1157,12 @@ class CompactBlockProcessor internal constructor(
             var orchardSubtreeRootList: List<SubtreeRoot> = emptyList()
 
             retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
-                // TODO tor: pick the right service mode
                 downloader
                     .getSubtreeRoots(
                         saplingStartIndex,
                         shieldedProtocol = ShieldedProtocolEnum.SAPLING,
                         maxEntries = UInt.MIN_VALUE,
-                        serviceMode = ServiceMode.DefaultTor
+                        serviceMode = ServiceMode.Direct
                     ).onEach { response ->
                         when (response) {
                             is Response.Success -> {
@@ -1210,13 +1206,12 @@ class CompactBlockProcessor internal constructor(
             }
 
             retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
-                // TODO tor: pick the right service mode
                 downloader
                     .getSubtreeRoots(
-                        orchardStartIndex,
+                        startIndex = orchardStartIndex,
                         shieldedProtocol = ShieldedProtocolEnum.ORCHARD,
                         maxEntries = UInt.MIN_VALUE,
-                        serviceMode = ServiceMode.DefaultTor
+                        serviceMode = ServiceMode.Direct
                     ).onEach { response ->
                         when (response) {
                             is Response.Success -> {
@@ -1710,7 +1705,6 @@ class CompactBlockProcessor internal constructor(
                 } else {
                     Twig.warn { "Retrying to download batch $batch after $failedAttempts failure(s)..." }
                 }
-                // TODO tor: pick the right service mode
                 downloadedBlocks =
                     downloader.downloadBlockRange(
                         heightRange = batch.range,
@@ -1990,12 +1984,11 @@ class CompactBlockProcessor internal constructor(
                 // - 1 for the end height because the GRPC request is end-inclusive whereas we use end-exclusive
                 // ranges everywhere in the Rust code
                 val requestedRange = transactionRequest.startHeight..(transactionRequest.endHeight!! - 1)
-                // TODO tor: pick the right service mode
                 resultFlow =
                     downloader.getTAddressTransactions(
                         transparentAddress = transactionRequest.address,
                         blockHeightRange = requestedRange,
-                        serviceMode = ServiceMode.DefaultTor
+                        serviceMode = ServiceMode.Direct
                     )
             }
             traceScope.end()
@@ -2098,7 +2091,6 @@ class CompactBlockProcessor internal constructor(
                     }
                 }
 
-                // TODO tor: pick the right service mode
                 transactionResult =
                     when (
                         val response =
