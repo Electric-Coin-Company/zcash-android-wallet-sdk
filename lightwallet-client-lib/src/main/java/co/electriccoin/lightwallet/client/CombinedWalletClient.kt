@@ -128,6 +128,9 @@ interface CombinedWalletClient : Disposable {
  * Mode that determines which connection is used for the lightwalletd networking calls.
  */
 sealed interface ServiceMode {
+    /**
+     * Default Tor connection is used, lives for the lifetime of the CombinedWalletClient.
+     */
     data object DefaultTor : ServiceMode
 
     data object UniqueTor : ServiceMode
