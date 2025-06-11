@@ -133,6 +133,9 @@ sealed interface ServiceMode {
      */
     data object DefaultTor : ServiceMode
 
+    /**
+     * Tor connection is used, each time a new one, not held in memory, used only once.
+     */
     data object UniqueTor : ServiceMode
 
     data class Group(
