@@ -110,7 +110,7 @@ interface CombinedWalletClient : Disposable {
     ): Response<SendResponseUnsafe>
 
     /**
-     * @return the latest block height known to the service.
+     * @return information about roots of subtrees of the Sapling and Orchard note commitment trees.
      */
     suspend fun getTreeState(
         height: BlockHeightUnsafe,
