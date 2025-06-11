@@ -748,7 +748,7 @@ class SdkSynchronizer private constructor(
     override suspend fun importAccountByUfvk(setup: AccountImportSetup): Account {
         // TODO tor: pick the right service mode
         val chainTip: BlockHeight? =
-            when (val response = processor.downloader.getLatestBlockHeight(serviceMode = ServiceMode.DefaultTor)) {
+            when (val response = processor.downloader.getLatestBlockHeight(serviceMode = ServiceMode.UniqueTor)) {
                 is Response.Success -> {
                     Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
                     runCatching { response.result.toBlockHeight() }.getOrNull()
