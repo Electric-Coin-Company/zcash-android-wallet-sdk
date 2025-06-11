@@ -1748,7 +1748,7 @@ class CompactBlockProcessor internal constructor(
                     val response =
                         downloader.getTreeState(
                             height = BlockHeightUnsafe(height.value),
-                            serviceMode = ServiceMode.DefaultTor
+                            serviceMode = ServiceMode.Direct
                         )
                 ) {
                     is Response.Success -> {
