@@ -60,7 +60,7 @@ interface CombinedWalletClient : Disposable {
     ): Flow<Response<RawTransactionUnsafe>>
 
     /**
-     * Returns a stream of information about roots of subtrees of the Sapling and Orchard note commitment trees.
+     * Returns a stream of information about roots of subtrees of the note commitment tree for the specified protocol.
      *
      * @return a flow of information about roots of subtrees of the Sapling and Orchard note commitment trees.
      *
