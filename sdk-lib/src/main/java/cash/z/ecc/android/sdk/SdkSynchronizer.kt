@@ -984,7 +984,7 @@ class SdkSynchronizer private constructor(
         val currentChainTip =
             when (
                 val response =
-                    processor.downloader.getLatestBlockHeight(serviceMode = ServiceMode.DefaultTor)
+                    processor.downloader.getLatestBlockHeight(serviceMode = ServiceMode.Group("SdkSynchronizer.validateConsensusBranch"))
             ) {
                 is Response.Success -> {
                     Twig.info { "Chain tip for validate consensus branch action fetched: ${response.result.value}" }
