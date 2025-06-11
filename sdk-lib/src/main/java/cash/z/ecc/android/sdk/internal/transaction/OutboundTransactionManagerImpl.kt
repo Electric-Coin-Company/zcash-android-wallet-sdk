@@ -73,7 +73,7 @@ internal class OutboundTransactionManagerImpl(
             val response =
                 walletClient.submitTransaction(
                     tx = encodedTransaction.raw.byteArray,
-                    serviceMode = ServiceMode.DefaultTor
+                    serviceMode = ServiceMode.Group("submit-${encodedTransaction.txId.byteArray.toHexReversed()}")
                 )
         ) {
             is Response.Success -> {
