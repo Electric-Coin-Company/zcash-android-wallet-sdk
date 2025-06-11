@@ -72,10 +72,10 @@ internal class FastestServerFetcher(
                                     runCatching {
                                         val to = result.remoteInfo.blockHeightUnsafe
                                         val from = BlockHeightUnsafe((to.value - N).coerceAtLeast(0))
-                                        // TODO tor: pick the right service mode
+                                        // Fetched the same way as in `downloadBatchOfBlocks()`.
                                         result.lightWalletClient.getBlockRange(
                                             heightRange = from..to,
-                                            serviceMode = ServiceMode.DefaultTor
+                                            serviceMode = ServiceMode.Direct
                                         )
                                     }.getOrNull()
                                 } == null
