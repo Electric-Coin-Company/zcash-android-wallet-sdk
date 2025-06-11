@@ -1061,7 +1061,7 @@ class SdkSynchronizer private constructor(
 
                 // TODO tor: pick the right service mode
                 val currentChainTip =
-                    when (val response = lightWalletClient.getLatestBlockHeight(ServiceMode.DefaultTor)) {
+                    when (val response = lightWalletClient.getLatestBlockHeight(ServiceMode.Group("SdkSynchronizer.validateServerEndpoint(${endpoint.host}:${endpoint.port})"))) {
                         is Response.Success -> {
                             runCatching { response.result.toBlockHeight() }.getOrElse {
                                 return ServerValidation.InValid(it)
