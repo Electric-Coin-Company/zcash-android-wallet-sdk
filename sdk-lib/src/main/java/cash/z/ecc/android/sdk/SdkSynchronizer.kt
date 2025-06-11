@@ -977,7 +977,7 @@ class SdkSynchronizer private constructor(
         // TODO tor: pick the right service mode
         val serverBranchId =
             tryNull {
-                processor.downloader.getServerInfo(ServiceMode.DefaultTor)?.consensusBranchId
+                processor.downloader.getServerInfo(ServiceMode.Group("SdkSynchronizer.validateConsensusBranch"))?.consensusBranchId
             }
 
         // TODO tor: pick the right service mode
