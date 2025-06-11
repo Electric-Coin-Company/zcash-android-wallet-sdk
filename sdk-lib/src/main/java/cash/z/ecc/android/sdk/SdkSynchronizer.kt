@@ -1026,7 +1026,7 @@ class SdkSynchronizer private constructor(
             .use { lightWalletClient ->
                 // TODO tor: pick the right service mode
                 val remoteInfo =
-                    when (val response = lightWalletClient.getServerInfo(ServiceMode.DefaultTor)) {
+                    when (val response = lightWalletClient.getServerInfo(ServiceMode.Group("SdkSynchronizer.validateServerEndpoint(${endpoint.host}:${endpoint.port})"))) {
                         is Response.Success -> response.result
                         is Response.Failure -> {
                             return ServerValidation.InValid(response.toThrowable())
