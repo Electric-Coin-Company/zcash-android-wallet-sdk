@@ -124,6 +124,9 @@ interface CombinedWalletClient : Disposable {
     fun reconnect()
 }
 
+/**
+ * Mode that determines which connection is used for the lightwalletd networking calls.
+ */
 sealed interface ServiceMode {
     data object DefaultTor : ServiceMode
 
