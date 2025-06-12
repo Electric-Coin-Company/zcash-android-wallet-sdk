@@ -5,7 +5,8 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FastestServersResult
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import cash.z.ecc.android.sdk.util.WalletClientFactory
-import co.electriccoin.lightwallet.client.WalletClient
+import co.electriccoin.lightwallet.client.CombinedWalletClient
+import co.electriccoin.lightwallet.client.ServiceMode
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
@@ -71,7 +72,11 @@ internal class FastestServerFetcher(
                                     runCatching {
                                         val to = result.remoteInfo.blockHeightUnsafe
                                         val from = BlockHeightUnsafe((to.value - N).coerceAtLeast(0))
-                                        result.lightWalletClient.getBlockRange(from..to)
+                                        // Fetched the same way as in `downloadBatchOfBlocks()`.
+                                        result.lightWalletClient.getBlockRange(
+                                            heightRange = from..to,
+                                            serviceMode = ServiceMode.Direct
+                                        )
                                     }.getOrNull()
                                 } == null
 
@@ -116,7 +121,14 @@ internal class FastestServerFetcher(
                 // 5 seconds timeout in case server is very unresponsive
                 remoteInfo =
                     withTimeoutOrNull(5.seconds) {
-                        when (val response = lightWalletClient.getServerInfo()) {
+                        when (
+                            val response =
+                                lightWalletClient.getServerInfo(
+                                    ServiceMode.Group(
+                                        "validateServerEndpointAndMeasure(${endpoint.host}:${endpoint.port})"
+                                    )
+                                )
+                        ) {
                             is Response.Success -> response.result
                             is Response.Failure -> {
                                 logRuledOut("getServerInfo failed", response.toThrowable())
@@ -156,7 +168,15 @@ internal class FastestServerFetcher(
         val getLatestBlockHeightDuration =
             measureTime {
                 currentChainTip =
-                    when (val response = lightWalletClient.getLatestBlockHeight()) {
+                    when (
+                        val response =
+                            lightWalletClient.getLatestBlockHeight(
+                                serviceMode =
+                                    ServiceMode.Group(
+                                        "validateServerEndpointAndMeasure(${endpoint.host}:${endpoint.port})"
+                                    )
+                            )
+                    ) {
                         is Response.Success -> {
                             runCatching { response.result.toBlockHeight() }.getOrElse {
                                 logRuledOut("toBlockHeight failed", it)
@@ -216,7 +236,7 @@ internal class FastestServerFetcher(
 
 private data class ValidateServerResult(
     val remoteInfo: LightWalletEndpointInfoUnsafe,
-    val lightWalletClient: WalletClient,
+    val lightWalletClient: CombinedWalletClient,
     val endpoint: LightWalletEndpoint,
     val getServerInfoDuration: Duration,
     val getLatestBlockHeightDuration: Duration,
