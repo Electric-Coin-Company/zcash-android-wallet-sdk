@@ -128,7 +128,6 @@ interface CombinedWalletClient : Disposable {
  * Mode that determines which connection is used for the lightwalletd networking calls.
  */
 sealed interface ServiceMode {
-
     /**
      * GRPC connection is used, no Tor involved.
      */
