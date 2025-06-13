@@ -59,14 +59,6 @@ internal sealed class SyncingResult {
     ) : SyncingResult(),
         Failure
 
-    data object EnhanceSuccess : SyncingResult()
-
-    data class EnhanceFailed(
-        override val failedAtHeight: BlockHeight? = null,
-        override val exception: CompactBlockProcessorException
-    ) : SyncingResult(),
-        Failure
-
     data object UpdateBirthday : SyncingResult()
 
     data class ContinuityError(
