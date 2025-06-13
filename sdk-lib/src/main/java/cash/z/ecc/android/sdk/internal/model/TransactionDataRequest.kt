@@ -8,23 +8,25 @@ import cash.z.ecc.android.sdk.model.TransactionId
  * Serves as cross layer (Kotlin, Rust) communication class.
  */
 sealed interface TransactionDataRequest {
-
     sealed interface Enhanceable : TransactionDataRequest {
         val txid: TransactionId
 
         fun txIdString(): String? = txid.txIdString()
     }
 
-    data class GetStatus(override val txid: TransactionId) : Enhanceable
+    data class GetStatus(
+        override val txid: TransactionId
+    ) : Enhanceable
 
-    data class Enhancement(override val txid: TransactionId) : Enhanceable
+    data class Enhancement(
+        override val txid: TransactionId
+    ) : Enhanceable
 
     data class SpendFromAddress(
         val address: String,
         val startHeight: BlockHeight,
         val endHeight: BlockHeight?,
     ) : TransactionDataRequest {
-
         init {
             if (endHeight != null) {
                 require(endHeight >= startHeight) {

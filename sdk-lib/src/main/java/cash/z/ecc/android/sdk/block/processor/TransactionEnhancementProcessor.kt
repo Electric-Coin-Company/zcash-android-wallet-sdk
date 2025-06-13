@@ -31,6 +31,7 @@ import kotlin.time.Duration.Companion.seconds
 
 internal interface TransactionEnhancementProcessor : Disposable {
     fun start()
+
     fun stop()
 
     companion object Factory {
@@ -38,11 +39,12 @@ internal interface TransactionEnhancementProcessor : Disposable {
             backend: TypesafeBackend,
             downloader: CompactBlockDownloader,
             derivedDataRepository: DerivedDataRepository,
-        ): TransactionEnhancementProcessor = TransactionEnhancementProcessorImpl(
-            backend = backend,
-            downloader = downloader,
-            derivedDataRepository = derivedDataRepository
-        )
+        ): TransactionEnhancementProcessor =
+            TransactionEnhancementProcessorImpl(
+                backend = backend,
+                downloader = downloader,
+                derivedDataRepository = derivedDataRepository
+            )
     }
 }
 
@@ -51,25 +53,25 @@ private class TransactionEnhancementProcessorImpl(
     private val downloader: CompactBlockDownloader,
     private val derivedDataRepository: DerivedDataRepository,
 ) : TransactionEnhancementProcessor {
-
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     private var job: Job? = null
 
     override fun start() {
-        job = scope.launch {
-            while (true) {
-                delay(9.seconds + (0..2000).random().milliseconds) // initial delay
-                val requests = getTransactionDataRequests() ?: continue // fetch requests
-                requests
-                    .filterIsInstance<TransactionDataRequest.Enhanceable>() // filter for GetStatus & Enhancement
-                    .forEach { request ->
-                        if (enhanceTransaction(request)) { // enhance transaction
-                            derivedDataRepository.invalidate() // enhance transaction
+        job =
+            scope.launch {
+                while (true) {
+                    delay(9.seconds + (0..2000).random().milliseconds) // initial delay
+                    val requests = getTransactionDataRequests() ?: continue // fetch requests
+                    requests
+                        .filterIsInstance<TransactionDataRequest.Enhanceable>() // filter for GetStatus & Enhancement
+                        .forEach { request ->
+                            if (enhanceTransaction(request)) { // enhance transaction
+                                derivedDataRepository.invalidate() // enhance transaction
+                            }
                         }
-                    }
+                }
             }
-        }
     }
 
     override fun stop() {
@@ -93,25 +95,27 @@ private class TransactionEnhancementProcessorImpl(
             val rawTransactionUnsafe = getTransaction(transactionRequest, downloader)
 
             when (transactionRequest) {
-                is TransactionDataRequest.GetStatus -> setTransactionStatus(
-                    transactionId = transactionRequest.txid,
-                    rawTransactionUnsafe = rawTransactionUnsafe,
-                    backend = backend
-                )
-
-                is TransactionDataRequest.Enhancement -> if (rawTransactionUnsafe == null) {
+                is TransactionDataRequest.GetStatus ->
                     setTransactionStatus(
-                        transactionId = transactionRequest.txid,
-                        backend = backend,
-                        rawTransactionUnsafe = null
-                    )
-                } else {
-                    decryptTransaction(
                         transactionId = transactionRequest.txid,
                         rawTransactionUnsafe = rawTransactionUnsafe,
                         backend = backend
                     )
-                }
+
+                is TransactionDataRequest.Enhancement ->
+                    if (rawTransactionUnsafe == null) {
+                        setTransactionStatus(
+                            transactionId = transactionRequest.txid,
+                            backend = backend,
+                            rawTransactionUnsafe = null
+                        )
+                    } else {
+                        decryptTransaction(
+                            transactionId = transactionRequest.txid,
+                            rawTransactionUnsafe = rawTransactionUnsafe,
+                            backend = backend
+                        )
+                    }
             }
 
             Twig.debug { "Done enhancing transaction: txid: ${transactionRequest.txIdString()}" }
@@ -123,6 +127,8 @@ private class TransactionEnhancementProcessorImpl(
         } catch (_: EnhanceTxDownloadError) {
             false
         } catch (_: EnhanceTxDecryptError) {
+            false
+        } catch (_: Exception) {
             false
         }
     }
@@ -157,39 +163,40 @@ private class TransactionEnhancementProcessorImpl(
     private suspend fun getTransaction(
         transactionRequest: TransactionDataRequest.Enhanceable,
         downloader: CompactBlockDownloader,
-    ): RawTransactionUnsafe? = withTraceScope("CompactBlockProcessor.fetchTransaction") {
-        retryUpToAndThrow(TRANSACTION_FETCH_RETRIES) { failedAttempts ->
-            if (failedAttempts == 0) {
-                Twig.debug { "Starting to fetch transaction: txid: ${transactionRequest.txIdString()}" }
-            } else {
-                Twig.warn {
-                    "Retrying to fetch transaction: txid: ${transactionRequest.txIdString()}" +
-                        " after $failedAttempts failure(s)..."
-                }
-            }
-
-            when (
-                val response =
-                    downloader.fetchTransaction(
-                        txId = transactionRequest.txid.value.byteArray,
-                        serviceMode = ServiceMode.Group("fetch-${transactionRequest.txIdString()}")
-                    )
-            ) {
-                is Response.Success -> response.result
-                is Response.Failure ->
-                    when {
-                        response is Response.Failure.Server.NotFound -> null
-                        response.description.orEmpty().contains(NOT_FOUND_MESSAGE_WORKAROUND, true) -> null
-
-                        response.description.orEmpty().contains(NOT_FOUND_MESSAGE_WORKAROUND_2, true) -> null
-
-                        else -> throw EnhanceTxDownloadError(response.toThrowable())
+    ): RawTransactionUnsafe? =
+        withTraceScope("CompactBlockProcessor.fetchTransaction") {
+            retryUpToAndThrow(TRANSACTION_FETCH_RETRIES) { failedAttempts ->
+                if (failedAttempts == 0) {
+                    Twig.debug { "Starting to fetch transaction: txid: ${transactionRequest.txIdString()}" }
+                } else {
+                    Twig.warn {
+                        "Retrying to fetch transaction: txid: ${transactionRequest.txIdString()}" +
+                            " after $failedAttempts failure(s)..."
                     }
+                }
+
+                when (
+                    val response =
+                        downloader.fetchTransaction(
+                            txId = transactionRequest.txid.value.byteArray,
+                            serviceMode = ServiceMode.Group("fetch-${transactionRequest.txIdString()}")
+                        )
+                ) {
+                    is Response.Success -> response.result
+                    is Response.Failure ->
+                        when {
+                            response is Response.Failure.Server.NotFound -> null
+                            response.description.orEmpty().contains(NOT_FOUND_MESSAGE_WORKAROUND, true) -> null
+
+                            response.description.orEmpty().contains(NOT_FOUND_MESSAGE_WORKAROUND_2, true) -> null
+
+                            else -> throw EnhanceTxDownloadError(response.toThrowable())
+                        }
+                }
+            }?.also {
+                Twig.debug { "Transaction fetched: $it" }
             }
-        }?.also {
-            Twig.debug { "Transaction fetched: $it" }
         }
-    }
 
     @Throws(EnhanceTxDecryptError::class)
     private suspend fun decryptTransaction(
@@ -221,4 +228,3 @@ private const val TRANSACTION_FETCH_RETRIES = 1
 private const val NOT_FOUND_MESSAGE_WORKAROUND = "Transaction not found"
 private const val NOT_FOUND_MESSAGE_WORKAROUND_2 =
     "No such mempool or blockchain transaction. Use gettransaction for wallet transactions."
-

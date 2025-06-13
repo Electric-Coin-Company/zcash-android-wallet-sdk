@@ -116,7 +116,8 @@ class CompactBlockProcessor internal constructor(
     private val repository: DerivedDataRepository,
     private val txManager: OutboundTransactionManager,
     private val transactionEnhancementProcessor: TransactionEnhancementProcessor,
-): Disposable {
+    private val transparentTransactionEnhancementProcessor: TransparentTransactionEnhancementProcessor
+) : Disposable {
     /**
      * Callback for any non-trivial errors that occur while processing compact blocks.
      *
@@ -220,6 +221,7 @@ class CompactBlockProcessor internal constructor(
 
     override suspend fun dispose() {
         transactionEnhancementProcessor.dispose()
+        transparentTransactionEnhancementProcessor.dispose()
     }
 
     /**
@@ -228,6 +230,7 @@ class CompactBlockProcessor internal constructor(
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     suspend fun start() {
         transactionEnhancementProcessor.start()
+        transparentTransactionEnhancementProcessor.start()
 
         val traceScope = TraceScope("CompactBlockProcessor.start")
 
@@ -419,6 +422,7 @@ class CompactBlockProcessor internal constructor(
      */
     suspend fun stop() {
         transactionEnhancementProcessor.stop()
+        transparentTransactionEnhancementProcessor.stop()
 
         runCatching {
             setState(State.Stopped)
@@ -616,7 +620,6 @@ class CompactBlockProcessor internal constructor(
                     }
 
                     else -> {
-
                         if (batchSyncProgress.resultState is SyncingResult.AllSuccess ||
                             batchSyncProgress.resultState is SyncingResult.ScanSuccess ||
                             batchSyncProgress.resultState is SyncingResult.DeleteSuccess
@@ -706,7 +709,7 @@ class CompactBlockProcessor internal constructor(
                     lastValidHeight = lastValidHeight
                 )
         ) {
-            is UpdateChainTipResult.Success -> { /* Let's continue to the next step */
+            is UpdateChainTipResult.Success -> { // Let's continue to the next step
             }
 
             is UpdateChainTipResult.Failure -> {
@@ -1456,8 +1459,7 @@ class CompactBlockProcessor internal constructor(
                                         batch = it
                                     )
                             )
-                        }
-                        .buffer(1)
+                        }.buffer(1)
                         .map { downloadStageResult ->
                             Twig.debug { "Download stage done with result: $downloadStageResult" }
 

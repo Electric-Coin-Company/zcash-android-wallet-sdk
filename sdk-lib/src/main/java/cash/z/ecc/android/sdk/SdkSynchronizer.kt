@@ -13,6 +13,7 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Stoppe
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Synced
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Syncing
 import cash.z.ecc.android.sdk.block.processor.TransactionEnhancementProcessor
+import cash.z.ecc.android.sdk.block.processor.TransparentTransactionEnhancementProcessor
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
@@ -1219,11 +1220,17 @@ internal object DefaultSynchronizerFactory {
             minimumHeight = birthdayHeight,
             repository = repository,
             txManager = txManager,
-            transactionEnhancementProcessor = TransactionEnhancementProcessor.new(
-                backend = backend,
-                downloader = downloader,
-                derivedDataRepository = repository
-            )
+            transactionEnhancementProcessor =
+                TransactionEnhancementProcessor.new(
+                    backend = backend,
+                    downloader = downloader,
+                    derivedDataRepository = repository
+                ),
+            transparentTransactionEnhancementProcessor =
+                TransparentTransactionEnhancementProcessor.new(
+                    backend = backend,
+                    downloader = downloader
+                )
         )
 }
 
