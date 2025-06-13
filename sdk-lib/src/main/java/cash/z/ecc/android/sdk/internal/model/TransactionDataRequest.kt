@@ -9,21 +9,21 @@ import cash.z.ecc.android.sdk.model.TransactionId
  */
 sealed interface TransactionDataRequest {
 
-    val txid: TransactionId?
+    sealed interface Enhanceable : TransactionDataRequest {
+        val txid: TransactionId
 
-    fun txIdString(): String? = txid?.txIdString()
+        fun txIdString(): String? = txid.txIdString()
+    }
 
-    data class GetStatus(override val txid: TransactionId) : TransactionDataRequest
+    data class GetStatus(override val txid: TransactionId) : Enhanceable
 
-    data class Enhancement(override val txid: TransactionId) : TransactionDataRequest
+    data class Enhancement(override val txid: TransactionId) : Enhanceable
 
     data class SpendFromAddress(
         val address: String,
         val startHeight: BlockHeight,
         val endHeight: BlockHeight?,
     ) : TransactionDataRequest {
-
-        override val txid: TransactionId? = null
 
         init {
             if (endHeight != null) {

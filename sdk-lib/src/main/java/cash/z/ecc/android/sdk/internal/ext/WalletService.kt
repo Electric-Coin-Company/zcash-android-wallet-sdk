@@ -17,18 +17,17 @@ import kotlin.random.Random
  * @param block the code to execute, which will be wrapped in a try/catch and retried whenever an
  * exception is thrown up to [retries] attempts.
  */
-suspend inline fun retryUpToAndThrow(
+suspend inline fun <T> retryUpToAndThrow(
     retries: Int,
     exceptionWrapper: (Throwable) -> Throwable = { it },
     initialDelayMillis: Long = 500L,
-    block: (Int) -> Unit
-) {
+    block: (Int) -> T
+): T {
     var failedAttempts = 0
     while (failedAttempts <= retries) {
         @Suppress("TooGenericExceptionCaught")
         try {
-            block(failedAttempts)
-            return
+            return block(failedAttempts)
         } catch (t: Throwable) {
             failedAttempts++
             if (failedAttempts > retries) {
@@ -39,6 +38,8 @@ suspend inline fun retryUpToAndThrow(
             delay(duration)
         }
     }
+
+    throw exceptionWrapper(IllegalStateException(""))
 }
 
 /**

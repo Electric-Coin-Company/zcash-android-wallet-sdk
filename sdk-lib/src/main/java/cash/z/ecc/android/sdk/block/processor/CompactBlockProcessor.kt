@@ -57,6 +57,7 @@ import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import cash.z.ecc.android.sdk.model.Zatoshi
+import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.ServiceMode
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
@@ -64,6 +65,7 @@ import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
 import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
+import co.electriccoin.lightwallet.client.util.Disposable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -112,8 +114,9 @@ class CompactBlockProcessor internal constructor(
     val downloader: CompactBlockDownloader,
     minimumHeight: BlockHeight,
     private val repository: DerivedDataRepository,
-    private val txManager: OutboundTransactionManager
-) {
+    private val txManager: OutboundTransactionManager,
+    private val transactionEnhancementProcessor: TransactionEnhancementProcessor,
+): Disposable {
     /**
      * Callback for any non-trivial errors that occur while processing compact blocks.
      *
@@ -147,7 +150,8 @@ class CompactBlockProcessor internal constructor(
     /**
      * The zcash network that is being processed. Either Testnet or Mainnet.
      */
-    val network = backend.network
+    val network: ZcashNetwork
+        get() = backend.network
 
     private val lowerBoundHeight: BlockHeight =
         BlockHeight(
@@ -211,13 +215,20 @@ class CompactBlockProcessor internal constructor(
      * transactions, this value will later update to 100 blocks before the first transaction,
      * rounded down to the nearest 100. So in some cases, this is a dynamic value.
      */
-    val birthdayHeight = _birthdayHeight.value
+    val birthdayHeight: BlockHeight
+        get() = _birthdayHeight.value
+
+    override suspend fun dispose() {
+        transactionEnhancementProcessor.dispose()
+    }
 
     /**
      * Download compact blocks, verify and scan them until [stop] is called.
      */
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     suspend fun start() {
+        transactionEnhancementProcessor.start()
+
         val traceScope = TraceScope("CompactBlockProcessor.start")
 
         val (saplingStartIndex, orchardStartIndex) = refreshWalletSummary()
@@ -407,6 +418,8 @@ class CompactBlockProcessor internal constructor(
      * Sets the state to [State.Stopped], which causes the processor loop to exit.
      */
     suspend fun stop() {
+        transactionEnhancementProcessor.stop()
+
         runCatching {
             setState(State.Stopped)
             downloader.stop()
