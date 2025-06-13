@@ -120,13 +120,13 @@ private class TransparentTransactionEnhancementProcessorImpl(
             }.onCompletion {
                 Twig.verbose { "Done Decrypting and storing of all transaction" }
             }.collect()
-        } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
+        } catch (_: CompactBlockProcessorException.EnhanceTransactionError) {
             // do nothing
-        } catch (e: EnhanceTxDownloadError) {
+        } catch (_: EnhanceTxDownloadError) {
             // do nothing
-        } catch (e: EnhanceTxDecryptError) {
+        } catch (_: EnhanceTxDecryptError) {
             // do nothing
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // do nothing
         }
     }
