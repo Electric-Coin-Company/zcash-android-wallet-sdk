@@ -12,6 +12,8 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Initia
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Stopped
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Synced
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Syncing
+import cash.z.ecc.android.sdk.block.processor.TransactionEnhancementProcessor
+import cash.z.ecc.android.sdk.block.processor.TransparentTransactionEnhancementProcessor
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
@@ -449,6 +451,7 @@ class SdkSynchronizer private constructor(
                 coroutineScope.launch {
                     Twig.info { "Stopping synchronizer $synchronizerKey…" }
                     processor.stop()
+                    processor.dispose()
                     torClient.dispose()
                     walletClient.dispose()
                     fetchExchangeChangeUsd.dispose()
@@ -1217,6 +1220,17 @@ internal object DefaultSynchronizerFactory {
             minimumHeight = birthdayHeight,
             repository = repository,
             txManager = txManager,
+            transactionEnhancementProcessor =
+                TransactionEnhancementProcessor.new(
+                    backend = backend,
+                    downloader = downloader,
+                    derivedDataRepository = repository
+                ),
+            transparentTransactionEnhancementProcessor =
+                TransparentTransactionEnhancementProcessor.new(
+                    backend = backend,
+                    downloader = downloader
+                )
         )
 }
 

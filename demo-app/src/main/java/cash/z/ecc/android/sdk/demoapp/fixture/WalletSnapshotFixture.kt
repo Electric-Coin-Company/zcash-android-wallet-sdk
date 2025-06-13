@@ -30,7 +30,6 @@ object WalletSnapshotFixture {
         processorInfo: CompactBlockProcessor.ProcessorInfo =
             CompactBlockProcessor.ProcessorInfo(
                 null,
-                null,
                 null
             ),
         walletBalances: Map<AccountUuid, AccountBalance> = WALLET_BALANCES,
