@@ -746,8 +746,9 @@ class SdkSynchronizer private constructor(
         }
 
     override suspend fun importAccountByUfvk(setup: AccountImportSetup): Account {
+        // TODO [#1772]: redirect to correct service mode after 2.1 release
         val chainTip: BlockHeight? =
-            when (val response = processor.downloader.getLatestBlockHeight(serviceMode = ServiceMode.UniqueTor)) {
+            when (val response = processor.downloader.getLatestBlockHeight(serviceMode = ServiceMode.Direct)) {
                 is Response.Success -> {
                     Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
                     runCatching { response.result.toBlockHeight() }.getOrNull()
@@ -974,25 +975,21 @@ class SdkSynchronizer private constructor(
     // TODO [#1405]: Fix/Remove broken SdkSynchronizer.validateConsensusBranch function
     // TODO [#1405]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1405
     override suspend fun validateConsensusBranch(): ConsensusMatchType {
+        // TODO [#1772]: redirect to correct service mode after 2.1 release
         val serverBranchId =
             tryNull {
                 processor.downloader
                     .getServerInfo(
-                        serviceMode =
-                            ServiceMode.Group(
-                                "SdkSynchronizer.validateConsensusBranch"
-                            )
+                        serviceMode = ServiceMode.Direct
                     )?.consensusBranchId
             }
 
+        // TODO [#1772]: redirect to correct service mode after 2.1 release
         val currentChainTip =
             when (
                 val response =
                     processor.downloader.getLatestBlockHeight(
-                        serviceMode =
-                            ServiceMode.Group(
-                                "SdkSynchronizer.validateConsensusBranch"
-                            )
+                        serviceMode = ServiceMode.Direct
                     )
             ) {
                 is Response.Success -> {
@@ -1033,14 +1030,10 @@ class SdkSynchronizer private constructor(
         walletClientFactory
             .create(endpoint = endpoint)
             .use { lightWalletClient ->
+                // TODO [#1772]: redirect to correct service mode after 2.1 release
                 val remoteInfo =
                     when (
-                        val response =
-                            lightWalletClient.getServerInfo(
-                                ServiceMode.Group(
-                                    "SdkSynchronizer.validateServerEndpoint(${endpoint.host}:${endpoint.port})"
-                                )
-                            )
+                        val response = lightWalletClient.getServerInfo(ServiceMode.Direct)
                     ) {
                         is Response.Success -> response.result
                         is Response.Failure -> {
@@ -1073,14 +1066,12 @@ class SdkSynchronizer private constructor(
                     return ServerValidation.InValid(it)
                 }
 
+                // TODO [#1772]: redirect to correct service mode after 2.1 release
                 val currentChainTip =
                     when (
                         val response =
                             lightWalletClient.getLatestBlockHeight(
-                                serviceMode =
-                                    ServiceMode.Group(
-                                        "SdkSynchronizer.validateServerEndpoint(${endpoint.host}:${endpoint.port})"
-                                    )
+                                serviceMode = ServiceMode.Direct
                             )
                     ) {
                         is Response.Success -> {
