@@ -118,16 +118,12 @@ internal class FastestServerFetcher(
         val remoteInfo: LightWalletEndpointInfoUnsafe?
         val getServerInfoDuration =
             measureTime {
+                // TODO [#1772]: redirect to correct service mode after 2.1 release
                 // 5 seconds timeout in case server is very unresponsive
                 remoteInfo =
                     withTimeoutOrNull(5.seconds) {
                         when (
-                            val response =
-                                lightWalletClient.getServerInfo(
-                                    ServiceMode.Group(
-                                        "validateServerEndpointAndMeasure(${endpoint.host}:${endpoint.port})"
-                                    )
-                                )
+                            val response = lightWalletClient.getServerInfo(ServiceMode.Direct)
                         ) {
                             is Response.Success -> response.result
                             is Response.Failure -> {
@@ -167,14 +163,12 @@ internal class FastestServerFetcher(
         val currentChainTip: BlockHeight
         val getLatestBlockHeightDuration =
             measureTime {
+                // TODO [#1772]: redirect to correct service mode after 2.1 release
                 currentChainTip =
                     when (
                         val response =
                             lightWalletClient.getLatestBlockHeight(
-                                serviceMode =
-                                    ServiceMode.Group(
-                                        "validateServerEndpointAndMeasure(${endpoint.host}:${endpoint.port})"
-                                    )
+                                serviceMode = ServiceMode.Direct
                             )
                     ) {
                         is Response.Success -> {

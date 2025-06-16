@@ -68,11 +68,12 @@ internal class OutboundTransactionManagerImpl(
     ): List<EncodedTransaction> = encoder.createProposedTransactions(proposal, usk)
 
     override suspend fun submit(encodedTransaction: EncodedTransaction): TransactionSubmitResult =
+        // TODO [#1772]: redirect to correct service mode after 2.1 release
         when (
             val response =
                 walletClient.submitTransaction(
                     tx = encodedTransaction.raw.byteArray,
-                    serviceMode = ServiceMode.Group("submit-${encodedTransaction.txId.byteArray.toHexReversed()}")
+                    serviceMode = ServiceMode.Direct
                 )
         ) {
             is Response.Success -> {

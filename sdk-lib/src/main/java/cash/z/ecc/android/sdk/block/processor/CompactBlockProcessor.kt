@@ -875,7 +875,8 @@ class CompactBlockProcessor internal constructor(
             // Reach out to the server to obtain the current server info
             val serverInfo =
                 runCatching {
-                    downloader.getServerInfo(ServiceMode.DefaultTor)
+                    // TODO [#1772]: redirect to correct service mode after 2.1 release
+                    downloader.getServerInfo(ServiceMode.Direct)
                 }.onFailure {
                     Twig.error { "Unable to obtain server info due to: ${it.message}" }
                 }.getOrElse {
@@ -1111,7 +1112,8 @@ class CompactBlockProcessor internal constructor(
             var latestBlockHeight: BlockHeight? = null
 
             retryUpToAndContinue(FETCH_LATEST_BLOCK_HEIGHT_RETRIES) {
-                when (val response = downloader.getLatestBlockHeight(ServiceMode.DefaultTor)) {
+                // TODO [#1772]: redirect to correct service mode after 2.1 release
+                when (val response = downloader.getLatestBlockHeight(ServiceMode.Direct)) {
                     is Response.Success -> {
                         Twig.debug { "Latest block height fetched successfully with value: ${response.result.value}" }
                         latestBlockHeight =
@@ -2091,12 +2093,13 @@ class CompactBlockProcessor internal constructor(
                     }
                 }
 
+                // TODO [#1772]: redirect to correct service mode after 2.1 release
                 transactionResult =
                     when (
                         val response =
                             downloader.fetchTransaction(
                                 transactionRequest.txid,
-                                ServiceMode.Group("fetch-${transactionRequest.txIdString()}")
+                                ServiceMode.Direct
                             )
                     ) {
                         is Response.Success -> response.result

@@ -791,7 +791,8 @@ interface Synchronizer {
             val chainTip =
                 when (walletInitMode) {
                     is RestoreWallet -> {
-                        when (val response = downloader.getLatestBlockHeight(ServiceMode.UniqueTor)) {
+                        // TODO [#1772]: redirect to correct service mode after 2.1 release
+                        when (val response = downloader.getLatestBlockHeight(ServiceMode.Direct)) {
                             is Response.Success -> {
                                 Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
                                 runCatching { response.result.toBlockHeight() }.getOrNull()
