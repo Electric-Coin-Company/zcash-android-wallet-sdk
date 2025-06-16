@@ -65,7 +65,9 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.RawTransaction
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
+import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import cash.z.ecc.android.sdk.model.Zatoshi
+import co.electriccoin.lightwallet.client.ServiceMode
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
@@ -875,7 +877,8 @@ class CompactBlockProcessor internal constructor(
             // Reach out to the server to obtain the current server info
             val serverInfo =
                 runCatching {
-                    downloader.getServerInfo()
+                    // TODO [#1772]: redirect to correct service mode after 2.1 release
+                    downloader.getServerInfo(ServiceMode.Direct)
                 }.onFailure {
                     Twig.error { "Unable to obtain server info due to: ${it.message}" }
                 }.getOrElse {
@@ -951,11 +954,11 @@ class CompactBlockProcessor internal constructor(
 
         retryUpToAndThrow(UTXO_FETCH_RETRIES) {
             val tAddresses = backend.listTransparentReceivers(account)
-
             downloader
                 .fetchUtxos(
                     tAddresses = tAddresses,
-                    startHeight = BlockHeightUnsafe.from(startHeight)
+                    startHeight = BlockHeightUnsafe.from(startHeight),
+                    serviceMode = ServiceMode.Direct
                 ).onEach { response ->
                     when (response) {
                         is Response.Success -> {
@@ -1111,7 +1114,8 @@ class CompactBlockProcessor internal constructor(
             var latestBlockHeight: BlockHeight? = null
 
             retryUpToAndContinue(FETCH_LATEST_BLOCK_HEIGHT_RETRIES) {
-                when (val response = downloader.getLatestBlockHeight()) {
+                // TODO [#1772]: redirect to correct service mode after 2.1 release
+                when (val response = downloader.getLatestBlockHeight(ServiceMode.Direct)) {
                     is Response.Success -> {
                         Twig.debug { "Latest block height fetched successfully with value: ${response.result.value}" }
                         latestBlockHeight =
@@ -1160,8 +1164,9 @@ class CompactBlockProcessor internal constructor(
                 downloader
                     .getSubtreeRoots(
                         saplingStartIndex,
+                        shieldedProtocol = ShieldedProtocolEnum.SAPLING,
                         maxEntries = UInt.MIN_VALUE,
-                        shieldedProtocol = ShieldedProtocolEnum.SAPLING
+                        serviceMode = ServiceMode.Direct
                     ).onEach { response ->
                         when (response) {
                             is Response.Success -> {
@@ -1207,9 +1212,10 @@ class CompactBlockProcessor internal constructor(
             retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
                 downloader
                     .getSubtreeRoots(
-                        orchardStartIndex,
+                        startIndex = orchardStartIndex,
+                        shieldedProtocol = ShieldedProtocolEnum.ORCHARD,
                         maxEntries = UInt.MIN_VALUE,
-                        shieldedProtocol = ShieldedProtocolEnum.ORCHARD
+                        serviceMode = ServiceMode.Direct
                     ).onEach { response ->
                         when (response) {
                             is Response.Success -> {
@@ -1703,7 +1709,11 @@ class CompactBlockProcessor internal constructor(
                 } else {
                     Twig.warn { "Retrying to download batch $batch after $failedAttempts failure(s)..." }
                 }
-                downloadedBlocks = downloader.downloadBlockRange(batch.range)
+                downloadedBlocks =
+                    downloader.downloadBlockRange(
+                        heightRange = batch.range,
+                        serviceMode = ServiceMode.Direct
+                    )
             }
             traceScope.end()
             Twig.verbose { "Successfully downloaded batch: $batch of $downloadedBlocks blocks" }
@@ -1731,7 +1741,14 @@ class CompactBlockProcessor internal constructor(
                         "Retrying to fetch tree state for height ${height.value} after $failedAttempts failure(s)..."
                     }
                 }
-                when (val response = downloader.getTreeState(BlockHeightUnsafe(height.value))) {
+                // Directly correlated with `downloadBatchOfBlocks()` ranges.
+                when (
+                    val response =
+                        downloader.getTreeState(
+                            height = BlockHeightUnsafe(height.value),
+                            serviceMode = ServiceMode.Direct
+                        )
+                ) {
                     is Response.Success -> {
                         return TreeState.new(response.result)
                     }
@@ -1994,7 +2011,8 @@ class CompactBlockProcessor internal constructor(
                 resultFlow =
                     downloader.getTAddressTransactions(
                         transparentAddress = transactionRequest.address,
-                        blockHeightRange = requestedRange
+                        blockHeightRange = requestedRange,
+                        serviceMode = ServiceMode.Direct
                     )
             }
             traceScope.end()
@@ -2097,8 +2115,15 @@ class CompactBlockProcessor internal constructor(
                     }
                 }
 
+                // TODO [#1772]: redirect to correct service mode after 2.1 release
                 transactionResult =
-                    when (val response = downloader.fetchTransaction(transactionRequest.txid)) {
+                    when (
+                        val response =
+                            downloader.fetchTransaction(
+                                transactionRequest.txid,
+                                ServiceMode.Direct
+                            )
+                    ) {
                         is Response.Success -> response.result
                         is Response.Failure ->
                             when {
@@ -2213,6 +2238,17 @@ class CompactBlockProcessor internal constructor(
             backend: TypesafeBackend,
             account: Account
         ) = backend.getCurrentAddress(account)
+
+        /**
+         * Get the current unified address for the given wallet account.
+         *
+         * @return the current unified address of this account.
+         */
+        internal suspend fun getNextAvailableAddress(
+            backend: TypesafeBackend,
+            account: Account,
+            request: UnifiedAddressRequest
+        ) = backend.getNextAvailableAddress(account, request)
 
         /**
          * Get the legacy Sapling address corresponding to the current unified address for the given wallet account.

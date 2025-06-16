@@ -9,7 +9,6 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
-import co.electriccoin.lightwallet.client.new
 import org.junit.Ignore
 import org.junit.Test
 

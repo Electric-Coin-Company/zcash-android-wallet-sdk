@@ -14,7 +14,7 @@ data class SendResponseUnsafe(
     val message: String
 ) {
     companion object {
-        internal fun new(sendResponse: Service.SendResponse) =
+        fun new(sendResponse: Service.SendResponse) =
             SendResponseUnsafe(
                 code = sendResponse.errorCode,
                 message = sendResponse.errorMessage

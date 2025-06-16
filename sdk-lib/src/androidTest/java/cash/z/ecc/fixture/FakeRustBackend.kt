@@ -206,6 +206,13 @@ internal class FakeRustBackend(
         error("Intentionally not implemented yet.")
     }
 
+    override suspend fun getNextAvailableAddress(
+        accountUuid: ByteArray,
+        receiverFlags: Int
+    ): String {
+        error("Intentionally not implemented yet.")
+    }
+
     override fun getTransparentReceiver(ua: String): String? {
         error("Intentionally not implemented yet.")
     }

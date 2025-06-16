@@ -7,6 +7,7 @@ use std::ptr;
 use std::time::UNIX_EPOCH;
 
 use anyhow::anyhow;
+use bitflags::bitflags;
 use jni::objects::{JByteArray, JObject, JObjectArray, JValue};
 use jni::{
     objects::{JClass, JString},
@@ -35,9 +36,6 @@ use zcash_client_backend::data_api::{
     AccountPurpose, BirthdayError, OutputStatusFilter, TransactionDataRequest, TransactionStatus,
     TransactionStatusFilter, Zip32Derivation,
 };
-use zcash_client_backend::fees::zip317::MultiOutputChangeStrategy;
-use zcash_client_backend::fees::{SplitPolicy, StandardFeeRule};
-use zcash_client_backend::keys::UnifiedAddressRequest;
 use zcash_client_backend::{
     address::{Address, UnifiedAddress},
     data_api::{
@@ -52,10 +50,13 @@ use zcash_client_backend::{
         WalletCommitmentTrees, WalletRead, WalletSummary, WalletWrite,
     },
     encoding::AddressCodec,
-    fees::DustOutputPolicy,
-    keys::{DecodingError, Era, UnifiedFullViewingKey, UnifiedSpendingKey},
+    fees::{zip317::MultiOutputChangeStrategy, DustOutputPolicy, SplitPolicy, StandardFeeRule},
+    keys::{
+        DecodingError, Era, ReceiverRequirement, UnifiedAddressRequest, UnifiedFullViewingKey,
+        UnifiedSpendingKey,
+    },
     proto::{proposal::Proposal, service::TreeState},
-    tor::http::cryptex,
+    tor::{http::cryptex, DormantMode},
     wallet::{NoteId, OvkPolicy, WalletTransparentOutput},
     zip321::{Payment, TransactionRequest},
 };
@@ -381,6 +382,19 @@ fn encode_usk<'a>(
     )
 }
 
+fn encode_transaction<'a>(
+    env: &mut JNIEnv<'a>,
+    height: u64,
+    txid_bytes: Vec<u8>,
+) -> jni::errors::Result<JObject<'a>> {
+    let java_byte_array = env.byte_array_from_slice(&txid_bytes)?;
+    env.new_object(
+        "cash/z/ecc/android/sdk/internal/model/JniTransaction",
+        "(J[B)V",
+        &[JValue::Long(height as jlong), (&java_byte_array).into()],
+    )
+}
+
 fn decode_usk(env: &JNIEnv, usk: JByteArray) -> anyhow::Result<UnifiedSpendingKey> {
     let usk_bytes = secret_from_jni(env, usk)?;
 
@@ -619,6 +633,98 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getCurren
                 Ok(output.into_raw())
             }
             Ok(None) => Err(anyhow!("{:?} is not known to the wallet", account_uuid)),
+            Err(e) => Err(anyhow!("Error while fetching address: {}", e)),
+        }
+    });
+
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+bitflags! {
+    /// A set of bitflags used to specify the types of receivers a unified address can contain.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    struct ReceiverFlags: u32 {
+        /// The requested address can receive transparent p2pkh outputs.
+        const P2PKH = 0b00000001;
+        /// The requested address can receive Sapling outputs.
+        const SAPLING = 0b00000100;
+        /// The requested address can receive Orchard outputs.
+        const ORCHARD = 0b00001000;
+    }
+}
+
+impl ReceiverFlags {
+    fn to_address_request(&self) -> Result<UnifiedAddressRequest, ()> {
+        UnifiedAddressRequest::custom(
+            if self.contains(ReceiverFlags::ORCHARD) {
+                ReceiverRequirement::Require
+            } else {
+                ReceiverRequirement::Omit
+            },
+            if self.contains(ReceiverFlags::SAPLING) {
+                ReceiverRequirement::Require
+            } else {
+                ReceiverRequirement::Omit
+            },
+            if self.contains(ReceiverFlags::P2PKH) {
+                ReceiverRequirement::Require
+            } else {
+                ReceiverRequirement::Omit
+            },
+        )
+    }
+}
+
+/// Returns a newly-generated unified payment address for the specified account, with the next
+/// available diversifier and the specified set of receivers.
+///
+/// The set of receivers to include in the generated address is specified by a byte which may have
+/// any of the following bits set:
+/// * P2PKH = 0b00000001
+/// * SAPLING = 0b00000100
+/// * ORCHARD = 0b00001000
+///
+/// Note that at present, p2pkh-only unified addresses are not supported.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getNextAvailableAddress<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    account_uuid: JByteArray<'local>,
+    receiver_flags: jint,
+    network_id: jint,
+) -> jstring {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.getNextAvailableAddress").entered();
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+        let account_uuid = account_id_from_jni(&env, account_uuid)?;
+
+        let receiver_flags = <u32>::try_from(receiver_flags)
+            .ok()
+            .and_then(ReceiverFlags::from_bits)
+            .ok_or_else(|| anyhow!("Invalid unified address receiver flags {}", receiver_flags))?;
+        let address_request = receiver_flags.to_address_request().map_err(|_| {
+            anyhow!(
+                "Could not generate a valid unified address for flags {}",
+                receiver_flags.bits()
+            )
+        })?;
+
+        match db_data.get_next_available_address(account_uuid, address_request) {
+            Ok(Some((ua, _))) => {
+                let addr_str = ua.encode(&network);
+                let output = env
+                    .new_string(addr_str)
+                    .expect("Couldn't create Java string!");
+                Ok(output.into_raw())
+            }
+            Ok(None) => Err(anyhow!(
+                "No payment address was available for account {:?}",
+                account_uuid
+            )),
             Err(e) => Err(anyhow!("Error while fetching address: {}", e)),
         }
     });
@@ -1413,7 +1519,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getWallet
         match db_data
             .get_wallet_summary(ANCHOR_OFFSET_U32)
             .map_err(|e| anyhow!("Error while fetching scan progress: {}", e))?
-            .filter(|summary| summary.progress().scan().denominator() > &0)
         {
             Some(summary) => Ok(encode_wallet_summary(env, summary)?.into_raw()),
             None => Ok(ptr::null_mut()),
@@ -2714,6 +2819,37 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_isolatedC
     unwrap_exc_or(&mut env, res, -1)
 }
 
+/// Changes the client's current dormant mode, putting background tasks to sleep or waking
+/// them up as appropriate.
+///
+/// This can be used to conserve CPU usage if you aren’t planning on using the client for
+/// a while, especially on mobile platforms.
+///
+/// The `mode` argument specifies what level of sleep to put a Tor client into:
+/// - 0: Normal - The client functions as normal, and background tasks run periodically.
+/// - 1: Soft - Background tasks are suspended, conserving CPU usage. Attempts to use the
+///   client will wake it back up again.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_setDormant<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    tor_runtime: jlong,
+    mode: jint,
+) {
+    let res = panic::catch_unwind(|| {
+        let tor_runtime =
+            ptr::with_exposed_provenance_mut::<crate::tor::TorRuntime>(tor_runtime as usize);
+        let tor_runtime =
+            unsafe { tor_runtime.as_mut() }.ok_or_else(|| anyhow!("A Tor runtime is required"))?;
+        let mode = parse_tor_dormant_mode(mode as u32)?;
+
+        tor_runtime.set_dormant(mode);
+
+        Ok(())
+    });
+    unwrap_exc_or(&mut env, res, ())
+}
+
 /// Fetches the current ZEC-USD exchange rate over Tor.
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_getExchangeRateUsd<
@@ -2788,7 +2924,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorClient_connectTo
 
 /// Frees a lightwalletd connection.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_freeLightwalletdConnection<
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_freeLightwalletdConnection<
     'local,
 >(
     _: JNIEnv<'local>,
@@ -2804,7 +2940,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_freeLigh
 
 /// Returns information about this lightwalletd instance and the blockchain.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_getServerInfo<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getServerInfo<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,
@@ -2823,7 +2961,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_getServe
 
 /// Returns information about this lightwalletd instance and the blockchain.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_getLatestBlock<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getLatestBlock<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,
@@ -2842,12 +2982,14 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_getLates
 
 /// Fetches the transaction with the given ID.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_fetchTransaction<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_fetchTransaction<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,
     txid_bytes: JByteArray<'local>,
-) -> jbyteArray {
+) -> jobject {
     let res = catch_unwind(&mut env, |env| {
         let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
         let lwd_conn = unsafe { lwd_conn.as_mut() }
@@ -2857,16 +2999,16 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_fetchTra
         // we may as well confirm we were actually passed something shaped correctly.
         let txid = parse_txid(env, txid_bytes)?;
 
-        let (tx, _height) = lwd_conn.get_transaction(txid)?;
+        let (tx, height) = lwd_conn.get_transaction(txid)?;
 
-        Ok(utils::rust_bytes_to_java(env, &tx)?.into_raw())
+        Ok(encode_transaction(env, height, tx)?.into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
 /// Submits a transaction to the Zcash network via the given lightwalletd connection.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_submitTransaction<
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_submitTransaction<
     'local,
 >(
     mut env: JNIEnv<'local>,
@@ -2888,7 +3030,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_submitTr
 
 /// Fetches the note commitment tree state corresponding to the given block height.
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorLwdConn_getTreeState<'local>(
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_getTreeState<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     lwd_conn: jlong,
@@ -2977,15 +3121,17 @@ fn parse_ufvk(
         .map_err(|e| anyhow!("Value \"{ufvk_string}\" did not decode as a valid UFVK: {e}"))
 }
 
-struct UnifiedAddressParser(UnifiedAddress);
+struct UnifiedAddressParser((NetworkType, UnifiedAddress));
 
-impl zcash_address::TryFromRawAddress for UnifiedAddressParser {
+impl zcash_address::TryFromAddress for UnifiedAddressParser {
     type Error = anyhow::Error;
 
-    fn try_from_raw_unified(
+    fn try_from_unified(
+        net: NetworkType,
         data: zcash_address::unified::Address,
     ) -> Result<Self, zcash_address::ConversionError<Self::Error>> {
         data.try_into()
+            .map(|ua| (net, ua))
             .map(UnifiedAddressParser)
             .map_err(|e| anyhow!("Invalid Unified Address: {}", e).into())
     }
@@ -2995,9 +3141,19 @@ fn parse_ua(env: &mut JNIEnv, ua: JString) -> anyhow::Result<(NetworkType, Unifi
     let ua_str = utils::java_string_to_rust(env, &ua)?;
     match ZcashAddress::try_from_encoded(&ua_str) {
         Ok(addr) => addr
-            .convert::<(_, UnifiedAddressParser)>()
+            .convert::<UnifiedAddressParser>()
             .map_err(|e| anyhow!("Not a Unified Address: {}", e))
-            .map(|(network, ua)| (network, ua.0)),
+            .map(|ua| ua.0),
         Err(e) => return Err(anyhow!("Invalid Zcash address: {}", e)),
+    }
+}
+
+fn parse_tor_dormant_mode(value: u32) -> anyhow::Result<DormantMode> {
+    match value {
+        0 => Ok(DormantMode::Normal),
+        1 => Ok(DormantMode::Soft),
+        _ => Err(anyhow!(
+            "Invalid Tor dormant mode: {value}. Expected either 0 for Normal or 1 for Soft."
+        )),
     }
 }

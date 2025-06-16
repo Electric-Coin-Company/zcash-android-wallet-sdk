@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.getSystemService
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -25,9 +26,9 @@ import cash.z.ecc.android.sdk.demoapp.util.fromResources
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
-import co.electriccoin.lightwallet.client.new
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
+import kotlinx.coroutines.launch
 
 @Suppress("TooManyFunctions")
 class MainActivity :
@@ -87,8 +88,10 @@ class MainActivity :
     }
 
     override fun onDestroy() {
+        lifecycleScope.launch {
+            lightwalletClient?.dispose()
+        }
         super.onDestroy()
-        lightwalletClient?.shutdown()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -130,15 +133,17 @@ class MainActivity :
     //
 
     private fun initService() {
-        if (lightwalletClient != null) {
-            lightwalletClient?.shutdown()
+        lifecycleScope.launch {
+            if (lightwalletClient != null) {
+                lightwalletClient?.dispose()
+            }
+            val network = ZcashNetwork.fromResources(applicationContext)
+            lightwalletClient =
+                LightWalletClient.new(
+                    applicationContext,
+                    LightWalletEndpoint.defaultForNetwork(network)
+                )
         }
-        val network = ZcashNetwork.fromResources(applicationContext)
-        lightwalletClient =
-            LightWalletClient.new(
-                applicationContext,
-                LightWalletEndpoint.defaultForNetwork(network)
-            )
     }
 
     private fun onFabClicked() {

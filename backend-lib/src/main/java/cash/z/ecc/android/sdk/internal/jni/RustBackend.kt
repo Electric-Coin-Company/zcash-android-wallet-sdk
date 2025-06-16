@@ -159,6 +159,18 @@ class RustBackend private constructor(
             )
         }
 
+    override suspend fun getNextAvailableAddress(
+        accountUuid: ByteArray,
+        receiverFlags: Int
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
+        getNextAvailableAddress(
+            dataDbFile.absolutePath,
+            accountUuid,
+            receiverFlags,
+            networkId = networkId
+        )
+    }
+
     override fun getTransparentReceiver(ua: String) = getTransparentReceiverForUnifiedAddress(ua)
 
     override fun getSaplingReceiver(ua: String) = getSaplingReceiverForUnifiedAddress(ua)
@@ -614,6 +626,14 @@ class RustBackend private constructor(
         private external fun getCurrentAddress(
             dbDataPath: String,
             accountUuid: ByteArray,
+            networkId: Int
+        ): String
+
+        @JvmStatic
+        private external fun getNextAvailableAddress(
+            dbDataPath: String,
+            accountUuid: ByteArray,
+            receiverFlags: Int,
             networkId: Int
         ): String
 
