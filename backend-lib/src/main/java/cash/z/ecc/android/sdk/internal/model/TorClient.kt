@@ -170,9 +170,10 @@ class TorClient private constructor(
 
 /**
  * What level of sleep to put a Tor client into.
+ *
+ * The order of the enum constants MUST match the order in `parse_tor_dormant_mode()` in
+ * `backend-lib/src/main/rust/lib.rs`.
  */
-// The order of the enum constants MUST match the order in `parse_tor_dormant_mode()` in
-// `backend-lib/src/main/rust/lib.rs`.
 enum class TorDormantMode {
     /**
      * The client functions as normal, and background tasks run periodically.

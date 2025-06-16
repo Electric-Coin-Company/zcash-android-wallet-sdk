@@ -4,6 +4,7 @@ use std::num::{NonZeroU32, NonZeroUsize};
 use std::panic;
 use std::path::PathBuf;
 use std::ptr;
+use std::time::UNIX_EPOCH;
 
 use anyhow::anyhow;
 use bitflags::bitflags;
@@ -33,7 +34,7 @@ use zcash_address::unified::{Container, Encoding, Item as _};
 use zcash_address::{unified, ToAddress, ZcashAddress};
 use zcash_client_backend::data_api::{
     AccountPurpose, BirthdayError, OutputStatusFilter, TransactionDataRequest, TransactionStatus,
-    Zip32Derivation,
+    TransactionStatusFilter, Zip32Derivation,
 };
 use zcash_client_backend::{
     address::{Address, UnifiedAddress},
@@ -1633,6 +1634,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_scanBlock
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
+const TRANSACTION_STATUS_FILTER: &str =
+    "cash/z/ecc/android/sdk/internal/model/JniTransactionStatusFilter";
+const OUTPUT_STATUS_FILTER: &str = "cash/z/ecc/android/sdk/internal/model/JniOutputStatusFilter";
+
 fn encode_transaction_data_request<'a>(
     env: &mut JNIEnv<'a>,
     net: NetworkType,
@@ -1653,8 +1658,9 @@ fn encode_transaction_data_request<'a>(
             address,
             block_range_start,
             block_range_end,
-            output_status_filter: OutputStatusFilter::All,
-            ..
+            request_at,
+            tx_status_filter,
+            output_status_filter,
         } => {
             let taddr = match address {
                 TransparentAddress::PublicKeyHash(data) => {
@@ -1665,23 +1671,63 @@ fn encode_transaction_data_request<'a>(
                 }
             };
 
+            let request_at = request_at.map_or(-1, |t| {
+                t.duration_since(UNIX_EPOCH)
+                    .expect("SystemTime should never be before the epoch")
+                    .as_secs()
+                    .try_into()
+                    .expect("we have time before a SystemTime overflows i64")
+            });
+
+            let tx_status_filter = env.new_object(
+                format!(
+                    "{TRANSACTION_STATUS_FILTER}${}",
+                    match tx_status_filter {
+                        TransactionStatusFilter::Mined => {
+                            "Mined"
+                        }
+                        TransactionStatusFilter::Mempool => {
+                            "Mempool"
+                        }
+                        TransactionStatusFilter::All => {
+                            "All"
+                        }
+                    }
+                ),
+                "()V",
+                &[],
+            )?;
+
+            let output_status_filter = env.new_object(
+                format!(
+                    "{OUTPUT_STATUS_FILTER}${}",
+                    match output_status_filter {
+                        OutputStatusFilter::Unspent => {
+                            "Unspent"
+                        }
+                        OutputStatusFilter::All => {
+                            "All"
+                        }
+                    }
+                ),
+                "()V",
+                &[],
+            )?;
+
             env.new_object(
-                "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest$SpendsFromAddress",
-                "(Ljava/lang/String;JJ)V",
+                "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest$TransactionsInvolvingAddress",
+                format!(
+                    "(Ljava/lang/String;JJJL{TRANSACTION_STATUS_FILTER};L{OUTPUT_STATUS_FILTER};)V"
+                ),
                 &[
                     (&env.new_string(taddr.encode())?).into(),
                     JValue::Long(i64::from(u32::from(block_range_start))),
                     JValue::Long(block_range_end.map(u32::from).map(i64::from).unwrap_or(-1)),
+                    JValue::Long(request_at),
+                    JValue::Object(&tx_status_filter),
+                    JValue::Object(&output_status_filter),
                 ],
             )
-        }
-        TransactionDataRequest::TransactionsInvolvingAddress {
-            output_status_filter: OutputStatusFilter::Unspent,
-            ..
-        } => {
-            // UTXO retreieval via the transaction data request queue is not yet
-            // supported; support will be added in a future release.
-            panic!("Should have been previously filtered out.")
         }
     }
 }
@@ -1702,20 +1748,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_transacti
 
         let ranges = db_data
             .transaction_data_requests()
-            .map_err(|e| anyhow!("Error while fetching transaction data requests: {}", e))?
-            .into_iter()
-            .filter(|req| match req {
-                TransactionDataRequest::TransactionsInvolvingAddress {
-                    output_status_filter: OutputStatusFilter::Unspent,
-                    ..
-                } => {
-                    // UTXO retreieval via the transaction data request queue is not yet
-                    // supported; support will be added in a future release.
-                    false
-                }
-                _ => true,
-            })
-            .collect();
+            .map_err(|e| anyhow!("Error while fetching transaction data requests: {}", e))?;
 
         let net = network.network_type();
 

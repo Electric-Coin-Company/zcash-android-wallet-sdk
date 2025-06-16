@@ -41,6 +41,7 @@ import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.metrics.TraceScope
 import cash.z.ecc.android.sdk.internal.model.BlockBatch
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.OutputStatusFilter
 import cash.z.ecc.android.sdk.internal.model.RecoveryProgress
 import cash.z.ecc.android.sdk.internal.model.RewindResult
 import cash.z.ecc.android.sdk.internal.model.ScanProgress
@@ -49,6 +50,7 @@ import cash.z.ecc.android.sdk.internal.model.SubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.SuggestScanRangePriority
 import cash.z.ecc.android.sdk.internal.model.TransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.TransactionStatus
+import cash.z.ecc.android.sdk.internal.model.TransactionStatusFilter
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.WalletSummary
 import cash.z.ecc.android.sdk.internal.model.ext.from
@@ -65,6 +67,7 @@ import cash.z.ecc.android.sdk.model.RawTransaction
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import cash.z.ecc.android.sdk.model.Zatoshi
+import co.electriccoin.lightwallet.client.ServiceMode
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.GetAddressUtxosReplyUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
@@ -299,6 +302,7 @@ class CompactBlockProcessor internal constructor(
                                     PutSaplingSubtreeRootsResult.Success -> {
                                         // Let's continue with the next step
                                     }
+
                                     is PutSaplingSubtreeRootsResult.Failure -> {
                                         BlockProcessingResult.SyncFailure(result.failedAtHeight, result.exception)
                                     }
@@ -312,6 +316,7 @@ class CompactBlockProcessor internal constructor(
                                     firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
                                 )
                             }
+
                             is GetSubtreeRootsResult.OtherFailure, GetSubtreeRootsResult.Linear -> {
                                 // This is caused by an empty response result or another unsupported error.
                                 // Although the spend-before-sync synchronization algorithm is not supported, we can get
@@ -324,6 +329,7 @@ class CompactBlockProcessor internal constructor(
                                     firstUnenhancedHeight = _processorInfo.value.firstUnenhancedHeight
                                 )
                             }
+
                             GetSubtreeRootsResult.FailureConnection -> {
                                 // SubtreeRoot fetching retry
                                 subTreeRootResult =
@@ -343,6 +349,7 @@ class CompactBlockProcessor internal constructor(
                             true
                         )
                     }
+
                     BlockProcessingResult.RestartSynchronization -> {
                         Twig.info { "Planned restarting of block synchronization..." }
 
@@ -350,6 +357,7 @@ class CompactBlockProcessor internal constructor(
 
                         // No nap time set to immediately continue with refreshed block synchronization
                     }
+
                     BlockProcessingResult.NoBlocksToProcess -> {
                         setState(State.Synced(_processorInfo.value.overallSyncRange))
                         val noWorkDone = _processorInfo.value.overallSyncRange?.isEmpty() ?: true
@@ -363,6 +371,7 @@ class CompactBlockProcessor internal constructor(
                         resetErrorCounters()
                         takeANap(summary, false)
                     }
+
                     is BlockProcessingResult.ContinuityError -> {
                         Twig.error {
                             "Failed while processing blocks at height: ${result.failedAtHeight} with continuity " +
@@ -371,6 +380,7 @@ class CompactBlockProcessor internal constructor(
                         handleChainError(result.failedAtHeight)
                         // No nap time set to immediately continue with the following block synchronization attempt
                     }
+
                     is BlockProcessingResult.SyncFailure -> {
                         Twig.error {
                             "Failed while processing blocks at height: ${result.failedAtHeight} with: " +
@@ -381,6 +391,7 @@ class CompactBlockProcessor internal constructor(
                             takeANap("", true)
                         }
                     }
+
                     is BlockProcessingResult.Success -> {
                         resetErrorCounters()
                     }
@@ -476,12 +487,15 @@ class CompactBlockProcessor internal constructor(
             is SbSPreparationResult.ProcessFailure -> {
                 return preparationResult.toBlockProcessingResult()
             }
+
             SbSPreparationResult.ConnectionFailure -> {
                 return BlockProcessingResult.Reconnecting
             }
+
             SbSPreparationResult.NoMoreBlocksToProcess -> {
                 return BlockProcessingResult.NoBlocksToProcess
             }
+
             is SbSPreparationResult.Success -> {
                 Twig.info { "Preparation phase done with result: $preparationResult" }
                 // Continue processing ranges
@@ -514,15 +528,19 @@ class CompactBlockProcessor internal constructor(
                     SyncingResult.UpdateBirthday -> {
                         updateBirthdayHeight()
                     }
+
                     SyncingResult.EnhanceSuccess -> {
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data
                         checkTransactions(transactionStorage = repository)
                     }
+
                     is SyncingResult.Failure -> {
                         syncingResult = batchSyncProgress.resultState
                         return@collect
-                    } else -> {
+                    }
+
+                    else -> {
                         // Continue with processing
                     }
                 }
@@ -532,6 +550,7 @@ class CompactBlockProcessor internal constructor(
                 is SyncingResult.AllSuccess -> {
                     // Continue with processing the rest of the ranges
                 }
+
                 is SyncingResult.ContinuityError -> {
                     val failedHeight = (syncingResult as SyncingResult.ContinuityError).failedAtHeight
                     Twig.warn {
@@ -546,10 +565,12 @@ class CompactBlockProcessor internal constructor(
                     )
                     return (syncingResult as SyncingResult.ContinuityError).toBlockProcessingResult()
                 }
+
                 is SyncingResult.Failure -> {
                     // Other failure types
                     return (syncingResult as SyncingResult.Failure).toBlockProcessingResult()
                 }
+
                 else -> {
                     // The rest types of result are not expected here
                     Twig.info { "Unexpected syncing result: $syncingResult" }
@@ -562,6 +583,7 @@ class CompactBlockProcessor internal constructor(
                 is SuggestScanRangesResult.Success -> {
                     verifyRangeResult = shouldVerifySuggestedScanRanges(suggestedRangesResult)
                 }
+
                 is SuggestScanRangesResult.Failure -> {
                     Twig.error {
                         "Process suggested scan ranges failure: " +
@@ -581,6 +603,7 @@ class CompactBlockProcessor internal constructor(
                 is SuggestScanRangesResult.Success -> {
                     suggestedRangesResult.ranges
                 }
+
                 is SuggestScanRangesResult.Failure -> {
                     Twig.error { "Process suggested scan ranges failure: ${suggestedRangesResult.exception}" }
                     return BlockProcessingResult.SyncFailure(
@@ -613,15 +636,19 @@ class CompactBlockProcessor internal constructor(
                         updateBirthdayHeight()
                         SyncingResult.AllSuccess
                     }
+
                     SyncingResult.EnhanceSuccess -> {
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data and return the common batch syncing success result to the caller
                         checkTransactions(transactionStorage = repository)
                         SyncingResult.AllSuccess
                     }
+
                     is SyncingResult.Failure -> {
                         batchSyncProgress.resultState
-                    } else -> {
+                    }
+
+                    else -> {
                         // First, check the time and refresh the prepare phase inputs, if needed
                         val currentTimeMillis = System.currentTimeMillis()
                         if (shouldRefreshPreparation(
@@ -646,10 +673,12 @@ class CompactBlockProcessor internal constructor(
                 is SyncingResult.AllSuccess -> {
                     // Continue with processing the rest of the ranges
                 }
+
                 is SyncingResult.RestartSynchronization -> {
                     // Restarting the synchronization process
                     return BlockProcessingResult.RestartSynchronization
                 }
+
                 is SyncingResult.ContinuityError -> {
                     val failedHeight = (syncingResult as SyncingResult.ContinuityError).failedAtHeight
                     Twig.warn {
@@ -664,10 +693,12 @@ class CompactBlockProcessor internal constructor(
                     )
                     return (syncingResult as SyncingResult.ContinuityError).toBlockProcessingResult()
                 }
+
                 is SyncingResult.Failure -> {
                     // Other failure types
                     return (syncingResult as SyncingResult.Failure).toBlockProcessingResult()
                 }
+
                 else -> {
                     // The rest types of result are not expected here
                     Twig.info { "Unexpected syncing result: $syncingResult" }
@@ -700,7 +731,9 @@ class CompactBlockProcessor internal constructor(
                     lastValidHeight = lastValidHeight
                 )
         ) {
-            is UpdateChainTipResult.Success -> { /* Let's continue to the next step */ }
+            is UpdateChainTipResult.Success -> { // Let's continue to the next step
+            }
+
             is UpdateChainTipResult.Failure -> {
                 return SbSPreparationResult.ProcessFailure(
                     result.failedAtHeight,
@@ -723,6 +756,7 @@ class CompactBlockProcessor internal constructor(
                 is SuggestScanRangesResult.Success -> {
                     updateRange(suggestedRangesResult.ranges)
                 }
+
                 is SuggestScanRangesResult.Failure -> {
                     Twig.error { "Process suggested scan ranges failure: ${suggestedRangesResult.exception}" }
                     return SbSPreparationResult.ProcessFailure(
@@ -791,6 +825,7 @@ class CompactBlockProcessor internal constructor(
                     result.walletSummary.nextOrchardSubtreeIndex
                 )
             }
+
             else -> {
                 // Do not report the progress and balances in case of any error, and
                 // tell the caller to fetch all subtree roots.
@@ -874,7 +909,8 @@ class CompactBlockProcessor internal constructor(
             // Reach out to the server to obtain the current server info
             val serverInfo =
                 runCatching {
-                    downloader.getServerInfo()
+                    // TODO [#1772]: redirect to correct service mode after 2.1 release
+                    downloader.getServerInfo(ServiceMode.Direct)
                 }.onFailure {
                     Twig.error { "Unable to obtain server info due to: ${it.message}" }
                 }.getOrElse {
@@ -950,11 +986,11 @@ class CompactBlockProcessor internal constructor(
 
         retryUpToAndThrow(UTXO_FETCH_RETRIES) {
             val tAddresses = backend.listTransparentReceivers(account)
-
             downloader
                 .fetchUtxos(
                     tAddresses = tAddresses,
-                    startHeight = BlockHeightUnsafe.from(startHeight)
+                    startHeight = BlockHeightUnsafe.from(startHeight),
+                    serviceMode = ServiceMode.Direct
                 ).onEach { response ->
                     when (response) {
                         is Response.Success -> {
@@ -962,6 +998,7 @@ class CompactBlockProcessor internal constructor(
                             processUtxoResult(response.result)
                             count++
                         }
+
                         is Response.Failure -> {
                             Twig.error {
                                 "Downloading UTXO from height: $startHeight failed with: ${response.description}."
@@ -1110,7 +1147,8 @@ class CompactBlockProcessor internal constructor(
             var latestBlockHeight: BlockHeight? = null
 
             retryUpToAndContinue(FETCH_LATEST_BLOCK_HEIGHT_RETRIES) {
-                when (val response = downloader.getLatestBlockHeight()) {
+                // TODO [#1772]: redirect to correct service mode after 2.1 release
+                when (val response = downloader.getLatestBlockHeight(ServiceMode.Direct)) {
                     is Response.Success -> {
                         Twig.debug { "Latest block height fetched successfully with value: ${response.result.value}" }
                         latestBlockHeight =
@@ -1118,6 +1156,7 @@ class CompactBlockProcessor internal constructor(
                                 response.result.toBlockHeight()
                             }.getOrNull()
                     }
+
                     is Response.Failure -> {
                         Twig.error { "Fetching latest block height failed with: ${response.toThrowable()}" }
                         traceScope.end()
@@ -1159,16 +1198,20 @@ class CompactBlockProcessor internal constructor(
                 downloader
                     .getSubtreeRoots(
                         saplingStartIndex,
+                        shieldedProtocol = ShieldedProtocolEnum.SAPLING,
                         maxEntries = UInt.MIN_VALUE,
-                        shieldedProtocol = ShieldedProtocolEnum.SAPLING
+                        serviceMode = ServiceMode.Direct
                     ).onEach { response ->
                         when (response) {
                             is Response.Success -> {
                                 Twig.verbose {
-                                    "Sapling SubtreeRoot fetched successfully: its completingHeight is: ${response.result
-                                        .completingBlockHeight}"
+                                    "Sapling SubtreeRoot fetched successfully: its completingHeight is: ${
+                                        response.result
+                                            .completingBlockHeight
+                                    }"
                                 }
                             }
+
                             is Response.Failure -> {
                                 val error =
                                     LightWalletException.GetSubtreeRootsException(
@@ -1206,17 +1249,21 @@ class CompactBlockProcessor internal constructor(
             retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
                 downloader
                     .getSubtreeRoots(
-                        orchardStartIndex,
+                        startIndex = orchardStartIndex,
+                        shieldedProtocol = ShieldedProtocolEnum.ORCHARD,
                         maxEntries = UInt.MIN_VALUE,
-                        shieldedProtocol = ShieldedProtocolEnum.ORCHARD
+                        serviceMode = ServiceMode.Direct
                     ).onEach { response ->
                         when (response) {
                             is Response.Success -> {
                                 Twig.verbose {
-                                    "Orchard SubtreeRoot fetched successfully: its completingHeight is: ${response.result
-                                        .completingBlockHeight}"
+                                    "Orchard SubtreeRoot fetched successfully: its completingHeight is: ${
+                                        response.result
+                                            .completingBlockHeight
+                                    }"
                                 }
                             }
+
                             is Response.Failure -> {
                                 val error =
                                     LightWalletException.GetSubtreeRootsException(
@@ -1500,7 +1547,9 @@ class CompactBlockProcessor internal constructor(
                                 when (scanResult.stageResult) {
                                     is SyncingResult.ScanSuccess -> {
                                         SyncingResult.AllSuccess
-                                    } else -> {
+                                    }
+
+                                    else -> {
                                         scanResult.stageResult
                                     }
                                 }
@@ -1531,7 +1580,9 @@ class CompactBlockProcessor internal constructor(
                                             batch = scanResult.batch
                                         )
                                     )
-                                } else -> {
+                                }
+
+                                else -> {
                                     scanResult
                                 }
                             }
@@ -1579,12 +1630,14 @@ class CompactBlockProcessor internal constructor(
                                                 Twig.info { "Birthday height update reporting" }
                                                 enhancingResult
                                             }
+
                                             is SyncingResult.EnhanceFailed -> {
                                                 Twig.error {
                                                     "Enhancing failed for: $enhancingRange with $enhancingResult"
                                                 }
                                                 enhancingResult
                                             }
+
                                             else -> {
                                                 // Transactions enhanced correctly. Let's continue with block processing
                                                 enhancingResult
@@ -1702,7 +1755,11 @@ class CompactBlockProcessor internal constructor(
                 } else {
                     Twig.warn { "Retrying to download batch $batch after $failedAttempts failure(s)..." }
                 }
-                downloadedBlocks = downloader.downloadBlockRange(batch.range)
+                downloadedBlocks =
+                    downloader.downloadBlockRange(
+                        heightRange = batch.range,
+                        serviceMode = ServiceMode.Direct
+                    )
             }
             traceScope.end()
             Twig.verbose { "Successfully downloaded batch: $batch of $downloadedBlocks blocks" }
@@ -1730,10 +1787,18 @@ class CompactBlockProcessor internal constructor(
                         "Retrying to fetch tree state for height ${height.value} after $failedAttempts failure(s)..."
                     }
                 }
-                when (val response = downloader.getTreeState(BlockHeightUnsafe(height.value))) {
+                // Directly correlated with `downloadBatchOfBlocks()` ranges.
+                when (
+                    val response =
+                        downloader.getTreeState(
+                            height = BlockHeightUnsafe(height.value),
+                            serviceMode = ServiceMode.Direct
+                        )
+                ) {
                     is Response.Success -> {
                         return TreeState.new(response.result)
                     }
+
                     is Response.Failure -> {
                         Twig.error(response.toThrowable()) { "Tree state fetch failed" }
                         throw response.toThrowable()
@@ -1875,7 +1940,8 @@ class CompactBlockProcessor internal constructor(
                                     // We intentionally do not terminate the batch enhancing here, just reporting it
                                 }
                             }
-                            is TransactionDataRequest.SpendsFromAddress -> {
+
+                            is TransactionDataRequest.TransactionsInvolvingAddress -> {
                                 val processTaddrTxidsResult =
                                     processTransparentAddressTxids(
                                         transactionRequest = it,
@@ -1898,25 +1964,30 @@ class CompactBlockProcessor internal constructor(
                 emit(SyncingResult.EnhanceSuccess)
             }
 
+        @Suppress("ReturnCount", "ForbiddenComment", "ComplexCondition")
         private suspend fun processTransparentAddressTxids(
-            transactionRequest: TransactionDataRequest.SpendsFromAddress,
+            transactionRequest: TransactionDataRequest.TransactionsInvolvingAddress,
             backend: TypesafeBackend,
             downloader: CompactBlockDownloader
         ): SyncingResult {
             Twig.debug { "Starting to get transparent address transactions ids" }
 
-            // TODO [#1564]: Support empty block range end
-            if (transactionRequest.endHeight == null) {
-                Twig.error { "Unexpected Null " }
-                return SyncingResult.EnhanceFailed(
-                    failedAtHeight = transactionRequest.startHeight,
-                    exception =
-                        CompactBlockProcessorException.EnhanceTransactionError(
-                            message = "Unexpected NULL TransactionDataRequest.SpendsFromAddress.endHeight",
-                            height = transactionRequest.startHeight,
-                            cause = IllegalStateException("Unexpected SpendsFromAddress state")
-                        )
-                )
+            when {
+                transactionRequest.endHeight == null -> {
+                    // TODO [#1564]: Support empty block range end
+                    Twig.debug { "TransactionsInvolvingAddress is missing blockRangeEnd, ignoring the request." }
+                    return SyncingResult.EnhanceSuccess
+                }
+                transactionRequest.requestAt != null -> {
+                    // TODO: [#1757] Support this.
+                    Twig.debug { "TransactionsInvolvingAddress has requestAt set, ignoring the unsupported request." }
+                    return SyncingResult.EnhanceSuccess
+                }
+                transactionRequest.outputStatusFilter == OutputStatusFilter.Unspent -> {
+                    // TODO: [#1758] Support the OutputStatusFilter.
+                    Twig.debug { "TransactionsInvolvingAddress is unspent, ignoring the unsupported request." }
+                    return SyncingResult.EnhanceSuccess
+                }
             }
 
             val traceScope = TraceScope("CompactBlockProcessor.processTransparentAddressTxids")
@@ -1927,6 +1998,22 @@ class CompactBlockProcessor internal constructor(
                         transactionRequest = transactionRequest,
                         downloader = downloader
                     ).onEach { rawTransactionUnsafe ->
+                        val rawTransaction = RawTransaction.new(rawTransactionUnsafe = rawTransactionUnsafe)
+
+                        // Ignore transactions that don't match the status filter.
+                        if (
+                            (
+                                transactionRequest.txStatusFilter == TransactionStatusFilter.Mined &&
+                                    rawTransaction.height == null
+                            ) ||
+                            (
+                                transactionRequest.txStatusFilter == TransactionStatusFilter.Mempool &&
+                                    rawTransaction.height != null
+                            )
+                        ) {
+                            return@onEach
+                        }
+
                         // Decrypting and storing transaction is run just once, since we consider it more stable
                         Twig.verbose { "Decrypting and storing rawTransactionUnsafe" }
                         decryptTransaction(
@@ -1947,7 +2034,7 @@ class CompactBlockProcessor internal constructor(
 
         @Throws(EnhanceTxDownloadError::class)
         private suspend fun getTransparentAddressTransactions(
-            transactionRequest: TransactionDataRequest.SpendsFromAddress,
+            transactionRequest: TransactionDataRequest.TransactionsInvolvingAddress,
             downloader: CompactBlockDownloader,
         ): Flow<RawTransactionUnsafe> {
             val traceScope = TraceScope("CompactBlockProcessor.getTransparentAddressTransactions")
@@ -1973,7 +2060,8 @@ class CompactBlockProcessor internal constructor(
                 resultFlow =
                     downloader.getTAddressTransactions(
                         transparentAddress = transactionRequest.address,
-                        blockHeightRange = requestedRange
+                        blockHeightRange = requestedRange,
+                        serviceMode = ServiceMode.Direct
                     )
             }
             traceScope.end()
@@ -2006,7 +2094,7 @@ class CompactBlockProcessor internal constructor(
                         is TransactionDataRequest.GetStatus -> {
                             Twig.debug {
                                 "Resolving TransactionDataRequest.GetStatus by setting status of " +
-                                    "transaction: txid: ${transactionRequest.txIdString() }"
+                                    "transaction: txid: ${transactionRequest.txIdString()}"
                             }
                             val status =
                                 rawTransactionUnsafe?.toTransactionStatus()
@@ -2017,6 +2105,7 @@ class CompactBlockProcessor internal constructor(
                                 backend = backend
                             )
                         }
+
                         is TransactionDataRequest.Enhancement -> {
                             if (rawTransactionUnsafe == null) {
                                 Twig.debug {
@@ -2076,16 +2165,25 @@ class CompactBlockProcessor internal constructor(
                     }
                 }
 
+                // TODO [#1772]: redirect to correct service mode after 2.1 release
                 transactionResult =
-                    when (val response = downloader.fetchTransaction(transactionRequest.txid)) {
+                    when (
+                        val response =
+                            downloader.fetchTransaction(
+                                transactionRequest.txid,
+                                ServiceMode.Direct
+                            )
+                    ) {
                         is Response.Success -> response.result
                         is Response.Failure ->
                             when {
                                 response is Response.Failure.Server.NotFound -> null
                                 response.description.orEmpty().contains(NOT_FOUND_MESSAGE_WORKAROUND, true) ->
                                     null
+
                                 response.description.orEmpty().contains(NOT_FOUND_MESSAGE_WORKAROUND_2, true) ->
                                     null
+
                                 else -> throw EnhanceTxDownloadError(response.toThrowable())
                             }
                     }
@@ -2356,6 +2454,7 @@ class CompactBlockProcessor internal constructor(
                         setProcessorInfo(overallSyncRange = null)
                         it.height
                     }
+
                     is RewindResult.Invalid -> {
                         Twig.warn { "Requested rewind height ${it.requestedHeight} is invalid" }
                         if (it.safeRewindHeight != null) {
@@ -2501,6 +2600,7 @@ class CompactBlockProcessor internal constructor(
                         is TransactionSubmitResult.Success -> {
                             Twig.info { "Trx resubmission success: ${response.txIdString()}" }
                         }
+
                         is TransactionSubmitResult.Failure -> {
                             Twig.error { "Trx resubmission failure: ${response.description}" }
                             throw LightWalletException.TransactionSubmitException(
@@ -2508,6 +2608,7 @@ class CompactBlockProcessor internal constructor(
                                 response.description,
                             )
                         }
+
                         is TransactionSubmitResult.NotAttempted -> {
                             Twig.warn { "Trx resubmission not attempted: ${response.txIdString()}" }
                         }

@@ -10,13 +10,14 @@ import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
-import co.electriccoin.lightwallet.client.WalletClient
+import co.electriccoin.lightwallet.client.CombinedWalletClient
+import co.electriccoin.lightwallet.client.ServiceMode
 import co.electriccoin.lightwallet.client.model.Response
 
 @Suppress("TooManyFunctions")
 internal class OutboundTransactionManagerImpl(
     internal val encoder: TransactionEncoder,
-    private val service: WalletClient
+    private val walletClient: CombinedWalletClient
 ) : OutboundTransactionManager {
     /**
      * Creates a proposal for transferring funds from a ZIP-321 compliant payment URI
@@ -67,7 +68,14 @@ internal class OutboundTransactionManagerImpl(
     ): List<EncodedTransaction> = encoder.createProposedTransactions(proposal, usk)
 
     override suspend fun submit(encodedTransaction: EncodedTransaction): TransactionSubmitResult =
-        when (val response = service.submitTransaction(encodedTransaction.raw.byteArray)) {
+        // TODO [#1772]: redirect to correct service mode after 2.1 release
+        when (
+            val response =
+                walletClient.submitTransaction(
+                    tx = encodedTransaction.raw.byteArray,
+                    serviceMode = ServiceMode.Direct
+                )
+        ) {
             is Response.Success -> {
                 if (response.result.code == 0) {
                     Twig.info {
@@ -135,7 +143,7 @@ internal class OutboundTransactionManagerImpl(
     companion object {
         fun new(
             encoder: TransactionEncoder,
-            lightWalletClient: WalletClient,
+            lightWalletClient: CombinedWalletClient,
         ): OutboundTransactionManager =
             OutboundTransactionManagerImpl(
                 encoder,

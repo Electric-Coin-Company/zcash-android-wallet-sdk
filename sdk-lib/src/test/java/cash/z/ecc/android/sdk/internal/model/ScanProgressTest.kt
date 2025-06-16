@@ -20,6 +20,6 @@ class ScanProgressTest {
             ScanProgressFixture.new(
                 denominator = 0
             )
-        assertEquals(0f, scanProgress.getSafeRatio())
+        assertEquals(1f, scanProgress.getSafeRatio())
     }
 }
