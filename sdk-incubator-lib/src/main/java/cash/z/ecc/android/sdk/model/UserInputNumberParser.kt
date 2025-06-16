@@ -6,7 +6,6 @@ import java.text.DecimalFormatSymbols
 import java.util.Locale
 
 object UserInputNumberParser {
-
     /**
      * Normalizes [input] string by replacing grouping separators by decimal separators derived from [locale].
      */
@@ -20,15 +19,17 @@ object UserInputNumberParser {
      *
      * @return [BigDecimal] if [input] is a valid number representation, null otherwise.
      */
+    @Suppress("ReturnCount")
     fun toBigDecimalOrNull(input: String, locale: Locale): BigDecimal? {
         val symbols = DecimalFormatSymbols(locale)
 
         if (!isValidNumericWithOptionalDecimalSeparator(input = input, symbols = symbols)) return null
 
-        val decimalFormat = DecimalFormat().apply {
-            this.decimalFormatSymbols = symbols
-            this.isParseBigDecimal = true
-        }
+        val decimalFormat =
+            DecimalFormat().apply {
+                this.decimalFormatSymbols = symbols
+                this.isParseBigDecimal = true
+            }
 
         return try {
             when (val parsedNumber = decimalFormat.parse(input)) {
@@ -47,10 +48,11 @@ object UserInputNumberParser {
     }
 
     private fun isValidNumericWithOptionalDecimalSeparator(input: String, symbols: DecimalFormatSymbols): Boolean {
-        val decimalSeparator = when (val separator = symbols.decimalSeparator) {
-            '.' -> "\\."
-            else -> separator.toString()
-        }
+        val decimalSeparator =
+            when (val separator = symbols.decimalSeparator) {
+                '.' -> "\\."
+                else -> separator.toString()
+            }
         val regex =
             Regex("^(?:\\d+$decimalSeparator?\\d*|$decimalSeparator\\d+)$")
         return regex.matches(input)
