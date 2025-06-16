@@ -6,10 +6,13 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Fixed
+- FFI 0.17.0 introduces retry logic for Tor, significantly improving the reliability of currency conversion fetches.
+
 ### Changed
-- `WalletClient.getServerInfo`, `WalletClient.getLatestBlockHeight`, `WalletClient.fetchTransaction`, 
-  `WalletClient.submitTransaction` and `WalletClient.getTreeState` queries have been moved to execute over Tor. 
-  Because of this fact custom lightwalletd servers over VPNs like Tailscape might stop working.
+- Added a `ServiceOption` parameter for functions `WalletClient.getServerInfo`, `WalletClient.getLatestBlockHeight`, 
+  `WalletClient.fetchTransaction`, `WalletClient.submitTransaction` and `WalletClient.getTreeState` to add the 
+  option to execute over Tor. Custom lightwalletd servers over VPNs like Tailscape might stop working when using Tor.
 - `Synchronizer.getFastestServers` function signature changed and does not require `Context` parameter anymore
 
 ## [2.2.13] - 2025-05-16
