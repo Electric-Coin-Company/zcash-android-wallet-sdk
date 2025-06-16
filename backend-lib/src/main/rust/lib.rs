@@ -1715,7 +1715,7 @@ fn encode_transaction_data_request<'a>(
             )?;
 
             env.new_object(
-                "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest$SpendsFromAddress",
+                "cash/z/ecc/android/sdk/internal/model/JniTransactionDataRequest$TransactionsInvolvingAddress",
                 format!(
                     "(Ljava/lang/String;JJJL{TRANSACTION_STATUS_FILTER};L{OUTPUT_STATUS_FILTER};)V"
                 ),
