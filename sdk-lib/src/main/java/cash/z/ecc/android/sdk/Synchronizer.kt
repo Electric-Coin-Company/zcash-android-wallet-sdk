@@ -850,7 +850,7 @@ interface Synchronizer {
                         network = processor.network,
                         walletClientFactory = walletClientFactory
                     ),
-                fetchExchangeChangeUsd = UsdExchangeRateFetcher(isolatedTorClient = torClient.isolatedTorClient()),
+                fetchExchangeChangeUsd = UsdExchangeRateFetcher(isolatedTorClient = torClient?.isolatedTorClient()),
                 preferenceProvider = standardPreferenceProvider(),
                 torClient = torClient,
                 walletClient = walletClient,

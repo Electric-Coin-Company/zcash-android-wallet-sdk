@@ -9,11 +9,15 @@ import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 
 internal class UsdExchangeRateFetcher(
-    private val isolatedTorClient: TorClient,
+    private val isolatedTorClient: TorClient?,
 ) : Disposable {
     @Suppress("TooGenericExceptionCaught", "ReturnCount")
     suspend operator fun invoke(): FetchFiatCurrencyResult {
         return retry {
+            if (isolatedTorClient == null) {
+                return@retry FetchFiatCurrencyResult.Error(NullPointerException("Tor client is null"))
+            }
+
             val rate =
                 try {
                     Twig.info { "[USD] Fetch start" }
@@ -59,6 +63,6 @@ internal class UsdExchangeRateFetcher(
     }
 
     override suspend fun dispose() {
-        isolatedTorClient.dispose()
+        isolatedTorClient?.dispose()
     }
 }

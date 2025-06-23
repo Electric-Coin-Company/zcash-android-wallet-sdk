@@ -38,7 +38,7 @@ class TorClient private constructor(
      * Calling this method is usually preferable to creating a completely separate
      * `TorClient` instance, since it can share its internals with the existing `TorClient`.
      */
-    suspend fun isolatedTorClient(): TorClient = accessMutex.withLock { isolatedTorClientInternal() }
+    suspend fun isolatedTorClient(): TorClient? = accessMutex.withLock { isolatedTorClientInternal() }
 
     /**
      * The caller MUST acquire `accessMutex` before calling this function.
@@ -46,10 +46,12 @@ class TorClient private constructor(
      * @return a new isolated `TorClient` handle.
      */
     private suspend fun isolatedTorClientInternal() =
-        withContext(Dispatchers.IO) {
-            checkNotNull(nativeHandle) { "TorClient is disposed" }
-            TorClient(nativeHandle = isolatedClient(nativeHandle!!))
-        }
+        runCatching {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorClient is disposed" }
+                TorClient(nativeHandle = isolatedClient(nativeHandle!!))
+            }
+        }.getOrNull()
 
     /**
      * Changes the client's current dormant mode, putting background tasks to sleep or waking
@@ -80,49 +82,62 @@ class TorClient private constructor(
      * This client is isolated from any other Tor usage, and queries made with this client
      * are isolated from each other (but may still be correlatable by the server through
      * request timing, if the caller does not mitigate timing attacks).
+     *
+     * @return given client or null if tor instantiation failed
      */
-    suspend fun createIsolatedWalletClient(endpoint: String): PartialTorWalletClient =
-        accessMutex.withLock {
-            checkNotNull(nativeHandle) { "TorClient is disposed" }
-            IsolatedTorWalletClient.new(
-                isolatedTorClient = isolatedTorClientInternal(),
-                endpoint = endpoint
-            )
-        }
+    suspend fun createIsolatedWalletClient(endpoint: String): PartialTorWalletClient? =
+        runCatching {
+            accessMutex.withLock {
+                checkNotNull(nativeHandle) { "TorClient is disposed" }
+                IsolatedTorWalletClient.new(
+                    isolatedTorClient = isolatedTorClientInternal(),
+                    endpoint = endpoint
+                )
+            }
+        }.getOrNull()
 
     /**
      * Connects to the lightwalletd server at the given endpoint.
      *
      * This client is isolated from any other Tor usage. Queries made with this client are
      * not isolated from each other; use `createIsolatedWalletClient()` if you need this.
+     *
+     * @return given client or null if tor instantiation failed
      */
-    suspend fun createWalletClient(endpoint: String): PartialTorWalletClient =
-        accessMutex.withLock {
-            withContext(Dispatchers.IO) {
-                checkNotNull(nativeHandle) { "TorClient is disposed" }
-                TorWalletClient.new(
-                    nativeHandle =
-                        connectToLightwalletd(
-                            nativeHandle = nativeHandle!!,
-                            endpoint = endpoint
-                        )
-                )
+    suspend fun createWalletClient(endpoint: String): PartialTorWalletClient? =
+        runCatching {
+            accessMutex.withLock {
+                withContext(Dispatchers.IO) {
+                    checkNotNull(nativeHandle) { "TorClient is disposed" }
+                    TorWalletClient.new(
+                        nativeHandle =
+                            connectToLightwalletd(
+                                nativeHandle = nativeHandle!!,
+                                endpoint = endpoint
+                            )
+                    )
+                }
             }
-        }
+        }.getOrNull()
 
     companion object {
-        suspend fun new(torDir: File): TorClient =
-            withContext(Dispatchers.IO) {
-                RustBackend.loadLibrary()
+        /**
+         * @return a new instance of [TorClient] or null if an error occurred.
+         */
+        suspend fun new(torDir: File): TorClient? =
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    RustBackend.loadLibrary()
 
-                // Ensure that the directory exists.
-                torDir.mkdirsSuspend()
-                if (!torDir.existsSuspend()) {
-                    error("${torDir.path} directory does not exist and could not be created.")
+                    // Ensure that the directory exists.
+                    torDir.mkdirsSuspend()
+                    if (!torDir.existsSuspend()) {
+                        error("${torDir.path} directory does not exist and could not be created.")
+                    }
+
+                    TorClient(nativeHandle = createTorRuntime(torDir.path))
                 }
-
-                TorClient(nativeHandle = createTorRuntime(torDir.path))
-            }
+            }.getOrNull()
 
         //
         // External Functions

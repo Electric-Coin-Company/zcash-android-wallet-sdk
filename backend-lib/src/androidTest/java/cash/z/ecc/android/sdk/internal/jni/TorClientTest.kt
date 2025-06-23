@@ -11,6 +11,7 @@ import org.junit.Test
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Ignore
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
@@ -22,10 +23,10 @@ class TorClientTest {
         runTest {
             // Spin up a new Tor client.
             val torDir = createTempDirectory("tor-client-").toFile()
-            val torClient = TorClient.new(torDir)
+            val torClient = assertNotNull(TorClient.new(torDir))
 
             // Connect to a testnet lightwalletd server.
-            val lwdConn = torClient.createIsolatedWalletClient("https://testnet.zec.rocks:443")
+            val lwdConn = assertNotNull(torClient.createIsolatedWalletClient("https://testnet.zec.rocks:443"))
 
             // Confirm that it is on testnet.
             val info =

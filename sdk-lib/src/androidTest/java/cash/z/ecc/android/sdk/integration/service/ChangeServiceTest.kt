@@ -27,6 +27,7 @@ import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Ignore
+import kotlin.test.assertNotNull
 
 @MaintainedTest(TestPurpose.REGRESSION)
 @RunWith(AndroidJUnit4::class)
@@ -60,7 +61,7 @@ class ChangeServiceTest : ScopedTest() {
 
     private suspend fun initMocks() {
         val torDir = createTempDirectory("tor-client-").toFile()
-        val torClient = TorClient.new(torDir)
+        val torClient = assertNotNull(TorClient.new(torDir))
         val factory = WalletClientFactory(context = context, torClient = torClient)
         service = factory.create(lightWalletEndpoint)
         mockCloseable = MockitoAnnotations.openMocks(this)
