@@ -38,7 +38,7 @@ class TorClient private constructor(
      * Calling this method is usually preferable to creating a completely separate
      * `TorClient` instance, since it can share its internals with the existing `TorClient`.
      */
-    suspend fun isolatedTorClient(): TorClient? = accessMutex.withLock { isolatedTorClientInternal() }
+    suspend fun isolatedTorClient(): TorClient = accessMutex.withLock { isolatedTorClientInternal() }
 
     /**
      * The caller MUST acquire `accessMutex` before calling this function.
