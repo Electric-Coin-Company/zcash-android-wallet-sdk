@@ -145,8 +145,7 @@ class CombinedWalletClientImpl private constructor(
                 ServiceMode.DefaultTor,
                 is ServiceMode.Group ->
                     try {
-                        val client = getOrCreate(serviceMode)
-                        block(client)
+                        block(getOrCreate(serviceMode))
                     } catch (e: Exception) {
                         remove(serviceMode)
                         throw e
@@ -157,17 +156,8 @@ class CombinedWalletClientImpl private constructor(
     private suspend fun remove(serviceMode: ServiceMode) =
         withContext(Dispatchers.Default) { cache.remove(serviceMode) }
 
-    private suspend fun getOrCreate(serviceMode: ServiceMode): PartialWalletClient =
-        withContext(Dispatchers.Default) {
-            val partialClient = cache[serviceMode]
-            if (partialClient == null) {
-                val newClient = create()
-                cache[serviceMode] = newClient
-                newClient
-            } else {
-                partialClient
-            }
-        }
+    private suspend fun getOrCreate(serviceMode: ServiceMode) =
+        withContext(Dispatchers.Default) { cache.getOrPut(serviceMode) { create() } }
 
     @Suppress("TooGenericExceptionCaught")
     private suspend fun create(): PartialTorWalletClient {
