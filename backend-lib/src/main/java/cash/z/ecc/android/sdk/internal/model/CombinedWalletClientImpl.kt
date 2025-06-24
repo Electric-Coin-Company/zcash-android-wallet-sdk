@@ -119,8 +119,8 @@ class CombinedWalletClientImpl private constructor(
     ): Flow<Response<T>> =
         try {
             execute(serviceMode, block)
-        } catch (_: UninitializedTorClientException) {
-            flowOf(Response.Failure.OverTor("No tor client available"))
+        } catch (e: UninitializedTorClientException) {
+            flowOf(Response.Failure.OverTor(cause = e))
         }
 
     private suspend inline fun <T> executeAsResponse(
@@ -129,8 +129,8 @@ class CombinedWalletClientImpl private constructor(
     ): Response<T> =
         try {
             execute(serviceMode, block)
-        } catch (_: UninitializedTorClientException) {
-            Response.Failure.OverTor("No tor client available")
+        } catch (e: UninitializedTorClientException) {
+            Response.Failure.OverTor(cause = e)
         }
 
     @Suppress("TooGenericExceptionCaught")
@@ -193,6 +193,6 @@ class CombinedWalletClientImpl private constructor(
     }
 }
 
-private class UninitializedTorClientException(
+class UninitializedTorClientException(
     cause: Exception
 ) : RuntimeException(cause)
