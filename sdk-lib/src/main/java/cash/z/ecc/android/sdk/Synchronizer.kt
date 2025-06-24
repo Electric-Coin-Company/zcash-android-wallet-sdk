@@ -777,7 +777,15 @@ interface Synchronizer {
                     .defaultCompactBlockRepository(coordinator.fsBlockDbRoot(zcashNetwork, alias), backend)
 
             val torDir = Files.getTorDir(context)
-            val torClient = TorClient.new(torDir)
+            val torClient = try {
+                TorClient.new(torDir)
+            } catch (e: RuntimeException) {
+                Twig.error(e) { "Error instantiating Tor Client" }
+                null
+            } catch (e: Exception) {
+                Twig.error(e) { "Error instantiating Tor Client" }
+                null
+            }
 
             val walletClientFactory =
                 WalletClientFactory(
@@ -850,7 +858,9 @@ interface Synchronizer {
                         network = processor.network,
                         walletClientFactory = walletClientFactory
                     ),
-                fetchExchangeChangeUsd = UsdExchangeRateFetcher(isolatedTorClient = torClient?.isolatedTorClient()),
+                fetchExchangeChangeUsd = torClient?.let {
+                    UsdExchangeRateFetcher(isolatedTorClient = it.isolatedTorClient())
+                },
                 preferenceProvider = standardPreferenceProvider(),
                 torClient = torClient,
                 walletClient = walletClient,
