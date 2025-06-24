@@ -141,21 +141,11 @@ class CombinedWalletClientImpl private constructor(
         semaphore.withLock {
             when (serviceMode) {
                 ServiceMode.Direct -> block(lightWalletClient)
-                ServiceMode.UniqueTor -> {
-                    val partialClient = create()
-
-                    if (partialClient != null) {
-                        partialClient.use { block(it) }
-                    } else {
-                        throw UninitializedTorClientException()
-                    }
-                }
+                ServiceMode.UniqueTor -> create().use { block(it) }
                 ServiceMode.DefaultTor,
                 is ServiceMode.Group ->
                     try {
-                        val client =
-                            getOrCreate(serviceMode)
-                                ?: throw UninitializedTorClientException()
+                        val client = getOrCreate(serviceMode)
                         block(client)
                     } catch (e: Exception) {
                         remove(serviceMode)
@@ -167,29 +157,28 @@ class CombinedWalletClientImpl private constructor(
     private suspend fun remove(serviceMode: ServiceMode) =
         withContext(Dispatchers.Default) { cache.remove(serviceMode) }
 
-    private suspend fun getOrCreate(serviceMode: ServiceMode): PartialWalletClient? =
+    private suspend fun getOrCreate(serviceMode: ServiceMode): PartialWalletClient =
         withContext(Dispatchers.Default) {
             val partialClient = cache[serviceMode]
             if (partialClient == null) {
                 val newClient = create()
-                if (newClient != null) {
-                    cache[serviceMode] = newClient
-                    newClient
-                } else {
-                    null
-                }
+                cache[serviceMode] = newClient
+                newClient
             } else {
                 partialClient
             }
         }
 
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun create(): PartialTorWalletClient? =
-        try {
-            torClient?.createWalletClient("https://${endpoint.host}:${endpoint.port}")
-        } catch (_: Exception) {
-            null
+    private suspend fun create(): PartialTorWalletClient {
+        if (torClient == null) throw UninitializedTorClientException(NullPointerException("torClient is null"))
+
+        return try {
+            torClient.createWalletClient("https://${endpoint.host}:${endpoint.port}")
+        } catch (e: Exception) {
+            throw UninitializedTorClientException(e)
         }
+    }
 
     companion object Factory {
         suspend fun new(
@@ -204,4 +193,6 @@ class CombinedWalletClientImpl private constructor(
     }
 }
 
-private class UninitializedTorClientException : NullPointerException()
+private class UninitializedTorClientException(
+    cause: Exception
+) : RuntimeException(cause)
