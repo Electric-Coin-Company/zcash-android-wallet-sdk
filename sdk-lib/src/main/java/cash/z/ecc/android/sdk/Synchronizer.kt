@@ -737,7 +737,7 @@ interface Synchronizer {
          * If customized initialization is required (e.g. for dependency injection or testing), see
          * [DefaultSynchronizerFactory].
          */
-        @Suppress("LongParameterList", "LongMethod")
+        @Suppress("LongParameterList", "LongMethod", "TooGenericExceptionCaught")
         suspend fun new(
             alias: String = ZcashSdk.DEFAULT_ALIAS,
             birthday: BlockHeight?,
@@ -777,15 +777,21 @@ interface Synchronizer {
                     .defaultCompactBlockRepository(coordinator.fsBlockDbRoot(zcashNetwork, alias), backend)
 
             val torDir = Files.getTorDir(context)
-            val torClient = try {
-                TorClient.new(torDir)
-            } catch (e: RuntimeException) {
-                Twig.error(e) { "Error instantiating Tor Client" }
-                null
-            } catch (e: Exception) {
-                Twig.error(e) { "Error instantiating Tor Client" }
-                null
-            }
+            val torClient =
+                try {
+                    TorClient.new(torDir)
+                } catch (e: Exception) {
+                    Twig.error(e) { "Error instantiating Tor Client" }
+                    null
+                }
+
+            val exchangeRateIsolatedTorClient =
+                try {
+                    torClient?.isolatedTorClient()
+                } catch (e: Exception) {
+                    Twig.error(e) { "Error instantiating an isolated Tor Client" }
+                    null
+                }
 
             val walletClientFactory =
                 WalletClientFactory(
@@ -858,9 +864,10 @@ interface Synchronizer {
                         network = processor.network,
                         walletClientFactory = walletClientFactory
                     ),
-                fetchExchangeChangeUsd = torClient?.let {
-                    UsdExchangeRateFetcher(isolatedTorClient = it.isolatedTorClient())
-                },
+                fetchExchangeChangeUsd =
+                    exchangeRateIsolatedTorClient?.let {
+                        UsdExchangeRateFetcher(isolatedTorClient = it)
+                    },
                 preferenceProvider = standardPreferenceProvider(),
                 torClient = torClient,
                 walletClient = walletClient,

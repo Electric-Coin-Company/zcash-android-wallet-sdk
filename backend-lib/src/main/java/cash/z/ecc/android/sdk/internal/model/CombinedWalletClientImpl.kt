@@ -183,7 +183,13 @@ class CombinedWalletClientImpl private constructor(
             }
         }
 
-    private suspend fun create() = torClient?.createWalletClient("https://${endpoint.host}:${endpoint.port}")
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun create(): PartialTorWalletClient? =
+        try {
+            torClient?.createWalletClient("https://${endpoint.host}:${endpoint.port}")
+        } catch (_: Exception) {
+            null
+        }
 
     companion object Factory {
         suspend fun new(

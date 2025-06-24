@@ -45,10 +45,11 @@ class TorClient private constructor(
      *
      * @return a new isolated `TorClient` handle.
      */
-    private suspend fun isolatedTorClientInternal() = withContext(Dispatchers.IO) {
-        checkNotNull(nativeHandle) { "TorClient is disposed" }
-        TorClient(nativeHandle = isolatedClient(nativeHandle!!))
-    }
+    private suspend fun isolatedTorClientInternal() =
+        withContext(Dispatchers.IO) {
+            checkNotNull(nativeHandle) { "TorClient is disposed" }
+            TorClient(nativeHandle = isolatedClient(nativeHandle!!))
+        }
 
     /**
      * Changes the client's current dormant mode, putting background tasks to sleep or waking
@@ -110,9 +111,6 @@ class TorClient private constructor(
         }
 
     companion object {
-        /**
-         * @return a new instance of [TorClient] or null if an error occurred.
-         */
         suspend fun new(torDir: File): TorClient =
             withContext(Dispatchers.IO) {
                 RustBackend.loadLibrary()

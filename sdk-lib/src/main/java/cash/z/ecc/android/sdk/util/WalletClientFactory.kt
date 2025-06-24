@@ -23,10 +23,19 @@ class WalletClientFactory(
      *
      * @return an instance of [WalletClient] for [endpoint]
      */
-    suspend fun create(endpoint: LightWalletEndpoint): CombinedWalletClient =
-        CombinedWalletClientImpl.new(
+    @Suppress("TooGenericExceptionCaught")
+    suspend fun create(endpoint: LightWalletEndpoint): CombinedWalletClient {
+        val torClient =
+            try {
+                torClient?.isolatedTorClient()
+            } catch (_: Exception) {
+                null
+            }
+
+        return CombinedWalletClientImpl.new(
             endpoint = endpoint,
             lightWalletClient = LightWalletClient.new(context, endpoint),
-            torClient = torClient?.isolatedTorClient(),
+            torClient = torClient,
         )
+    }
 }
