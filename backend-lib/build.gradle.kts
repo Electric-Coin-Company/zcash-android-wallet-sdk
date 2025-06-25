@@ -17,14 +17,10 @@ plugins {
 
 // Publishing information
 
-val myVersion = project.property("LIBRARY_VERSION").toString()
-val myArtifactId = "zcash-android-backend"
-publishing {
-    publications {
-        publications.withType<MavenPublication>().all {
-            artifactId = myArtifactId
-        }
-    }
+mavenPublishing {
+    coordinates(
+        artifactId = "zcash-android-backend"
+    )
 }
 
 android {

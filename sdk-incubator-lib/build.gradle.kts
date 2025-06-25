@@ -13,12 +13,10 @@ plugins {
     id("zcash-sdk.publishing-conventions")
 }
 
-publishing {
-    publications {
-        publications.withType<MavenPublication>().all {
-            artifactId = "zcash-android-sdk-incubator"
-        }
-    }
+mavenPublishing {
+    coordinates(
+        artifactId = "zcash-android-sdk-incubator"
+    )
 }
 
 android {

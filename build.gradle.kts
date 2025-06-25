@@ -38,8 +38,8 @@ tasks {
             // Ensure that developers do not change default values of certain properties directly in the repo, but
             // instead set them in their local ~/.gradle/gradle.properties file (or use command line arguments)
             val expectedPropertyValues = mapOf(
-                "ZCASH_MAVEN_PUBLISH_USERNAME" to "",
-                "ZCASH_MAVEN_PUBLISH_PASSWORD" to "",
+                "mavenCentralUsername" to "",
+                "mavenCentralPassword" to "",
                 "ZCASH_ASCII_GPG_KEY" to "",
 
                 "IS_SNAPSHOT" to "true",
