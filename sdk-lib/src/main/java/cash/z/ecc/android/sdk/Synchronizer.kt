@@ -43,6 +43,7 @@ import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.ecc.android.sdk.type.ServerValidation
 import cash.z.ecc.android.sdk.util.WalletClientFactory
+import co.electriccoin.lightwallet.client.ServiceMode
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.flow.Flow
@@ -736,7 +737,7 @@ interface Synchronizer {
          * If customized initialization is required (e.g. for dependency injection or testing), see
          * [DefaultSynchronizerFactory].
          */
-        @Suppress("LongParameterList", "LongMethod")
+        @Suppress("LongParameterList", "LongMethod", "TooGenericExceptionCaught")
         suspend fun new(
             alias: String = ZcashSdk.DEFAULT_ALIAS,
             birthday: BlockHeight?,
@@ -776,7 +777,21 @@ interface Synchronizer {
                     .defaultCompactBlockRepository(coordinator.fsBlockDbRoot(zcashNetwork, alias), backend)
 
             val torDir = Files.getTorDir(context)
-            val torClient = TorClient.new(torDir)
+            val torClient =
+                try {
+                    TorClient.new(torDir)
+                } catch (e: Exception) {
+                    Twig.error(e) { "Error instantiating Tor Client" }
+                    null
+                }
+
+            val exchangeRateIsolatedTorClient =
+                try {
+                    torClient?.isolatedTorClient()
+                } catch (e: Exception) {
+                    Twig.error(e) { "Error instantiating an isolated Tor Client" }
+                    null
+                }
 
             val walletClientFactory =
                 WalletClientFactory(
@@ -790,7 +805,8 @@ interface Synchronizer {
             val chainTip =
                 when (walletInitMode) {
                     is RestoreWallet -> {
-                        when (val response = downloader.getLatestBlockHeight()) {
+                        // TODO [#1772]: redirect to correct service mode after 2.1 release
+                        when (val response = downloader.getLatestBlockHeight(ServiceMode.Direct)) {
                             is Response.Success -> {
                                 Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
                                 runCatching { response.result.toBlockHeight() }.getOrNull()
@@ -848,7 +864,10 @@ interface Synchronizer {
                         network = processor.network,
                         walletClientFactory = walletClientFactory
                     ),
-                fetchExchangeChangeUsd = UsdExchangeRateFetcher(isolatedTorClient = torClient.isolatedTorClient()),
+                fetchExchangeChangeUsd =
+                    exchangeRateIsolatedTorClient?.let {
+                        UsdExchangeRateFetcher(isolatedTorClient = it)
+                    },
                 preferenceProvider = standardPreferenceProvider(),
                 torClient = torClient,
                 walletClient = walletClient,

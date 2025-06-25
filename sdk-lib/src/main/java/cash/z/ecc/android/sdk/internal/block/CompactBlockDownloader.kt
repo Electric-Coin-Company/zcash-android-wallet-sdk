@@ -7,7 +7,8 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.ext.from
 import cash.z.ecc.android.sdk.internal.repository.CompactBlockRepository
 import cash.z.ecc.android.sdk.model.BlockHeight
-import co.electriccoin.lightwallet.client.WalletClient
+import co.electriccoin.lightwallet.client.CombinedWalletClient
+import co.electriccoin.lightwallet.client.ServiceMode
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.CompactBlockUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
@@ -33,10 +34,10 @@ import kotlinx.coroutines.withContext
 open class CompactBlockDownloader private constructor(
     val compactBlockRepository: CompactBlockRepository
 ) {
-    private lateinit var lightWalletClient: WalletClient
+    private lateinit var lightWalletClient: CombinedWalletClient
 
     constructor(
-        walletClient: WalletClient,
+        walletClient: CombinedWalletClient,
         compactBlockRepository: CompactBlockRepository
     ) : this(compactBlockRepository) {
         this.lightWalletClient = walletClient
@@ -53,16 +54,23 @@ open class CompactBlockDownloader private constructor(
      * downloaded and persisted on the device disk
      */
     @Throws(LightWalletException.DownloadBlockException::class)
-    suspend fun downloadBlockRange(heightRange: ClosedRange<BlockHeight>): List<JniBlockMeta> {
+    suspend fun downloadBlockRange(
+        heightRange: ClosedRange<BlockHeight>,
+        serviceMode: ServiceMode
+    ): List<JniBlockMeta> {
+        val from = BlockHeightUnsafe.from(heightRange.start)
+        val to = BlockHeightUnsafe.from(heightRange.endInclusive)
         val filteredFlow =
             lightWalletClient
                 .getBlockRange(
-                    BlockHeightUnsafe.from(heightRange.start)..BlockHeightUnsafe.from(heightRange.endInclusive)
+                    heightRange = from..to,
+                    serviceMode = serviceMode
                 ).onEach { response ->
                     when (response) {
                         is Response.Success -> {
                             Twig.verbose { "Downloading block at height: ${response.result.height} succeeded." }
                         }
+
                         is Response.Failure -> {
                             Twig.warn {
                                 "Downloading blocks in range: $heightRange failed with: ${response.description}."
@@ -104,7 +112,9 @@ open class CompactBlockDownloader private constructor(
      *
      * @return the latest block height.
      */
-    suspend fun getLatestBlockHeight() = lightWalletClient.getLatestBlockHeight()
+    suspend fun getLatestBlockHeight(serviceMode: ServiceMode) =
+        lightWalletClient
+            .getLatestBlockHeight(serviceMode = serviceMode)
 
     /**
      * Return the latest block height that has been persisted into the [CompactBlockRepository].
@@ -114,10 +124,10 @@ open class CompactBlockDownloader private constructor(
     suspend fun getLastDownloadedHeight() = compactBlockRepository.getLatestHeight()
 
     @Throws(LightWalletException.GetServerInfoException::class)
-    suspend fun getServerInfo(): LightWalletEndpointInfoUnsafe? =
+    suspend fun getServerInfo(serviceMode: ServiceMode): LightWalletEndpointInfoUnsafe? =
         withContext(IO) {
             retryUpToAndThrow(GET_SERVER_INFO_RETRIES) {
-                when (val response = lightWalletClient.getServerInfo()) {
+                when (val response = lightWalletClient.getServerInfo(serviceMode = serviceMode)) {
                     is Response.Success -> return@withContext response.result
                     is Response.Failure -> {
                         lightWalletClient.reconnect()
@@ -157,7 +167,11 @@ open class CompactBlockDownloader private constructor(
      *
      * @return the full transaction info.
      */
-    suspend fun fetchTransaction(txId: ByteArray) = lightWalletClient.fetchTransaction(txId)
+    suspend fun fetchTransaction(txId: ByteArray, serviceMode: ServiceMode) =
+        lightWalletClient.fetchTransaction(
+            txId = txId,
+            serviceMode = serviceMode
+        )
 
     /**
      * Get transactions belonging to the given transparent address
@@ -165,20 +179,23 @@ open class CompactBlockDownloader private constructor(
      * @throws LightWalletException.GetTAddressTransactionsException if any error while getting the transactions occurs
      * @return List of all the transaction belonging to the given transparent address on the given block range
      */
-    fun getTAddressTransactions(
+    suspend fun getTAddressTransactions(
         transparentAddress: String,
-        blockHeightRange: ClosedRange<BlockHeight>
+        blockHeightRange: ClosedRange<BlockHeight>,
+        serviceMode: ServiceMode
     ) = lightWalletClient
         .getTAddressTransactions(
             tAddress = transparentAddress,
             blockHeightRange =
-                BlockHeightUnsafe.from(blockHeightRange.start)..BlockHeightUnsafe.from(blockHeightRange.endInclusive)
+                BlockHeightUnsafe.from(blockHeightRange.start)..BlockHeightUnsafe.from(blockHeightRange.endInclusive),
+            serviceMode = serviceMode
         ).map { response ->
             when (response) {
                 is Response.Success -> {
                     Twig.verbose { "Get a new rawTransactionUnsafe successfully" }
                     response.result
                 }
+
                 is Response.Failure -> {
                     Twig.error(response.toThrowable()) { "Getting a new rawTransactionUnsafe failed" }
                     throw LightWalletException.GetTAddressTransactionsException(
@@ -203,10 +220,12 @@ open class CompactBlockDownloader private constructor(
      */
     suspend fun fetchUtxos(
         tAddresses: List<String>,
-        startHeight: BlockHeightUnsafe
+        startHeight: BlockHeightUnsafe,
+        serviceMode: ServiceMode
     ) = lightWalletClient.fetchUtxos(
         tAddresses = tAddresses,
-        startHeight = startHeight
+        startHeight = startHeight,
+        serviceMode = serviceMode
     )
 
     /**
@@ -214,14 +233,16 @@ open class CompactBlockDownloader private constructor(
      *
      * @return a flow of information about roots of subtrees of the Sapling and Orchard note commitment trees.
      */
-    fun getSubtreeRoots(
+    suspend fun getSubtreeRoots(
         startIndex: UInt,
         shieldedProtocol: ShieldedProtocolEnum,
-        maxEntries: UInt
+        maxEntries: UInt,
+        serviceMode: ServiceMode
     ) = lightWalletClient.getSubtreeRoots(
         startIndex = startIndex,
         shieldedProtocol = shieldedProtocol,
-        maxEntries = maxEntries
+        maxEntries = maxEntries,
+        serviceMode = serviceMode
     )
 
     /**
@@ -229,7 +250,11 @@ open class CompactBlockDownloader private constructor(
      *
      * @return information about roots of subtrees of the Sapling and Orchard note commitment trees.
      */
-    suspend fun getTreeState(height: BlockHeightUnsafe) = lightWalletClient.getTreeState(height = height)
+    suspend fun getTreeState(height: BlockHeightUnsafe, serviceMode: ServiceMode) =
+        lightWalletClient.getTreeState(
+            height = height,
+            serviceMode = serviceMode
+        )
 
     companion object {
         private const val GET_SERVER_INFO_RETRIES = 6
