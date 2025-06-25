@@ -16,6 +16,7 @@ import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
 import co.electriccoin.lightwallet.client.util.use
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -23,7 +24,7 @@ import kotlinx.coroutines.withContext
 @Suppress("TooManyFunctions")
 class CombinedWalletClientImpl private constructor(
     private val lightWalletClient: LightWalletClient,
-    private val torClient: TorClient,
+    private val torClient: TorClient?,
     private val endpoint: LightWalletEndpoint,
 ) : CombinedWalletClient {
     private val cache = mutableMapOf<ServiceMode, PartialTorWalletClient>()
@@ -33,7 +34,7 @@ class CombinedWalletClientImpl private constructor(
     override suspend fun dispose() {
         semaphore.withLock {
             lightWalletClient.dispose()
-            torClient.dispose()
+            torClient?.dispose()
             cache.forEach { (_, client) -> client.dispose() }
             cache.clear()
         }
@@ -42,25 +43,25 @@ class CombinedWalletClientImpl private constructor(
     override suspend fun fetchTransaction(
         txId: ByteArray,
         serviceMode: ServiceMode
-    ) = execute(serviceMode) { fetchTransaction(txId) }
+    ) = executeAsResponse(serviceMode) { fetchTransaction(txId) }
 
     override suspend fun getServerInfo(
         serviceMode: ServiceMode
-    ) = execute(serviceMode) { getServerInfo() }
+    ) = executeAsResponse(serviceMode) { getServerInfo() }
 
     override suspend fun getLatestBlockHeight(
         serviceMode: ServiceMode
-    ) = execute(serviceMode) { getLatestBlockHeight() }
+    ) = executeAsResponse(serviceMode) { getLatestBlockHeight() }
 
     override suspend fun submitTransaction(
         tx: ByteArray,
         serviceMode: ServiceMode
-    ) = execute(serviceMode) { submitTransaction(tx) }
+    ) = executeAsResponse(serviceMode) { submitTransaction(tx) }
 
     override suspend fun getTreeState(
         height: BlockHeightUnsafe,
         serviceMode: ServiceMode
-    ) = execute(serviceMode) { getTreeState(height) }
+    ) = executeAsResponse(serviceMode) { getTreeState(height) }
 
     override suspend fun fetchUtxos(
         tAddresses: List<String>,
@@ -68,7 +69,7 @@ class CombinedWalletClientImpl private constructor(
         serviceMode: ServiceMode
     ): Flow<Response<GetAddressUtxosReplyUnsafe>> {
         require(serviceMode == ServiceMode.Direct)
-        return execute(serviceMode) {
+        return executeAsFlow(serviceMode) {
             require(this is LightWalletClient)
             fetchUtxos(tAddresses, startHeight)
         }
@@ -79,7 +80,7 @@ class CombinedWalletClientImpl private constructor(
         serviceMode: ServiceMode
     ): Flow<Response<CompactBlockUnsafe>> {
         require(serviceMode == ServiceMode.Direct)
-        return execute(serviceMode) {
+        return executeAsFlow(serviceMode) {
             require(this is LightWalletClient)
             getBlockRange(heightRange)
         }
@@ -91,7 +92,7 @@ class CombinedWalletClientImpl private constructor(
         serviceMode: ServiceMode
     ): Flow<Response<RawTransactionUnsafe>> {
         require(serviceMode == ServiceMode.Direct)
-        return execute(serviceMode) {
+        return executeAsFlow(serviceMode) {
             require(this is LightWalletClient)
             getTAddressTransactions(tAddress, blockHeightRange)
         }
@@ -104,13 +105,33 @@ class CombinedWalletClientImpl private constructor(
         serviceMode: ServiceMode
     ): Flow<Response<SubtreeRootUnsafe>> {
         require(serviceMode == ServiceMode.Direct)
-        return execute(serviceMode) {
+        return executeAsFlow(serviceMode) {
             require(this is LightWalletClient)
             getSubtreeRoots(startIndex, shieldedProtocol, maxEntries)
         }
     }
 
     override fun reconnect() = lightWalletClient.reconnect()
+
+    private suspend inline fun <T> executeAsFlow(
+        serviceMode: ServiceMode,
+        block: PartialWalletClient.() -> Flow<Response<T>>
+    ): Flow<Response<T>> =
+        try {
+            execute(serviceMode, block)
+        } catch (e: UninitializedTorClientException) {
+            flowOf(Response.Failure.OverTor(cause = e))
+        }
+
+    private suspend inline fun <T> executeAsResponse(
+        serviceMode: ServiceMode,
+        block: PartialWalletClient.() -> Response<T>
+    ): Response<T> =
+        try {
+            execute(serviceMode, block)
+        } catch (e: UninitializedTorClientException) {
+            Response.Failure.OverTor(cause = e)
+        }
 
     @Suppress("TooGenericExceptionCaught")
     private suspend inline fun <T> execute(
@@ -138,13 +159,22 @@ class CombinedWalletClientImpl private constructor(
     private suspend fun getOrCreate(serviceMode: ServiceMode) =
         withContext(Dispatchers.Default) { cache.getOrPut(serviceMode) { create() } }
 
-    private suspend fun create() = torClient.createWalletClient("https://${endpoint.host}:${endpoint.port}")
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun create(): PartialTorWalletClient {
+        if (torClient == null) throw UninitializedTorClientException(NullPointerException("torClient is null"))
+
+        return try {
+            torClient.createWalletClient("https://${endpoint.host}:${endpoint.port}")
+        } catch (e: Exception) {
+            throw UninitializedTorClientException(e)
+        }
+    }
 
     companion object Factory {
         suspend fun new(
             endpoint: LightWalletEndpoint,
             lightWalletClient: LightWalletClient,
-            torClient: TorClient
+            torClient: TorClient?
         ) = CombinedWalletClientImpl(
             endpoint = endpoint,
             lightWalletClient = lightWalletClient,
@@ -152,3 +182,7 @@ class CombinedWalletClientImpl private constructor(
         )
     }
 }
+
+class UninitializedTorClientException(
+    cause: Exception
+) : RuntimeException(cause)

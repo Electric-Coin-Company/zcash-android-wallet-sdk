@@ -74,10 +74,8 @@ class TorWalletClient private constructor(
             checkNotNull(nativeHandle) { "TorWalletClient is disposed" }
             try {
                 Response.Success(block(nativeHandle))
-            } catch (e: RuntimeException) {
-                Response.Failure.OverTor(e.message)
             } catch (e: Exception) {
-                Response.Failure.OverTor(e.message)
+                Response.Failure.OverTor(cause = e)
             }
         }
     }

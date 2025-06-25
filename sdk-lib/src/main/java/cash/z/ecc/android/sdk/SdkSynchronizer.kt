@@ -141,9 +141,9 @@ class SdkSynchronizer private constructor(
     val processor: CompactBlockProcessor,
     private val backend: TypesafeBackend,
     private val fetchFastestServers: FastestServerFetcher,
-    private val fetchExchangeChangeUsd: UsdExchangeRateFetcher,
+    private val fetchExchangeChangeUsd: UsdExchangeRateFetcher?,
     private val preferenceProvider: PreferenceProvider,
-    private val torClient: TorClient,
+    private val torClient: TorClient?,
     private val walletClient: CombinedWalletClient,
     private val walletClientFactory: WalletClientFactory,
 ) : CloseableSynchronizer {
@@ -180,9 +180,9 @@ class SdkSynchronizer private constructor(
             processor: CompactBlockProcessor,
             backend: TypesafeBackend,
             fastestServerFetcher: FastestServerFetcher,
-            fetchExchangeChangeUsd: UsdExchangeRateFetcher,
+            fetchExchangeChangeUsd: UsdExchangeRateFetcher?,
             preferenceProvider: PreferenceProvider,
-            torClient: TorClient,
+            torClient: TorClient?,
             walletClient: CombinedWalletClient,
             walletClientFactory: WalletClientFactory
         ): CloseableSynchronizer {
@@ -275,7 +275,8 @@ class SdkSynchronizer private constructor(
                     flow {
                         emit(lastExchangeRateValue.copy(isLoading = true))
                         lastExchangeRateValue =
-                            when (val result = fetchExchangeChangeUsd()) {
+                            when (val result = fetchExchangeChangeUsd?.invoke()) {
+                                null,
                                 is FetchFiatCurrencyResult.Error -> lastExchangeRateValue.copy(isLoading = false)
 
                                 is FetchFiatCurrencyResult.Success ->
@@ -423,9 +424,9 @@ class SdkSynchronizer private constructor(
             coroutineScope.launch {
                 Twig.info { "Stopping synchronizer $synchronizerKey…" }
                 processor.stop()
-                torClient.dispose()
+                torClient?.dispose()
                 walletClient.dispose()
-                fetchExchangeChangeUsd.dispose()
+                fetchExchangeChangeUsd?.dispose()
             }
 
         instances[synchronizerKey] = InstanceState.ShuttingDown(shutdownJob)
@@ -449,9 +450,9 @@ class SdkSynchronizer private constructor(
                 coroutineScope.launch {
                     Twig.info { "Stopping synchronizer $synchronizerKey…" }
                     processor.stop()
-                    torClient.dispose()
+                    torClient?.dispose()
                     walletClient.dispose()
-                    fetchExchangeChangeUsd.dispose()
+                    fetchExchangeChangeUsd?.dispose()
                 }
 
             instances[synchronizerKey] = InstanceState.ShuttingDown(shutdownJob)
@@ -534,11 +535,11 @@ class SdkSynchronizer private constructor(
         }
 
     override fun onBackground() {
-        coroutineScope.launch { torClient.setDormant(TorDormantMode.SOFT) }
+        coroutineScope.launch { torClient?.setDormant(TorDormantMode.SOFT) }
     }
 
     override fun onForeground() {
-        coroutineScope.launch { torClient.setDormant(TorDormantMode.NORMAL) }
+        coroutineScope.launch { torClient?.setDormant(TorDormantMode.NORMAL) }
     }
 
     //

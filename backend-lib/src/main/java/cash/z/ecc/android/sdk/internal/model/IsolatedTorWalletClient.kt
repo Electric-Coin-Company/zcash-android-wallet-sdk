@@ -40,7 +40,7 @@ class IsolatedTorWalletClient private constructor(
                         block(it)
                     }
             } catch (e: RuntimeException) {
-                Response.Failure.OverTor(e.message)
+                Response.Failure.OverTor(cause = e)
             }
         }
 

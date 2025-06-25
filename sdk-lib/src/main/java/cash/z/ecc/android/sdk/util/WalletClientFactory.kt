@@ -14,7 +14,7 @@ import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
  */
 class WalletClientFactory(
     private val context: Context,
-    private val torClient: TorClient
+    private val torClient: TorClient?
 ) {
     /**
      * Creates a [CombinedWalletClientImpl] which will leverage Tor for lightwalletd connection for functions specified
@@ -23,10 +23,19 @@ class WalletClientFactory(
      *
      * @return an instance of [WalletClient] for [endpoint]
      */
-    suspend fun create(endpoint: LightWalletEndpoint): CombinedWalletClient =
-        CombinedWalletClientImpl.new(
+    @Suppress("TooGenericExceptionCaught")
+    suspend fun create(endpoint: LightWalletEndpoint): CombinedWalletClient {
+        val torClient =
+            try {
+                torClient?.isolatedTorClient()
+            } catch (_: Exception) {
+                null
+            }
+
+        return CombinedWalletClientImpl.new(
             endpoint = endpoint,
             lightWalletClient = LightWalletClient.new(context, endpoint),
-            torClient = torClient.isolatedTorClient(),
+            torClient = torClient,
         )
+    }
 }
