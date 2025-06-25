@@ -65,16 +65,6 @@ jobs:
         id: setup
         timeout-minutes: 50
         uses: ./.github/actions/setup
-      # While not strictly necessary, this sanity checks the build before attempting to upload.
-      # This adds minimal additional build time, since most of the work is cached and re-used
-      # in the next step.
-      - name: Deploy to Maven Local
-        timeout-minutes: 25
-        env:
-          ORG_GRADLE_PROJECT_IS_SNAPSHOT: true
-          ORG_GRADLE_PROJECT_ZCASH_ASCII_GPG_KEY: ${{ secrets.MAVEN_SIGNING_KEY_ASCII }}
-        run: |
-          ./gradlew publishReleasePublicationToMavenLocalRepository --no-parallel
       # Note that GitHub Actions appears to have issues with environment variables that contain periods,
       # so the GPG variables are done as command line arguments instead.
       - name: Deploy to Maven Central
@@ -85,7 +75,7 @@ jobs:
           ORG_GRADLE_PROJECT_ZCASH_ASCII_GPG_KEY: ${{ secrets.MAVEN_SIGNING_KEY_ASCII }}
           ORG_GRADLE_PROJECT_IS_SNAPSHOT: true
         run: |
-          ./gradlew publishReleasePublicationToMavenCentralRepository --no-parallel
+          ./gradlew publishToMavenCentral
       - name: Collect Artifacts
         timeout-minutes: 1
         if: ${{ always() }}
