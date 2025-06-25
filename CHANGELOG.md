@@ -9,6 +9,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Tor client is now optional in case it's instantiation fails to prevent SDK
 
+## [2.2.15] - 2025-06-26
+
+### Fixed
+- Tor client is now optional in case it's instantiation fails to prevent SDK from crashing
+
 ## [2.2.14] - 2025-06-16
 
 ## Fixed
