@@ -97,6 +97,7 @@ class WalletCoordinator(
                                         seed = FirstClassByteArray(persistableWallet.seedPhrase.toByteArray())
                                     ),
                                 walletInitMode = persistableWallet.walletInitMode,
+                                isTorEnabled = persistableWallet.isTorEnabled
                             )
 
                         trySend(InternalSynchronizerStatus.Available(closeableSynchronizer))

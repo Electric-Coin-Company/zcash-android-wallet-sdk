@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+###
+- [Synchronizer] now takes [isTorEnabled] as a constructor parameter to indicate whether to force rpc-s via Tor network.
+
 ### Fixed
 - Tor client is now optional in case it's instantiation fails to prevent SDK
 

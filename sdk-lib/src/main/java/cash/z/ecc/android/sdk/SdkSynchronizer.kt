@@ -58,6 +58,7 @@ import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.SdkFlags
 import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionOutput
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -146,6 +147,7 @@ class SdkSynchronizer private constructor(
     private val torClient: TorClient?,
     private val walletClient: CombinedWalletClient,
     private val walletClientFactory: WalletClientFactory,
+    private val sdkFlags: SdkFlags
 ) : CloseableSynchronizer {
     companion object {
         private sealed class InstanceState {
@@ -184,7 +186,8 @@ class SdkSynchronizer private constructor(
             preferenceProvider: PreferenceProvider,
             torClient: TorClient?,
             walletClient: CombinedWalletClient,
-            walletClientFactory: WalletClientFactory
+            walletClientFactory: WalletClientFactory,
+            sdkFlags: SdkFlags
         ): CloseableSynchronizer {
             val synchronizerKey = SynchronizerKey(zcashNetwork, alias)
             return mutex.withLock {
@@ -202,7 +205,8 @@ class SdkSynchronizer private constructor(
                     preferenceProvider = preferenceProvider,
                     torClient = torClient,
                     walletClient = walletClient,
-                    walletClientFactory = walletClientFactory
+                    walletClientFactory = walletClientFactory,
+                    sdkFlags = sdkFlags
                 ).apply {
                     instances[synchronizerKey] = InstanceState.Active
                     start()
@@ -747,9 +751,8 @@ class SdkSynchronizer private constructor(
         }
 
     override suspend fun importAccountByUfvk(setup: AccountImportSetup): Account {
-        // TODO [#1772]: redirect to correct service mode after 2.1 release
         val chainTip: BlockHeight? =
-            when (val response = processor.downloader.getLatestBlockHeight(serviceMode = ServiceMode.Direct)) {
+            when (val response = processor.downloader.getLatestBlockHeight(serviceMode = ServiceMode.UniqueTor)) {
                 is Response.Success -> {
                     Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
                     runCatching { response.result.toBlockHeight() }.getOrNull()
@@ -976,21 +979,33 @@ class SdkSynchronizer private constructor(
     // TODO [#1405]: Fix/Remove broken SdkSynchronizer.validateConsensusBranch function
     // TODO [#1405]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1405
     override suspend fun validateConsensusBranch(): ConsensusMatchType {
-        // TODO [#1772]: redirect to correct service mode after 2.1 release
         val serverBranchId =
             tryNull {
                 processor.downloader
                     .getServerInfo(
-                        serviceMode = ServiceMode.Direct
+                        serviceMode =
+                            if (sdkFlags.isTorEnabled) {
+                                ServiceMode.Group(
+                                    "SdkSynchronizer.validateConsensusBranch"
+                                )
+                            } else {
+                                ServiceMode.Direct
+                            }
                     )?.consensusBranchId
             }
 
-        // TODO [#1772]: redirect to correct service mode after 2.1 release
         val currentChainTip =
             when (
                 val response =
                     processor.downloader.getLatestBlockHeight(
-                        serviceMode = ServiceMode.Direct
+                        serviceMode =
+                            if (sdkFlags.isTorEnabled) {
+                                ServiceMode.Group(
+                                    "SdkSynchronizer.validateConsensusBranch"
+                                )
+                            } else {
+                                ServiceMode.Direct
+                            }
                     )
             ) {
                 is Response.Success -> {
@@ -1031,10 +1046,18 @@ class SdkSynchronizer private constructor(
         walletClientFactory
             .create(endpoint = endpoint)
             .use { lightWalletClient ->
-                // TODO [#1772]: redirect to correct service mode after 2.1 release
                 val remoteInfo =
                     when (
-                        val response = lightWalletClient.getServerInfo(ServiceMode.Direct)
+                        val response =
+                            lightWalletClient.getServerInfo(
+                                if (sdkFlags.isTorEnabled) {
+                                    ServiceMode.Group(
+                                        "SdkSynchronizer.validateServerEndpoint(${endpoint.host}:${endpoint.port})"
+                                    )
+                                } else {
+                                    ServiceMode.Direct
+                                }
+                            )
                     ) {
                         is Response.Success -> response.result
                         is Response.Failure -> {
@@ -1067,12 +1090,18 @@ class SdkSynchronizer private constructor(
                     return ServerValidation.InValid(it)
                 }
 
-                // TODO [#1772]: redirect to correct service mode after 2.1 release
                 val currentChainTip =
                     when (
                         val response =
                             lightWalletClient.getLatestBlockHeight(
-                                serviceMode = ServiceMode.Direct
+                                serviceMode =
+                                    if (sdkFlags.isTorEnabled) {
+                                        ServiceMode.Group(
+                                            "SdkSynchronizer.validateServerEndpoint(${endpoint.host}:${endpoint.port})"
+                                        )
+                                    } else {
+                                        ServiceMode.Direct
+                                    }
                             )
                     ) {
                         is Response.Success -> {
@@ -1193,15 +1222,17 @@ internal object DefaultSynchronizerFactory {
 
     internal fun defaultTxManager(
         encoder: TransactionEncoder,
-        service: CombinedWalletClient
-    ): OutboundTransactionManager = OutboundTransactionManagerImpl.new(encoder, service)
+        service: CombinedWalletClient,
+        sdkFlags: SdkFlags
+    ): OutboundTransactionManager = OutboundTransactionManagerImpl.new(encoder, service, sdkFlags)
 
     internal fun defaultProcessor(
         backend: TypesafeBackend,
         downloader: CompactBlockDownloader,
         repository: DerivedDataRepository,
         birthdayHeight: BlockHeight,
-        txManager: OutboundTransactionManager
+        txManager: OutboundTransactionManager,
+        sdkFlags: SdkFlags
     ): CompactBlockProcessor =
         CompactBlockProcessor(
             backend = backend,
@@ -1209,6 +1240,7 @@ internal object DefaultSynchronizerFactory {
             minimumHeight = birthdayHeight,
             repository = repository,
             txManager = txManager,
+            sdkFlags = sdkFlags
         )
 }
 

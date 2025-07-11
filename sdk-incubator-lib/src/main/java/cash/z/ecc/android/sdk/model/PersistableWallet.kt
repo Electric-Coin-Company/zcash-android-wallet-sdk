@@ -28,7 +28,8 @@ data class PersistableWallet(
     val endpoint: LightWalletEndpoint,
     val birthday: BlockHeight?,
     val seedPhrase: SeedPhrase,
-    val walletInitMode: WalletInitMode
+    val walletInitMode: WalletInitMode,
+    val isTorEnabled: Boolean,
 ) {
     init {
         walletInitModeHolder = walletInitMode
@@ -51,6 +52,7 @@ data class PersistableWallet(
                 put(KEY_BIRTHDAY, it.value)
             }
             put(KEY_SEED_PHRASE, seedPhrase.joinToString())
+            put(KEY_IS_TOR_ENABLED, isTorEnabled)
         }
 
     // For security, intentionally override the toString method to reduce risk of accidentally logging secrets
@@ -77,6 +79,7 @@ data class PersistableWallet(
         internal const val KEY_ENDPOINT_IS_SECURE = "key_endpoint_is_secure"
         internal const val KEY_BIRTHDAY = "birthday"
         internal const val KEY_SEED_PHRASE = "seed_phrase"
+        internal const val KEY_IS_TOR_ENABLED = "isTorEnabled"
 
         // Note: [walletInitMode] is excluded from the serialization to avoid persisting the wallet initialization mode
         // with the persistable wallet.
@@ -87,6 +90,8 @@ data class PersistableWallet(
             val network = getNetwork(jsonObject)
             val birthday = getBirthday(jsonObject)
             val seedPhrase = getSeedPhrase(jsonObject)
+            val isTorEnabled = isTorEnabled(jsonObject)
+
             // From version 2
             val endpoint: LightWalletEndpoint
 
@@ -107,7 +112,8 @@ data class PersistableWallet(
                 endpoint = endpoint,
                 birthday = birthday,
                 seedPhrase = SeedPhrase.new(seedPhrase),
-                walletInitMode = walletInitModeHolder
+                walletInitMode = walletInitModeHolder,
+                isTorEnabled = isTorEnabled
             )
         }
 
@@ -118,6 +124,14 @@ data class PersistableWallet(
         internal fun getNetwork(jsonObject: JSONObject): ZcashNetwork {
             val networkId = jsonObject.getInt(KEY_NETWORK_ID)
             return ZcashNetwork.from(networkId)
+        }
+
+        internal fun isTorEnabled(jsonObject: JSONObject): Boolean {
+            return if (jsonObject.has(KEY_IS_TOR_ENABLED)) {
+                jsonObject.getBoolean(KEY_IS_TOR_ENABLED)
+            } else {
+                false
+            }
         }
 
         internal fun getBirthday(jsonObject: JSONObject): BlockHeight? =
@@ -151,18 +165,20 @@ data class PersistableWallet(
             application: Application,
             zcashNetwork: ZcashNetwork,
             endpoint: LightWalletEndpoint,
-            walletInitMode: WalletInitMode
+            walletInitMode: WalletInitMode,
+            isTorEnabled: Boolean
         ): PersistableWallet {
             val birthday = BlockHeight.ofLatestCheckpoint(application, zcashNetwork)
 
             val seedPhrase = newSeedPhrase()
 
             return PersistableWallet(
-                zcashNetwork,
-                endpoint,
-                birthday,
-                seedPhrase,
-                walletInitMode
+                network = zcashNetwork,
+                endpoint = endpoint,
+                birthday = birthday,
+                seedPhrase = seedPhrase,
+                walletInitMode = walletInitMode,
+                isTorEnabled = isTorEnabled
             )
         }
 

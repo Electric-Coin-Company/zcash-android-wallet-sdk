@@ -123,7 +123,8 @@ private fun ConfigureSeedMainContent(
                         endpoint = LightWalletEndpoint.defaultForNetwork(zcashNetwork),
                         birthday = WalletFixture.Alice.getBirthday(zcashNetwork),
                         seedPhrase = SeedPhrase.new(WalletFixture.Alice.seedPhrase),
-                        walletInitMode = WalletInitMode.RestoreWallet
+                        walletInitMode = WalletInitMode.RestoreWallet,
+                        isTorEnabled = false
                     )
                 onExistingWallet(newWallet)
             }
@@ -138,7 +139,8 @@ private fun ConfigureSeedMainContent(
                         endpoint = LightWalletEndpoint.defaultForNetwork(zcashNetwork),
                         birthday = WalletFixture.Ben.getBirthday(zcashNetwork),
                         seedPhrase = SeedPhrase.new(WalletFixture.Ben.seedPhrase),
-                        walletInitMode = WalletInitMode.RestoreWallet
+                        walletInitMode = WalletInitMode.RestoreWallet,
+                        isTorEnabled = false
                     )
                 onExistingWallet(newWallet)
             }
@@ -226,7 +228,8 @@ private fun RestoreWalletSection(
                         endpoint = LightWalletEndpoint.defaultForNetwork(zcashNetwork),
                         birthday = blockHeight,
                         seedPhrase = seedPhrase,
-                        walletInitMode = WalletInitMode.RestoreWallet
+                        walletInitMode = WalletInitMode.RestoreWallet,
+                        isTorEnabled = false
                     )
                 onExistingWallet(wallet)
             } catch (e: IllegalArgumentException) {

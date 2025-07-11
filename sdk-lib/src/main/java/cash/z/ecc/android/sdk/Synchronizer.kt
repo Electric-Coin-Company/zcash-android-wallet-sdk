@@ -29,6 +29,7 @@ import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.SdkFlags
 import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionOutput
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -746,6 +747,7 @@ interface Synchronizer {
             setup: AccountCreateSetup?,
             walletInitMode: WalletInitMode,
             zcashNetwork: ZcashNetwork,
+            isTorEnabled: Boolean
         ): CloseableSynchronizer {
             val applicationContext = context.applicationContext
 
@@ -805,8 +807,7 @@ interface Synchronizer {
             val chainTip =
                 when (walletInitMode) {
                     is RestoreWallet -> {
-                        // TODO [#1772]: redirect to correct service mode after 2.1 release
-                        when (val response = downloader.getLatestBlockHeight(ServiceMode.Direct)) {
+                        when (val response = downloader.getLatestBlockHeight(ServiceMode.UniqueTor)) {
                             is Response.Success -> {
                                 Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
                                 runCatching { response.result.toBlockHeight() }.getOrNull()
@@ -838,7 +839,10 @@ interface Synchronizer {
 
             val encoder = DefaultSynchronizerFactory.defaultEncoder(backend, saplingParamTool, repository)
 
-            val txManager = DefaultSynchronizerFactory.defaultTxManager(encoder, walletClient)
+            val sdkFlags = SdkFlags(
+                isTorEnabled = isTorEnabled
+            )
+            val txManager = DefaultSynchronizerFactory.defaultTxManager(encoder, walletClient, sdkFlags)
             val processor =
                 DefaultSynchronizerFactory.defaultProcessor(
                     backend = backend,
@@ -846,6 +850,7 @@ interface Synchronizer {
                     downloader = downloader,
                     repository = repository,
                     txManager = txManager,
+                    sdkFlags = sdkFlags
                 )
 
             val standardPreferenceProvider = StandardPreferenceProvider(context)
@@ -862,7 +867,8 @@ interface Synchronizer {
                     FastestServerFetcher(
                         backend = backend,
                         network = processor.network,
-                        walletClientFactory = walletClientFactory
+                        walletClientFactory = walletClientFactory,
+                        sdkFlags = sdkFlags
                     ),
                 fetchExchangeChangeUsd =
                     exchangeRateIsolatedTorClient?.let {
@@ -871,7 +877,8 @@ interface Synchronizer {
                 preferenceProvider = standardPreferenceProvider(),
                 torClient = torClient,
                 walletClient = walletClient,
-                walletClientFactory = walletClientFactory
+                walletClientFactory = walletClientFactory,
+                sdkFlags = sdkFlags
             )
         }
 
@@ -891,6 +898,7 @@ interface Synchronizer {
             setup: AccountCreateSetup?,
             walletInitMode: WalletInitMode,
             zcashNetwork: ZcashNetwork,
+            isTorEnabled: Boolean
         ): CloseableSynchronizer =
             runBlocking {
                 new(
@@ -901,6 +909,7 @@ interface Synchronizer {
                     setup = setup,
                     walletInitMode = walletInitMode,
                     zcashNetwork = zcashNetwork,
+                    isTorEnabled = isTorEnabled
                 )
             }
 

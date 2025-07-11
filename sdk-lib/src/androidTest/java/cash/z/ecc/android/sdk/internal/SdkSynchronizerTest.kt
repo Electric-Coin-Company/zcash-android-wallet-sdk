@@ -39,6 +39,7 @@ class SdkSynchronizerTest {
                     // Using existing wallet init mode as simplification for the test
                     walletInitMode = WalletInitMode.ExistingWallet,
                     zcashNetwork = ZcashNetwork.Mainnet,
+                    isTorEnabled = false,
                 ).use {
                     assertFailsWith<IllegalStateException> {
                         Synchronizer.new(
@@ -54,6 +55,7 @@ class SdkSynchronizerTest {
                             // Using existing wallet init mode as simplification for the test
                             walletInitMode = WalletInitMode.ExistingWallet,
                             zcashNetwork = ZcashNetwork.Mainnet,
+                            isTorEnabled = false,
                         )
                     }
                 }
@@ -83,6 +85,7 @@ class SdkSynchronizerTest {
                     // Using existing wallet init mode as simplification for the test
                     walletInitMode = WalletInitMode.ExistingWallet,
                     zcashNetwork = ZcashNetwork.Mainnet,
+                    isTorEnabled = false,
                 ).use {}
 
             // Second instance should succeed because first one was closed
@@ -99,6 +102,7 @@ class SdkSynchronizerTest {
                     // Using existing wallet init mode as simplification for the test
                     walletInitMode = WalletInitMode.ExistingWallet,
                     zcashNetwork = ZcashNetwork.Mainnet,
+                    isTorEnabled = false,
                 ).use {}
         }
 
@@ -126,6 +130,7 @@ class SdkSynchronizerTest {
                     // Using existing wallet init mode as simplification for the test
                     walletInitMode = WalletInitMode.ExistingWallet,
                     zcashNetwork = ZcashNetwork.Mainnet,
+                    isTorEnabled = false,
                 ).use {
                     it.getSaplingAddress(it.getAccounts()[0])
                 }
@@ -147,6 +152,7 @@ class SdkSynchronizerTest {
                             // Using existing wallet init mode as simplification for the test
                             walletInitMode = WalletInitMode.ExistingWallet,
                             zcashNetwork = ZcashNetwork.Mainnet,
+                            isTorEnabled = false,
                         ).use {}
                 }
             assertEquals(InitializeException.SeedNotRelevant, error)
