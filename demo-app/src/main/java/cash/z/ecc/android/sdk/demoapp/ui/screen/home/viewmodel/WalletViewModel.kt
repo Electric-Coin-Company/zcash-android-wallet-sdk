@@ -175,7 +175,7 @@ class WalletViewModel(
                     zcashNetwork = network,
                     endpoint = LightWalletEndpoint.defaultForNetwork(network),
                     walletInitMode = WalletInitMode.NewWallet,
-                    isTorEnabled = false
+                    isTorEnabled = null
                 )
             persistWallet(newWallet)
         }

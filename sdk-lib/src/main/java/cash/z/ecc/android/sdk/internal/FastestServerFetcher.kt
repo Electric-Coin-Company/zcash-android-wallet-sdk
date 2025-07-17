@@ -126,7 +126,7 @@ internal class FastestServerFetcher(
                         when (
                             val response =
                                 lightWalletClient.getServerInfo(
-                                    if (sdkFlags.isTorEnabled) {
+                                    if (sdkFlags.isTorEnabled == true) {
                                         ServiceMode.Group(
                                             "validateServerEndpointAndMeasure(${endpoint.host}:${endpoint.port})"
                                         )
@@ -178,7 +178,7 @@ internal class FastestServerFetcher(
                         val response =
                             lightWalletClient.getLatestBlockHeight(
                                 serviceMode =
-                                    if (sdkFlags.isTorEnabled) {
+                                    if (sdkFlags.isTorEnabled == true) {
                                         ServiceMode.Group(
                                             "validateServerEndpointAndMeasure(${endpoint.host}:${endpoint.port})"
                                         )

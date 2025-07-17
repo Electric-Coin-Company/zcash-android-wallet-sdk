@@ -22,6 +22,8 @@ import org.json.JSONObject
  * wallet that was created at some point in the past. Or use the last [WalletInitMode.ExistingWallet] type for a
  * wallet which is already initialized and needs follow-up block synchronization. Note that this parameter is NOT
  * persisted along with the rest of persistable wallet data.
+ * @param isTorEnabled indicates whether tor should be used for network connection. True if enabled, false if disabled,
+ * null if disabled and not explicitly set
  */
 data class PersistableWallet(
     val network: ZcashNetwork,
@@ -29,7 +31,7 @@ data class PersistableWallet(
     val birthday: BlockHeight?,
     val seedPhrase: SeedPhrase,
     val walletInitMode: WalletInitMode,
-    val isTorEnabled: Boolean,
+    val isTorEnabled: Boolean?,
 ) {
     init {
         walletInitModeHolder = walletInitMode
@@ -43,7 +45,7 @@ data class PersistableWallet(
      **/
     fun toJson() =
         JSONObject().apply {
-            put(KEY_VERSION, VERSION_2)
+            put(KEY_VERSION, VERSION_3)
             put(KEY_NETWORK_ID, network.id)
             put(KEY_ENDPOINT_HOST, endpoint.host)
             put(KEY_ENDPOINT_PORT, endpoint.port)
@@ -52,7 +54,7 @@ data class PersistableWallet(
                 put(KEY_BIRTHDAY, it.value)
             }
             put(KEY_SEED_PHRASE, seedPhrase.joinToString())
-            put(KEY_IS_TOR_ENABLED, isTorEnabled)
+            if (isTorEnabled != null) put(KEY_IS_TOR_ENABLED, isTorEnabled)
         }
 
     // For security, intentionally override the toString method to reduce risk of accidentally logging secrets
@@ -71,6 +73,7 @@ data class PersistableWallet(
     companion object {
         internal const val VERSION_1 = 1
         internal const val VERSION_2 = 2
+        internal const val VERSION_3 = 3
 
         internal const val KEY_VERSION = "v"
         internal const val KEY_NETWORK_ID = "network_ID"
@@ -93,18 +96,11 @@ data class PersistableWallet(
             val isTorEnabled = isTorEnabled(jsonObject)
 
             // From version 2
-            val endpoint: LightWalletEndpoint
-
-            when (val version = getVersion(jsonObject)) {
-                VERSION_1 -> {
-                    endpoint = getLightWalletEndpointForNetwork(network)
-                }
-                VERSION_2 -> {
-                    endpoint = getEndpoint(jsonObject)
-                }
-                else -> {
-                    throw IllegalArgumentException("Unsupported version $version")
-                }
+            val endpoint: LightWalletEndpoint = when (val version = getVersion(jsonObject)) {
+                VERSION_1 -> getLightWalletEndpointForNetwork(network)
+                VERSION_2,
+                VERSION_3 -> getEndpoint(jsonObject)
+                else -> throw IllegalArgumentException("Unsupported version $version")
             }
 
             return PersistableWallet(
@@ -126,13 +122,12 @@ data class PersistableWallet(
             return ZcashNetwork.from(networkId)
         }
 
-        internal fun isTorEnabled(jsonObject: JSONObject): Boolean {
-            return if (jsonObject.has(KEY_IS_TOR_ENABLED)) {
+        internal fun isTorEnabled(jsonObject: JSONObject): Boolean? =
+            if (jsonObject.has(KEY_IS_TOR_ENABLED)) {
                 jsonObject.getBoolean(KEY_IS_TOR_ENABLED)
             } else {
-                false
+                null
             }
-        }
 
         internal fun getBirthday(jsonObject: JSONObject): BlockHeight? =
             if (jsonObject.has(KEY_BIRTHDAY)) {
@@ -160,13 +155,15 @@ data class PersistableWallet(
          * restoring an existing wallet that was created at some point in the past. Or use the last [WalletInitMode
          * .ExistingWallet] type for a wallet which is already initialized and needs follow-up block synchronization.
          * Note that this parameter is NOT persisted along with the rest of persistable wallet data.
+         * @param isTorEnabled indicates whether tor should be used for network connection. True if enabled, false if
+         * disabled, null if disabled and not explicitly set
          */
         suspend fun new(
             application: Application,
             zcashNetwork: ZcashNetwork,
             endpoint: LightWalletEndpoint,
             walletInitMode: WalletInitMode,
-            isTorEnabled: Boolean
+            isTorEnabled: Boolean?
         ): PersistableWallet {
             val birthday = BlockHeight.ofLatestCheckpoint(application, zcashNetwork)
 

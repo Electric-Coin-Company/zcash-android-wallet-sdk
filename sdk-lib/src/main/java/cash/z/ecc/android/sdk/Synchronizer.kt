@@ -150,6 +150,16 @@ interface Synchronizer {
     val accountsFlow: Flow<List<Account>?>
 
     /**
+     * Emits error states of the synchronizer.
+     */
+    val errorState: Flow<SynchronizerErrorState?>
+
+    /**
+     * Emits the current flags of the synchronizer.
+     */
+    val flags: Flow<SdkFlags>
+
+    /**
      * Tells the wallet to track an account using a unified full viewing key.
      *
      * Returns details about the imported account, including the unique account identifier for
@@ -747,9 +757,11 @@ interface Synchronizer {
             setup: AccountCreateSetup?,
             walletInitMode: WalletInitMode,
             zcashNetwork: ZcashNetwork,
-            isTorEnabled: Boolean
+            isTorEnabled: Boolean?
         ): CloseableSynchronizer {
             val applicationContext = context.applicationContext
+
+            val sdkFlags = SdkFlags(isTorEnabled = isTorEnabled)
 
             validateAlias(alias)
 
@@ -781,7 +793,7 @@ interface Synchronizer {
             val torDir = Files.getTorDir(context)
             val torClient =
                 try {
-                    TorClient.new(torDir)
+                    if (sdkFlags.isTorEnabled == true) TorClient.new(torDir) else null
                 } catch (e: Exception) {
                     Twig.error(e) { "Error instantiating Tor Client" }
                     null
@@ -839,9 +851,6 @@ interface Synchronizer {
 
             val encoder = DefaultSynchronizerFactory.defaultEncoder(backend, saplingParamTool, repository)
 
-            val sdkFlags = SdkFlags(
-                isTorEnabled = isTorEnabled
-            )
             val txManager = DefaultSynchronizerFactory.defaultTxManager(encoder, walletClient, sdkFlags)
             val processor =
                 DefaultSynchronizerFactory.defaultProcessor(
@@ -976,4 +985,14 @@ private fun validateAlias(alias: String) {
         "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
             "characters and only contain letters, digits, hyphens, and underscores."
     }
+}
+
+enum class SynchronizerErrorState {
+    /**
+     * Indicates that tor is required but not available.
+     *
+     * Typically this means that [SdkFlags.isTorEnabled] is set to true but Tor instantiation
+     * using function [TorClient.new] failed.
+     */
+    TOR_NOT_AVAILABLE,
 }

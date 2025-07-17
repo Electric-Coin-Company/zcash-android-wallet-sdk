@@ -914,7 +914,11 @@ class CompactBlockProcessor internal constructor(
             val serverInfo =
                 runCatching {
                     downloader.getServerInfo(
-                        if (sdkFlags.isTorEnabled) ServiceMode.DefaultTor else ServiceMode.Direct
+                        if (sdkFlags.isTorEnabled == true) {
+                            ServiceMode.DefaultTor
+                        } else {
+                            ServiceMode.Direct
+                        }
                     )
                 }.onFailure {
                     Twig.error { "Unable to obtain server info due to: ${it.message}" }
@@ -1155,9 +1159,16 @@ class CompactBlockProcessor internal constructor(
             var latestBlockHeight: BlockHeight? = null
 
             retryUpToAndContinue(FETCH_LATEST_BLOCK_HEIGHT_RETRIES) {
-                when (val response = downloader.getLatestBlockHeight(
-                    if (sdkFlags.isTorEnabled) ServiceMode.DefaultTor else ServiceMode.Direct
-                )) {
+                when (
+                    val response =
+                        downloader.getLatestBlockHeight(
+                            if (sdkFlags.isTorEnabled == true) {
+                                ServiceMode.DefaultTor
+                            } else {
+                                ServiceMode.Direct
+                            }
+                        )
+                ) {
                     is Response.Success -> {
                         Twig.debug { "Latest block height fetched successfully with value: ${response.result.value}" }
                         latestBlockHeight =
@@ -2185,7 +2196,7 @@ class CompactBlockProcessor internal constructor(
                         val response =
                             downloader.fetchTransaction(
                                 transactionRequest.txid,
-                                if (sdkFlags.isTorEnabled) {
+                                if (sdkFlags.isTorEnabled == true) {
                                     ServiceMode.Group("fetch-${transactionRequest.txIdString()}")
                                 } else {
                                     ServiceMode.Direct

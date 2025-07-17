@@ -25,8 +25,9 @@ class PersistableWalletTest {
         assertTrue(jsonObject.has(PersistableWallet.KEY_ENDPOINT_IS_SECURE))
         assertTrue(jsonObject.has(PersistableWallet.KEY_SEED_PHRASE))
         assertTrue(jsonObject.has(PersistableWallet.KEY_BIRTHDAY))
+        assertTrue(!jsonObject.has(PersistableWallet.KEY_IS_TOR_ENABLED))
 
-        assertEquals(PersistableWallet.VERSION_2, jsonObject.getInt(PersistableWallet.KEY_VERSION))
+        assertEquals(PersistableWallet.VERSION_3, jsonObject.getInt(PersistableWallet.KEY_VERSION))
         assertEquals(ZcashNetwork.Mainnet.id, jsonObject.getInt(PersistableWallet.KEY_NETWORK_ID))
         assertEquals(
             PersistableWalletFixture.SEED_PHRASE.joinToString(),
@@ -36,10 +37,7 @@ class PersistableWalletTest {
         assertEquals(PersistableWalletFixture.ENDPOINT.port, jsonObject.getInt(PersistableWallet.KEY_ENDPOINT_PORT))
         assertEquals(
             PersistableWalletFixture.ENDPOINT.isSecure,
-            jsonObject.getBoolean(
-                PersistableWallet
-                    .KEY_ENDPOINT_IS_SECURE
-            )
+            jsonObject.getBoolean(PersistableWallet.KEY_ENDPOINT_IS_SECURE)
         )
 
         // Birthday serialization is tested in a separate file

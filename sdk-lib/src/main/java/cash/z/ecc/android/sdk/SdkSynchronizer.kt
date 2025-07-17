@@ -151,7 +151,7 @@ class SdkSynchronizer private constructor(
 ) : CloseableSynchronizer {
     companion object {
         private sealed class InstanceState {
-            object Active : InstanceState()
+            data object Active : InstanceState()
 
             data class ShuttingDown(
                 val job: Job
@@ -277,19 +277,22 @@ class SdkSynchronizer private constructor(
             refreshExchangeRateUsd
                 .flatMapLatest {
                     flow {
-                        emit(lastExchangeRateValue.copy(isLoading = true))
-                        lastExchangeRateValue =
-                            when (val result = fetchExchangeChangeUsd?.invoke()) {
-                                null,
-                                is FetchFiatCurrencyResult.Error -> lastExchangeRateValue.copy(isLoading = false)
+                        if (fetchExchangeChangeUsd == null) {
+                            emit(lastExchangeRateValue)
+                        } else {
+                            emit(lastExchangeRateValue.copy(isLoading = true))
+                            lastExchangeRateValue =
+                                when (val result = fetchExchangeChangeUsd.invoke()) {
+                                    is FetchFiatCurrencyResult.Error -> lastExchangeRateValue.copy(isLoading = false)
 
-                                is FetchFiatCurrencyResult.Success ->
-                                    lastExchangeRateValue.copy(
-                                        isLoading = false,
-                                        currencyConversion = result.currencyConversion
-                                    )
-                            }
-                        emit(lastExchangeRateValue)
+                                    is FetchFiatCurrencyResult.Success ->
+                                        lastExchangeRateValue.copy(
+                                            isLoading = false,
+                                            currencyConversion = result.currencyConversion
+                                        )
+                                }
+                            emit(lastExchangeRateValue)
+                        }
                     }
                 }.onEach { send(it) }
                 .flowOn(Dispatchers.Default)
@@ -561,8 +564,7 @@ class SdkSynchronizer private constructor(
     }
 
     /**
-     * Calculate the latest balance based on the blocks that have been scanned and transmit this information into the
-     * [transparentBalance], [saplingBalances], and [orchardBalances] flows.
+     * Recalculate the latest balance based on the blocks that have been scanned.
      */
     suspend fun refreshAllBalances() {
         processor.refreshWalletSummary()
@@ -813,6 +815,16 @@ class SdkSynchronizer private constructor(
             SharingStarted.WhileSubscribed(),
             null
         )
+    override val errorState = MutableStateFlow(createSynchronizerErrorState()).asStateFlow()
+
+    override val flags = MutableStateFlow(sdkFlags).asStateFlow()
+
+    private fun createSynchronizerErrorState(): SynchronizerErrorState? =
+        if (torClient == null && sdkFlags.isTorEnabled == true) {
+            SynchronizerErrorState.TOR_NOT_AVAILABLE
+        } else {
+            null
+        }
 
     /**
      * Returns the current Unified Address for this account.
@@ -984,7 +996,7 @@ class SdkSynchronizer private constructor(
                 processor.downloader
                     .getServerInfo(
                         serviceMode =
-                            if (sdkFlags.isTorEnabled) {
+                            if (sdkFlags.isTorEnabled == true) {
                                 ServiceMode.Group(
                                     "SdkSynchronizer.validateConsensusBranch"
                                 )
@@ -999,7 +1011,7 @@ class SdkSynchronizer private constructor(
                 val response =
                     processor.downloader.getLatestBlockHeight(
                         serviceMode =
-                            if (sdkFlags.isTorEnabled) {
+                            if (sdkFlags.isTorEnabled == true) {
                                 ServiceMode.Group(
                                     "SdkSynchronizer.validateConsensusBranch"
                                 )
@@ -1050,7 +1062,7 @@ class SdkSynchronizer private constructor(
                     when (
                         val response =
                             lightWalletClient.getServerInfo(
-                                if (sdkFlags.isTorEnabled) {
+                                if (sdkFlags.isTorEnabled == true) {
                                     ServiceMode.Group(
                                         "SdkSynchronizer.validateServerEndpoint(${endpoint.host}:${endpoint.port})"
                                     )
@@ -1095,7 +1107,7 @@ class SdkSynchronizer private constructor(
                         val response =
                             lightWalletClient.getLatestBlockHeight(
                                 serviceMode =
-                                    if (sdkFlags.isTorEnabled) {
+                                    if (sdkFlags.isTorEnabled == true) {
                                         ServiceMode.Group(
                                             "SdkSynchronizer.validateServerEndpoint(${endpoint.host}:${endpoint.port})"
                                         )
