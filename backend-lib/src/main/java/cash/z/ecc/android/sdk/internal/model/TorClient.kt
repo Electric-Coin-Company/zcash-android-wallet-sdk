@@ -66,6 +66,39 @@ class TorClient private constructor(
             }
         }
 
+    suspend fun httpGet(url: String, headers: List<JniHttpHeader>, retryLimit: Int):
+        JniHttpResponseBytes =
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorClient is disposed" }
+                httpGet(
+                    nativeHandle!!,
+                    url,
+                    headers.toTypedArray(),
+                    retryLimit
+                )
+            }
+        }
+
+    suspend fun httpPost(
+        url: String,
+        headers: List<JniHttpHeader>,
+        body: ByteArray,
+        retryLimit: Int
+    ): JniHttpResponseBytes =
+        accessMutex.withLock {
+            withContext(Dispatchers.IO) {
+                checkNotNull(nativeHandle) { "TorClient is disposed" }
+                httpPost(
+                    nativeHandle!!,
+                    url,
+                    headers.toTypedArray(),
+                    body,
+                    retryLimit
+                )
+            }
+        }
+
     suspend fun getExchangeRateUsd(): BigDecimal =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
@@ -151,6 +184,31 @@ class TorClient private constructor(
         @JvmStatic
         @Throws(RuntimeException::class)
         private external fun setDormant(nativeHandle: Long, mode: Int)
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        private external fun httpGet(
+            nativeHandle: Long,
+            url: String,
+            headers: Array<JniHttpHeader>,
+            retryLimit: Int
+        ): JniHttpResponseBytes
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        private external fun httpPost(
+            nativeHandle: Long,
+            url: String,
+            headers: Array<JniHttpHeader>,
+            body: ByteArray,
+            retryLimit: Int
+        ): JniHttpResponseBytes
 
         /**
          * @throws RuntimeException as a common indicator of the operation failure
