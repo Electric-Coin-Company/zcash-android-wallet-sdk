@@ -96,12 +96,13 @@ data class PersistableWallet(
             val isTorEnabled = isTorEnabled(jsonObject)
 
             // From version 2
-            val endpoint: LightWalletEndpoint = when (val version = getVersion(jsonObject)) {
-                VERSION_1 -> getLightWalletEndpointForNetwork(network)
-                VERSION_2,
-                VERSION_3 -> getEndpoint(jsonObject)
-                else -> throw IllegalArgumentException("Unsupported version $version")
-            }
+            val endpoint: LightWalletEndpoint =
+                when (val version = getVersion(jsonObject)) {
+                    VERSION_1 -> getLightWalletEndpointForNetwork(network)
+                    VERSION_2,
+                    VERSION_3 -> getEndpoint(jsonObject)
+                    else -> throw IllegalArgumentException("Unsupported version $version")
+                }
 
             return PersistableWallet(
                 network = network,

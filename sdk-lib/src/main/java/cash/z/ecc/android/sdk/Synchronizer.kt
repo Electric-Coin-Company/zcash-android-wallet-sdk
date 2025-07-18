@@ -720,7 +720,6 @@ interface Synchronizer {
         TOR_NOT_AVAILABLE,
     }
 
-
     companion object {
         /**
          * Primary method that SDK clients will use to construct a synchronizer.
