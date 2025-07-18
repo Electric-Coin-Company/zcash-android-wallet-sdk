@@ -815,13 +815,14 @@ class SdkSynchronizer private constructor(
             SharingStarted.WhileSubscribed(),
             null
         )
-    override val errorState = MutableStateFlow(createSynchronizerErrorState()).asStateFlow()
 
-    override val flags = MutableStateFlow(sdkFlags).asStateFlow()
+    override val error = MutableStateFlow(createSynchronizerErrorState()).asStateFlow()
 
-    private fun createSynchronizerErrorState(): SynchronizerErrorState? =
+    override val flags = sdkFlags
+
+    private fun createSynchronizerErrorState(): Synchronizer.Error? =
         if (torClient == null && sdkFlags.isTorEnabled == true) {
-            SynchronizerErrorState.TOR_NOT_AVAILABLE
+            Synchronizer.Error.TOR_NOT_AVAILABLE
         } else {
             null
         }

@@ -152,12 +152,12 @@ interface Synchronizer {
     /**
      * Emits error states of the synchronizer.
      */
-    val errorState: Flow<SynchronizerErrorState?>
+    val error: Flow<Error?>
 
     /**
-     * Emits the current flags of the synchronizer.
+     * Current flags of the synchronizer.
      */
-    val flags: Flow<SdkFlags>
+    val flags: SdkFlags
 
     /**
      * Tells the wallet to track an account using a unified full viewing key.
@@ -710,6 +710,17 @@ interface Synchronizer {
         SYNCED
     }
 
+    enum class Error {
+        /**
+         * Indicates that tor is required but not available.
+         *
+         * Typically this means that [SdkFlags.isTorEnabled] is set to true but Tor instantiation
+         * using function [TorClient.new] failed.
+         */
+        TOR_NOT_AVAILABLE,
+    }
+
+
     companion object {
         /**
          * Primary method that SDK clients will use to construct a synchronizer.
@@ -985,14 +996,4 @@ private fun validateAlias(alias: String) {
         "ERROR: Invalid alias ($alias). For security, the alias must be shorter than 100 " +
             "characters and only contain letters, digits, hyphens, and underscores."
     }
-}
-
-enum class SynchronizerErrorState {
-    /**
-     * Indicates that tor is required but not available.
-     *
-     * Typically this means that [SdkFlags.isTorEnabled] is set to true but Tor instantiation
-     * using function [TorClient.new] failed.
-     */
-    TOR_NOT_AVAILABLE,
 }
