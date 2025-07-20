@@ -33,6 +33,7 @@ import java.util.UUID
 
 /**
  * @param persistableWallet flow of the user's stored wallet.  Null indicates that no wallet has been stored.
+ * @param isTorEnabled flow indicating whether tor has been enabled for Synchronizer features supporting tor connection
  * @param accountName A human-readable name for the account, that will be used while instantiating [Synchronizer.new]
  * @param keySource A string identifier or other metadata describing the source of the seed, that will be used while
  * instantiating [Synchronizer.new]
@@ -81,7 +82,7 @@ class WalletCoordinator(
             persistableWallet,
             synchronizerLockoutId,
             isTorEnabled,
-        ) { persistableWallet: PersistableWallet?, lockoutId: UUID?, isTorEnabled ->
+        ) { persistableWallet, lockoutId, isTorEnabled ->
             if (null != lockoutId) { // this one needs to come first
                 flowOf(InternalSynchronizerStatus.Lockout(lockoutId))
             } else if (null == persistableWallet) {
