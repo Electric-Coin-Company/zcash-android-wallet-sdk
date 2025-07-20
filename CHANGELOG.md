@@ -9,7 +9,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - [WalletCoordinator] now takes [isTorEnabled] as a constructor parameter to indicate whether to force rpc-s via Tor 
   network.
-- [Synchronizer] now exposes [error] property containing synchronizer errors that happened during synchronizer init
+- [Synchronizer] now exposes [initializationError] property containing synchronizer errors that happened during 
+  synchronizer init
 
 ### Fixed
 - Tor client is now optional in case it's instantiation fails to prevent SDK
