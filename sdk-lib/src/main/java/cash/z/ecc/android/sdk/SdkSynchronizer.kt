@@ -816,14 +816,11 @@ class SdkSynchronizer private constructor(
             null
         )
 
-    override val initializationError = MutableStateFlow(createSynchronizerErrorState()).asStateFlow()
-
-    private fun createSynchronizerErrorState(): Synchronizer.InitializationError? =
-        if (torClient == null && sdkFlags.isTorEnabled) {
-            Synchronizer.InitializationError.TOR_NOT_AVAILABLE
-        } else {
-            null
-        }
+    override val initializationError = if (torClient == null && sdkFlags.isTorEnabled) {
+        Synchronizer.InitializationError.TOR_NOT_AVAILABLE
+    } else {
+        null
+    }
 
     /**
      * Returns the current Unified Address for this account.
