@@ -5,5 +5,5 @@ package cash.z.ecc.android.sdk.model
  * null if disabled and not explicitly set
  */
 data class SdkFlags(
-    val isTorEnabled: Boolean?
+    val isTorEnabled: Boolean
 )

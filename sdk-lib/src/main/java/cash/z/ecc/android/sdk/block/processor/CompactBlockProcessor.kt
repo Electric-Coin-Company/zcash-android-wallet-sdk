@@ -913,13 +913,7 @@ class CompactBlockProcessor internal constructor(
             // Reach out to the server to obtain the current server info
             val serverInfo =
                 runCatching {
-                    downloader.getServerInfo(
-                        if (sdkFlags.isTorEnabled == true) {
-                            ServiceMode.DefaultTor
-                        } else {
-                            ServiceMode.Direct
-                        }
-                    )
+                    downloader.getServerInfo(if (sdkFlags.isTorEnabled) ServiceMode.DefaultTor else ServiceMode.Direct)
                 }.onFailure {
                     Twig.error { "Unable to obtain server info due to: ${it.message}" }
                 }.getOrElse {
@@ -1162,7 +1156,7 @@ class CompactBlockProcessor internal constructor(
                 when (
                     val response =
                         downloader.getLatestBlockHeight(
-                            if (sdkFlags.isTorEnabled == true) {
+                            if (sdkFlags.isTorEnabled) {
                                 ServiceMode.DefaultTor
                             } else {
                                 ServiceMode.Direct
@@ -2196,7 +2190,7 @@ class CompactBlockProcessor internal constructor(
                         val response =
                             downloader.fetchTransaction(
                                 transactionRequest.txid,
-                                if (sdkFlags.isTorEnabled == true) {
+                                if (sdkFlags.isTorEnabled) {
                                     ServiceMode.Group("fetch-${transactionRequest.txIdString()}")
                                 } else {
                                     ServiceMode.Direct

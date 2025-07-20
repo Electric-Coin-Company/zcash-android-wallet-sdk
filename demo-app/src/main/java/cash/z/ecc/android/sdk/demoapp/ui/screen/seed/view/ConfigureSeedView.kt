@@ -124,7 +124,6 @@ private fun ConfigureSeedMainContent(
                         birthday = WalletFixture.Alice.getBirthday(zcashNetwork),
                         seedPhrase = SeedPhrase.new(WalletFixture.Alice.seedPhrase),
                         walletInitMode = WalletInitMode.RestoreWallet,
-                        isTorEnabled = null
                     )
                 onExistingWallet(newWallet)
             }
@@ -140,7 +139,6 @@ private fun ConfigureSeedMainContent(
                         birthday = WalletFixture.Ben.getBirthday(zcashNetwork),
                         seedPhrase = SeedPhrase.new(WalletFixture.Ben.seedPhrase),
                         walletInitMode = WalletInitMode.RestoreWallet,
-                        isTorEnabled = null
                     )
                 onExistingWallet(newWallet)
             }
@@ -229,7 +227,6 @@ private fun RestoreWalletSection(
                         birthday = blockHeight,
                         seedPhrase = seedPhrase,
                         walletInitMode = WalletInitMode.RestoreWallet,
-                        isTorEnabled = null
                     )
                 onExistingWallet(wallet)
             } catch (e: IllegalArgumentException) {

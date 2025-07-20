@@ -21,16 +21,13 @@ object PersistableWalletFixture {
 
     val WALLET_INIT_MODE = WalletInitMode.ExistingWallet
 
-    val IS_TOR_ENABLED: Boolean? = null
-
     fun new(
         network: ZcashNetwork = NETWORK,
         endpoint: LightWalletEndpoint = ENDPOINT,
         birthday: BlockHeight = BIRTHDAY,
         seedPhrase: SeedPhrase = SEED_PHRASE,
-        walletInitMode: WalletInitMode = WALLET_INIT_MODE,
-        isTorEnabled: Boolean? = IS_TOR_ENABLED
-    ) = PersistableWallet(network, endpoint, birthday, seedPhrase, walletInitMode, isTorEnabled)
+        walletInitMode: WalletInitMode = WALLET_INIT_MODE
+    ) = PersistableWallet(network, endpoint, birthday, seedPhrase, walletInitMode)
 
     fun persistVersionOne() =
         PersistableWallet.toCustomJson(

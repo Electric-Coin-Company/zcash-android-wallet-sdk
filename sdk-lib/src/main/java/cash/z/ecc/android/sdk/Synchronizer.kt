@@ -152,12 +152,7 @@ interface Synchronizer {
     /**
      * Emits error states of the synchronizer.
      */
-    val error: Flow<Error?>
-
-    /**
-     * Current flags of the synchronizer.
-     */
-    val flags: SdkFlags
+    val initializationError: InitializationError?
 
     /**
      * Tells the wallet to track an account using a unified full viewing key.
@@ -710,7 +705,7 @@ interface Synchronizer {
         SYNCED
     }
 
-    enum class Error {
+    enum class InitializationError {
         /**
          * Indicates that tor is required but not available.
          *
@@ -767,7 +762,7 @@ interface Synchronizer {
             setup: AccountCreateSetup?,
             walletInitMode: WalletInitMode,
             zcashNetwork: ZcashNetwork,
-            isTorEnabled: Boolean?
+            isTorEnabled: Boolean
         ): CloseableSynchronizer {
             val applicationContext = context.applicationContext
 
@@ -803,7 +798,7 @@ interface Synchronizer {
             val torDir = Files.getTorDir(context)
             val torClient =
                 try {
-                    if (sdkFlags.isTorEnabled == true) TorClient.new(torDir) else null
+                    if (sdkFlags.isTorEnabled) TorClient.new(torDir) else null
                 } catch (e: Exception) {
                     Twig.error(e) { "Error instantiating Tor Client" }
                     null

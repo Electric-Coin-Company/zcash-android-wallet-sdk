@@ -98,7 +98,7 @@ internal class FastestServerFetcher(
             emit(FastestServersResult.Done(serversByGetBlockRangeTimeout))
         }.flowOn(Dispatchers.Default)
 
-    @Suppress("LongMethod", "ReturnCount")
+    @Suppress("LongMethod", "ReturnCount", "CyclomaticComplexMethod")
     private suspend fun validateServerEndpointAndMeasure(endpoint: LightWalletEndpoint): ValidateServerResult? {
         fun logRuledOut(
             reason: String,
@@ -126,7 +126,7 @@ internal class FastestServerFetcher(
                         when (
                             val response =
                                 lightWalletClient.getServerInfo(
-                                    if (sdkFlags.isTorEnabled == true) {
+                                    if (sdkFlags.isTorEnabled) {
                                         ServiceMode.Group(
                                             "validateServerEndpointAndMeasure(${endpoint.host}:${endpoint.port})"
                                         )
@@ -178,7 +178,7 @@ internal class FastestServerFetcher(
                         val response =
                             lightWalletClient.getLatestBlockHeight(
                                 serviceMode =
-                                    if (sdkFlags.isTorEnabled == true) {
+                                    if (sdkFlags.isTorEnabled) {
                                         ServiceMode.Group(
                                             "validateServerEndpointAndMeasure(${endpoint.host}:${endpoint.port})"
                                         )

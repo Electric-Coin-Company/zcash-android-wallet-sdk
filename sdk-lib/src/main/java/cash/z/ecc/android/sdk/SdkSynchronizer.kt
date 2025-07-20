@@ -816,13 +816,11 @@ class SdkSynchronizer private constructor(
             null
         )
 
-    override val error = MutableStateFlow(createSynchronizerErrorState()).asStateFlow()
+    override val initializationError = MutableStateFlow(createSynchronizerErrorState()).asStateFlow()
 
-    override val flags = sdkFlags
-
-    private fun createSynchronizerErrorState(): Synchronizer.Error? =
-        if (torClient == null && sdkFlags.isTorEnabled == true) {
-            Synchronizer.Error.TOR_NOT_AVAILABLE
+    private fun createSynchronizerErrorState(): Synchronizer.InitializationError? =
+        if (torClient == null && sdkFlags.isTorEnabled) {
+            Synchronizer.InitializationError.TOR_NOT_AVAILABLE
         } else {
             null
         }
@@ -997,7 +995,7 @@ class SdkSynchronizer private constructor(
                 processor.downloader
                     .getServerInfo(
                         serviceMode =
-                            if (sdkFlags.isTorEnabled == true) {
+                            if (sdkFlags.isTorEnabled) {
                                 ServiceMode.Group(
                                     "SdkSynchronizer.validateConsensusBranch"
                                 )
@@ -1012,7 +1010,7 @@ class SdkSynchronizer private constructor(
                 val response =
                     processor.downloader.getLatestBlockHeight(
                         serviceMode =
-                            if (sdkFlags.isTorEnabled == true) {
+                            if (sdkFlags.isTorEnabled) {
                                 ServiceMode.Group(
                                     "SdkSynchronizer.validateConsensusBranch"
                                 )
@@ -1063,7 +1061,7 @@ class SdkSynchronizer private constructor(
                     when (
                         val response =
                             lightWalletClient.getServerInfo(
-                                if (sdkFlags.isTorEnabled == true) {
+                                if (sdkFlags.isTorEnabled) {
                                     ServiceMode.Group(
                                         "SdkSynchronizer.validateServerEndpoint(${endpoint.host}:${endpoint.port})"
                                     )
@@ -1108,7 +1106,7 @@ class SdkSynchronizer private constructor(
                         val response =
                             lightWalletClient.getLatestBlockHeight(
                                 serviceMode =
-                                    if (sdkFlags.isTorEnabled == true) {
+                                    if (sdkFlags.isTorEnabled) {
                                         ServiceMode.Group(
                                             "SdkSynchronizer.validateServerEndpoint(${endpoint.host}:${endpoint.port})"
                                         )
@@ -1239,6 +1237,7 @@ internal object DefaultSynchronizerFactory {
         sdkFlags: SdkFlags
     ): OutboundTransactionManager = OutboundTransactionManagerImpl.new(encoder, service, sdkFlags)
 
+    @Suppress("LongParameterList")
     internal fun defaultProcessor(
         backend: TypesafeBackend,
         downloader: CompactBlockDownloader,
