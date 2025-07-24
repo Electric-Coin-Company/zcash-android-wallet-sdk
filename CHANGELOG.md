@@ -7,8 +7,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- [WalletCoordinator] now takes [isTorEnabled] as a constructor parameter to indicate whether to force rpc-s via Tor 
-  network.
+- [WalletCoordinator] now takes [isTorEnabled] as a constructor parameter.
+  - When set to `true`, lightwalletd RPC queries will be made over Tor (where possible and beneficial).
+  - When set to `false`, lightwalletd RPC queries will always be made directly to the server.
 - [Synchronizer] now exposes [initializationError] property containing synchronizer errors that happened during 
   synchronizer init
 
