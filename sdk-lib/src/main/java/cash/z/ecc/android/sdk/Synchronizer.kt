@@ -710,7 +710,7 @@ interface Synchronizer {
          * Indicates that tor is required but not available.
          *
          * Typically this means that [SdkFlags.isTorEnabled] is set to true but Tor instantiation
-         * using function [TorClient.new] failed.
+         * failed.
          */
         TOR_NOT_AVAILABLE,
     }
