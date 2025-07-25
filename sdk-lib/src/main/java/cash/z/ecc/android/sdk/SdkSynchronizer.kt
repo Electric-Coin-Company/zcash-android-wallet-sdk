@@ -993,13 +993,8 @@ class SdkSynchronizer private constructor(
                 processor.downloader
                     .getServerInfo(
                         serviceMode =
-                            if (sdkFlags.isTorEnabled) {
-                                ServiceMode.Group(
-                                    "SdkSynchronizer.validateConsensusBranch"
-                                )
-                            } else {
-                                ServiceMode.Direct
-                            }
+                            sdkFlags ifTor
+                                ServiceMode.Group("SdkSynchronizer.validateConsensusBranch")
                     )?.consensusBranchId
             }
 
@@ -1008,13 +1003,10 @@ class SdkSynchronizer private constructor(
                 val response =
                     processor.downloader.getLatestBlockHeight(
                         serviceMode =
-                            if (sdkFlags.isTorEnabled) {
+                            sdkFlags ifTor
                                 ServiceMode.Group(
                                     "SdkSynchronizer.validateConsensusBranch"
                                 )
-                            } else {
-                                ServiceMode.Direct
-                            }
                     )
             ) {
                 is Response.Success -> {
@@ -1059,13 +1051,10 @@ class SdkSynchronizer private constructor(
                     when (
                         val response =
                             lightWalletClient.getServerInfo(
-                                if (sdkFlags.isTorEnabled) {
+                                sdkFlags ifTor
                                     ServiceMode.Group(
                                         "SdkSynchronizer.validateServerEndpoint(${endpoint.host}:${endpoint.port})"
                                     )
-                                } else {
-                                    ServiceMode.Direct
-                                }
                             )
                     ) {
                         is Response.Success -> response.result
@@ -1104,13 +1093,10 @@ class SdkSynchronizer private constructor(
                         val response =
                             lightWalletClient.getLatestBlockHeight(
                                 serviceMode =
-                                    if (sdkFlags.isTorEnabled) {
+                                    sdkFlags ifTor
                                         ServiceMode.Group(
                                             "SdkSynchronizer.validateServerEndpoint(${endpoint.host}:${endpoint.port})"
                                         )
-                                    } else {
-                                        ServiceMode.Direct
-                                    }
                             )
                     ) {
                         is Response.Success -> {

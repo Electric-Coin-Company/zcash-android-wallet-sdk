@@ -913,7 +913,7 @@ class CompactBlockProcessor internal constructor(
             // Reach out to the server to obtain the current server info
             val serverInfo =
                 runCatching {
-                    downloader.getServerInfo(if (sdkFlags.isTorEnabled) ServiceMode.DefaultTor else ServiceMode.Direct)
+                    downloader.getServerInfo(sdkFlags ifTor ServiceMode.DefaultTor)
                 }.onFailure {
                     Twig.error { "Unable to obtain server info due to: ${it.message}" }
                 }.getOrElse {
@@ -1155,13 +1155,7 @@ class CompactBlockProcessor internal constructor(
             retryUpToAndContinue(FETCH_LATEST_BLOCK_HEIGHT_RETRIES) {
                 when (
                     val response =
-                        downloader.getLatestBlockHeight(
-                            if (sdkFlags.isTorEnabled) {
-                                ServiceMode.DefaultTor
-                            } else {
-                                ServiceMode.Direct
-                            }
-                        )
+                        downloader.getLatestBlockHeight(sdkFlags ifTor ServiceMode.DefaultTor)
                 ) {
                     is Response.Success -> {
                         Twig.debug { "Latest block height fetched successfully with value: ${response.result.value}" }
@@ -2190,11 +2184,7 @@ class CompactBlockProcessor internal constructor(
                         val response =
                             downloader.fetchTransaction(
                                 transactionRequest.txid,
-                                if (sdkFlags.isTorEnabled) {
-                                    ServiceMode.Group("fetch-${transactionRequest.txIdString()}")
-                                } else {
-                                    ServiceMode.Direct
-                                }
+                                sdkFlags ifTor ServiceMode.Group("fetch-${transactionRequest.txIdString()}")
                             )
                     ) {
                         is Response.Success -> response.result

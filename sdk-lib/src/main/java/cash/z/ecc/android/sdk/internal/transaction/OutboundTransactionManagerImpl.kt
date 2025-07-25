@@ -75,11 +75,8 @@ internal class OutboundTransactionManagerImpl(
                 walletClient.submitTransaction(
                     tx = encodedTransaction.raw.byteArray,
                     serviceMode =
-                        if (sdkFlags.isTorEnabled) {
+                        sdkFlags ifTor
                             ServiceMode.Group("submit-${encodedTransaction.txId.byteArray.toHexReversed()}")
-                        } else {
-                            ServiceMode.Direct
-                        }
                 )
         ) {
             is Response.Success -> {
