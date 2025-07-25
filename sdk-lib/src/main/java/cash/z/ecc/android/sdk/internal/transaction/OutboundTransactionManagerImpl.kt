@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.SdkFlags
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -17,7 +18,8 @@ import co.electriccoin.lightwallet.client.model.Response
 @Suppress("TooManyFunctions")
 internal class OutboundTransactionManagerImpl(
     internal val encoder: TransactionEncoder,
-    private val walletClient: CombinedWalletClient
+    private val walletClient: CombinedWalletClient,
+    private val sdkFlags: SdkFlags
 ) : OutboundTransactionManager {
     /**
      * Creates a proposal for transferring funds from a ZIP-321 compliant payment URI
@@ -68,12 +70,13 @@ internal class OutboundTransactionManagerImpl(
     ): List<EncodedTransaction> = encoder.createProposedTransactions(proposal, usk)
 
     override suspend fun submit(encodedTransaction: EncodedTransaction): TransactionSubmitResult =
-        // TODO [#1772]: redirect to correct service mode after 2.1 release
         when (
             val response =
                 walletClient.submitTransaction(
                     tx = encodedTransaction.raw.byteArray,
-                    serviceMode = ServiceMode.Direct
+                    serviceMode =
+                        sdkFlags ifTor
+                            ServiceMode.Group("submit-${encodedTransaction.txId.byteArray.toHexReversed()}")
                 )
         ) {
             is Response.Success -> {
@@ -144,10 +147,12 @@ internal class OutboundTransactionManagerImpl(
         fun new(
             encoder: TransactionEncoder,
             lightWalletClient: CombinedWalletClient,
+            sdkFlags: SdkFlags
         ): OutboundTransactionManager =
             OutboundTransactionManagerImpl(
                 encoder,
-                lightWalletClient
+                lightWalletClient,
+                sdkFlags
             )
     }
 }

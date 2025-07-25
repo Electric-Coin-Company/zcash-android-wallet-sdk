@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.demoapp.preference.EncryptedPreferenceSingleton
 import cash.z.ecc.android.sdk.demoapp.util.LazyWithArgument
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 
 private val lazy =
     LazyWithArgument<Context, WalletCoordinator> {
@@ -27,6 +28,7 @@ private val lazy =
             persistableWallet = persistableWalletFlow,
             accountName = "Zcash Account 1",
             keySource = "ZCASH",
+            isTorEnabled = flowOf(null)
         )
     }
 

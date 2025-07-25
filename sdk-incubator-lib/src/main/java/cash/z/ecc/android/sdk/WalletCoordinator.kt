@@ -33,6 +33,7 @@ import java.util.UUID
 
 /**
  * @param persistableWallet flow of the user's stored wallet.  Null indicates that no wallet has been stored.
+ * @param isTorEnabled flow indicating whether tor has been enabled for Synchronizer features supporting tor connection
  * @param accountName A human-readable name for the account, that will be used while instantiating [Synchronizer.new]
  * @param keySource A string identifier or other metadata describing the source of the seed, that will be used while
  * instantiating [Synchronizer.new]
@@ -46,6 +47,7 @@ import java.util.UUID
 class WalletCoordinator(
     context: Context,
     val persistableWallet: Flow<PersistableWallet?>,
+    val isTorEnabled: Flow<Boolean?>,
     val accountName: String,
     val keySource: String?,
 ) {
@@ -76,37 +78,41 @@ class WalletCoordinator(
     }
 
     private val synchronizerOrLockoutId: Flow<Flow<InternalSynchronizerStatus>> =
-        persistableWallet
-            .combine(synchronizerLockoutId) { persistableWallet: PersistableWallet?, lockoutId: UUID? ->
-                if (null != lockoutId) { // this one needs to come first
-                    flowOf(InternalSynchronizerStatus.Lockout(lockoutId))
-                } else if (null == persistableWallet) {
-                    flowOf(InternalSynchronizerStatus.NoWallet)
-                } else {
-                    callbackFlow<InternalSynchronizerStatus.Available> {
-                        val closeableSynchronizer =
-                            Synchronizer.new(
-                                context = context,
-                                zcashNetwork = persistableWallet.network,
-                                lightWalletEndpoint = persistableWallet.endpoint,
-                                birthday = persistableWallet.birthday,
-                                setup =
-                                    AccountCreateSetup(
-                                        accountName = accountName,
-                                        keySource = keySource,
-                                        seed = FirstClassByteArray(persistableWallet.seedPhrase.toByteArray())
-                                    ),
-                                walletInitMode = persistableWallet.walletInitMode,
-                            )
+        combine(
+            persistableWallet,
+            synchronizerLockoutId,
+            isTorEnabled,
+        ) { persistableWallet, lockoutId, isTorEnabled ->
+            if (null != lockoutId) { // this one needs to come first
+                flowOf(InternalSynchronizerStatus.Lockout(lockoutId))
+            } else if (null == persistableWallet) {
+                flowOf(InternalSynchronizerStatus.NoWallet)
+            } else {
+                callbackFlow<InternalSynchronizerStatus.Available> {
+                    val closeableSynchronizer =
+                        Synchronizer.new(
+                            context = context,
+                            zcashNetwork = persistableWallet.network,
+                            lightWalletEndpoint = persistableWallet.endpoint,
+                            birthday = persistableWallet.birthday,
+                            setup =
+                                AccountCreateSetup(
+                                    accountName = accountName,
+                                    keySource = keySource,
+                                    seed = FirstClassByteArray(persistableWallet.seedPhrase.toByteArray())
+                                ),
+                            walletInitMode = persistableWallet.walletInitMode,
+                            isTorEnabled = isTorEnabled == true
+                        )
 
-                        trySend(InternalSynchronizerStatus.Available(closeableSynchronizer))
-                        awaitClose {
-                            Twig.info { "Closing flow and stopping synchronizer" }
-                            closeableSynchronizer.close()
-                        }
+                    trySend(InternalSynchronizerStatus.Available(closeableSynchronizer))
+                    awaitClose {
+                        Twig.info { "Closing flow and stopping synchronizer" }
+                        closeableSynchronizer.close()
                     }
                 }
             }
+        }
 
     /**
      * Synchronizer for the Zcash SDK. Emits null until a wallet secret is persisted.

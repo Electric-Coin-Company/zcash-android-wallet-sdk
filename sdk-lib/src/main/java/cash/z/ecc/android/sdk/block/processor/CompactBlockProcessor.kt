@@ -64,6 +64,7 @@ import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.RawTransaction
+import cash.z.ecc.android.sdk.model.SdkFlags
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -123,7 +124,8 @@ class CompactBlockProcessor internal constructor(
     val downloader: CompactBlockDownloader,
     minimumHeight: BlockHeight,
     private val repository: DerivedDataRepository,
-    private val txManager: OutboundTransactionManager
+    private val txManager: OutboundTransactionManager,
+    private val sdkFlags: SdkFlags
 ) {
     /**
      * Callback for any non-trivial errors that occur while processing compact blocks.
@@ -516,7 +518,8 @@ class CompactBlockProcessor internal constructor(
                 downloader = downloader,
                 repository = repository,
                 syncRange = verifyRangeResult.scanRange.range,
-                enhanceStartHeight = firstUnenhancedHeight
+                enhanceStartHeight = firstUnenhancedHeight,
+                sdkFlags = sdkFlags
             ).collect { batchSyncProgress ->
                 // Update sync progress and wallet balance
                 refreshWalletSummary()
@@ -623,7 +626,8 @@ class CompactBlockProcessor internal constructor(
                 downloader = downloader,
                 repository = repository,
                 syncRange = scanRange.range,
-                enhanceStartHeight = firstUnenhancedHeight
+                enhanceStartHeight = firstUnenhancedHeight,
+                sdkFlags = sdkFlags
             ).map { batchSyncProgress ->
                 // Update sync progress and wallet balances
                 refreshWalletSummary()
@@ -717,7 +721,7 @@ class CompactBlockProcessor internal constructor(
     ): SbSPreparationResult {
         // Download chain tip metadata from lightwalletd
         val chainTip =
-            fetchLatestBlockHeight(downloader = downloader) ?: let {
+            fetchLatestBlockHeight(downloader, sdkFlags) ?: let {
                 Twig.warn { "Disconnection detected. Attempting to reconnect." }
                 return SbSPreparationResult.ConnectionFailure
             }
@@ -866,7 +870,7 @@ class CompactBlockProcessor internal constructor(
     private suspend fun updateRange(ranges: List<ScanRange>): Boolean {
         // This fetches the latest height each time this method is called, which can be very inefficient
         // when downloading all of the blocks from the server
-        val networkBlockHeight = fetchLatestBlockHeight(downloader) ?: return false
+        val networkBlockHeight = fetchLatestBlockHeight(downloader, sdkFlags) ?: return false
 
         // Get the first un-enhanced transaction from the repository
         val firstUnenhancedHeight = getFirstUnenhancedHeight(repository)
@@ -909,8 +913,7 @@ class CompactBlockProcessor internal constructor(
             // Reach out to the server to obtain the current server info
             val serverInfo =
                 runCatching {
-                    // TODO [#1772]: redirect to correct service mode after 2.1 release
-                    downloader.getServerInfo(ServiceMode.Direct)
+                    downloader.getServerInfo(sdkFlags ifTor ServiceMode.DefaultTor)
                 }.onFailure {
                     Twig.error { "Unable to obtain server info due to: ${it.message}" }
                 }.getOrElse {
@@ -1140,15 +1143,20 @@ class CompactBlockProcessor internal constructor(
          * @return Latest block height wrapped in BlockHeight object, or null in case of failure
          */
         @VisibleForTesting
-        internal suspend fun fetchLatestBlockHeight(downloader: CompactBlockDownloader): BlockHeight? {
+        internal suspend fun fetchLatestBlockHeight(
+            downloader: CompactBlockDownloader,
+            sdkFlags: SdkFlags,
+        ): BlockHeight? {
             Twig.debug { "Fetching latest block height..." }
             val traceScope = TraceScope("CompactBlockProcessor.fetchLatestBlockHeight")
 
             var latestBlockHeight: BlockHeight? = null
 
             retryUpToAndContinue(FETCH_LATEST_BLOCK_HEIGHT_RETRIES) {
-                // TODO [#1772]: redirect to correct service mode after 2.1 release
-                when (val response = downloader.getLatestBlockHeight(ServiceMode.Direct)) {
+                when (
+                    val response =
+                        downloader.getLatestBlockHeight(sdkFlags ifTor ServiceMode.DefaultTor)
+                ) {
                     is Response.Success -> {
                         Twig.debug { "Latest block height fetched successfully with value: ${response.result.value}" }
                         latestBlockHeight =
@@ -1481,7 +1489,8 @@ class CompactBlockProcessor internal constructor(
             downloader: CompactBlockDownloader,
             repository: DerivedDataRepository,
             syncRange: ClosedRange<BlockHeight>,
-            enhanceStartHeight: BlockHeight?
+            enhanceStartHeight: BlockHeight?,
+            sdkFlags: SdkFlags
         ): Flow<BatchSyncProgress> =
             flow {
                 if (syncRange.isEmpty()) {
@@ -1621,7 +1630,8 @@ class CompactBlockProcessor internal constructor(
                                     range = currentEnhancingRange,
                                     repository = repository,
                                     backend = backend,
-                                    downloader = downloader
+                                    downloader = downloader,
+                                    sdkFlags = sdkFlags
                                 ).collect { enhancingResult ->
                                     Twig.info { "Enhancing result: $enhancingResult" }
                                     resultState =
@@ -1896,7 +1906,8 @@ class CompactBlockProcessor internal constructor(
             range: ClosedRange<BlockHeight>,
             repository: DerivedDataRepository,
             backend: TypesafeBackend,
-            downloader: CompactBlockDownloader
+            downloader: CompactBlockDownloader,
+            sdkFlags: SdkFlags
         ): Flow<SyncingResult> =
             flow {
                 Twig.debug { "Enhancing transaction details for blocks $range" }
@@ -1933,7 +1944,7 @@ class CompactBlockProcessor internal constructor(
 
                         when (it) {
                             is TransactionDataRequest.EnhancementRequired -> {
-                                val trxEnhanceResult = enhanceTransaction(it, backend, downloader)
+                                val trxEnhanceResult = enhanceTransaction(it, backend, downloader, sdkFlags)
                                 if (trxEnhanceResult is SyncingResult.EnhanceFailed) {
                                     Twig.error(trxEnhanceResult.exception) { "Encountered transaction enhancing error" }
                                     emit(trxEnhanceResult)
@@ -2073,7 +2084,8 @@ class CompactBlockProcessor internal constructor(
         private suspend fun enhanceTransaction(
             transactionRequest: TransactionDataRequest.EnhancementRequired,
             backend: TypesafeBackend,
-            downloader: CompactBlockDownloader
+            downloader: CompactBlockDownloader,
+            sdkFlags: SdkFlags
         ): SyncingResult {
             Twig.debug { "Starting enhancing transaction: txid: ${transactionRequest.txIdString()}" }
 
@@ -2085,6 +2097,7 @@ class CompactBlockProcessor internal constructor(
                         fetchTransaction(
                             transactionRequest = transactionRequest,
                             downloader = downloader,
+                            sdkFlags = sdkFlags
                         )
 
                     Twig.debug { "Transaction fetched: $rawTransactionUnsafe" }
@@ -2151,6 +2164,7 @@ class CompactBlockProcessor internal constructor(
         private suspend fun fetchTransaction(
             transactionRequest: TransactionDataRequest.EnhancementRequired,
             downloader: CompactBlockDownloader,
+            sdkFlags: SdkFlags
         ): RawTransactionUnsafe? {
             var transactionResult: RawTransactionUnsafe? = null
             val traceScope = TraceScope("CompactBlockProcessor.fetchTransaction")
@@ -2165,13 +2179,12 @@ class CompactBlockProcessor internal constructor(
                     }
                 }
 
-                // TODO [#1772]: redirect to correct service mode after 2.1 release
                 transactionResult =
                     when (
                         val response =
                             downloader.fetchTransaction(
                                 transactionRequest.txid,
-                                ServiceMode.Direct
+                                sdkFlags ifTor ServiceMode.Group("fetch-${transactionRequest.txIdString()}")
                             )
                     ) {
                         is Response.Success -> response.result

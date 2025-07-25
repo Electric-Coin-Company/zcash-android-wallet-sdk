@@ -73,7 +73,8 @@ class DataDbScannerUtil {
                 zcashNetwork = ZcashNetwork.Mainnet,
                 setup = AccountCreateSetupFixture.new(seed = byteArrayOf()),
                 // Using existing wallet init mode as simplification for the test
-                walletInitMode = WalletInitMode.ExistingWallet
+                walletInitMode = WalletInitMode.ExistingWallet,
+                isTorEnabled = false
             )
 
         println("sync!")

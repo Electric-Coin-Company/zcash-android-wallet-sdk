@@ -56,7 +56,7 @@ class TorWalletClient private constructor(
     override suspend fun submitTransaction(tx: ByteArray): Response<SendResponseUnsafe> =
         execute {
             submitTransaction(it, tx)
-            SendResponseUnsafe(-1, "")
+            SendResponseUnsafe(0, "")
         }
 
     override suspend fun getTreeState(height: BlockHeightUnsafe): Response<TreeStateUnsafe> =
