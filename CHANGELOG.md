@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2025-07-28
+
 ### Added
 - [WalletCoordinator] now takes [isTorEnabled] as a constructor parameter.
   - When set to `true`, lightwalletd RPC queries will be made over Tor (where possible and beneficial).
