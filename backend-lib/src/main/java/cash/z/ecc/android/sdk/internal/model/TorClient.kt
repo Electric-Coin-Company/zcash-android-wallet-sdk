@@ -66,8 +66,7 @@ class TorClient private constructor(
             }
         }
 
-    suspend fun httpGet(url: String, headers: List<JniHttpHeader>, retryLimit: Int):
-        JniHttpResponseBytes =
+    suspend fun httpGet(url: String, headers: List<JniHttpHeader>, retryLimit: Int): JniHttpResponseBytes =
         accessMutex.withLock {
             withContext(Dispatchers.IO) {
                 checkNotNull(nativeHandle) { "TorClient is disposed" }

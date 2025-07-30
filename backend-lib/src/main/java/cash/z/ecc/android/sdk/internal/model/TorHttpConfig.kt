@@ -12,5 +12,6 @@ class TorHttpConfig : HttpClientEngineConfig() {
      * Specified the maximum number of times that a failed request should be retried.
      * Set this property to `0` to disable retries.
      */
+    @Suppress("MagicNumber")
     var retryLimit: Int = 3
 }

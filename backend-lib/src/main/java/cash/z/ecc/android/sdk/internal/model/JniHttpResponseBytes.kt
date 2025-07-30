@@ -16,5 +16,4 @@ class JniHttpResponseBytes(
     val version: String,
     val headers: Array<JniHttpHeader>,
     val body: ByteArray,
-) {
-}
+)

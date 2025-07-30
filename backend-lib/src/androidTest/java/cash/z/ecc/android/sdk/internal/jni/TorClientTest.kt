@@ -78,18 +78,19 @@ class TorClientTest {
 
             // Set up an HttpClient using the Tor client.
             val httpTorClient = torClient.isolatedTorClient()
-            val httpClient = HttpClient(TorHttp) {
-                engine {
-                    tor = httpTorClient
-                    retryLimit = 3
+            val httpClient =
+                HttpClient(TorHttp) {
+                    engine {
+                        tor = httpTorClient
+                        retryLimit = 3
+                    }
                 }
-            }
 
             // Test HTTP GET.
             val getUrl = "https://httpbin.org/get"
             val getResponse = httpClient.get(getUrl)
             assertEquals(200, getResponse.status.value)
-            // TODO: Parse the response body as JSON and check its contents.
+            // TODO [#1782]: Parse the response body as JSON and check its contents.
 
             // Test HTTP GET with 419 response.
             val getErrorResponse = httpClient.get("https://httpbin.org/status/419")
@@ -97,11 +98,12 @@ class TorClientTest {
 
             // Test HTTP POST.
             val postUrl = "https://httpbin.org/post"
-            val postResponse = httpClient.post(postUrl) {
-                contentType(ContentType.Application.Json)
-                setBody("{\"body\": \"Some body\"}")
-            }
+            val postResponse =
+                httpClient.post(postUrl) {
+                    contentType(ContentType.Application.Json)
+                    setBody("{\"body\": \"Some body\"}")
+                }
             assertEquals(200, postResponse.status.value)
-            // TODO: Parse the response body as JSON and check its contents.
+            // TODO [#1782]: Parse the response body as JSON and check its contents.
         }
 }

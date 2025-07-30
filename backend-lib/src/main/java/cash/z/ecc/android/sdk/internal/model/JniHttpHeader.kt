@@ -6,5 +6,4 @@ package cash.z.ecc.android.sdk.internal.model
 class JniHttpHeader(
     val key: String,
     val value: String,
-) {
-}
+)
