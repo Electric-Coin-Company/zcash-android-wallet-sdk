@@ -601,7 +601,7 @@ class SdkSynchronizer private constructor(
             HttpClient(TorHttp) {
                 engine {
                     tor = isolatedTor
-                    retryLimit = 0
+                    retryLimit = 1
                 }
                 config(this as HttpClientConfig<HttpClientEngineConfig>)
             }
