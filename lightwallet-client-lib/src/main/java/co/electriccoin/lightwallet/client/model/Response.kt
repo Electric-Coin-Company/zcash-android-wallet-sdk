@@ -5,9 +5,6 @@ internal const val CONNECTION_ERROR_DESCRIPTION = "Missing internet connection."
 
 internal const val OVER_TOR_COMMUNICATION_ERROR_CODE = 3200
 
-// NON-NLS
-internal const val OVER_TOR_COMMUNICATION_ERROR_DESCRIPTION = "Request over Tor failed with no specific error message."
-
 sealed class Response<T> {
     data class Success<T>(
         val result: T
@@ -38,11 +35,10 @@ sealed class Response<T> {
          * communication over Tor.
          */
         class OverTor<T>(
-            override val description: String? = OVER_TOR_COMMUNICATION_ERROR_DESCRIPTION
-        ) : Failure<T>(OVER_TOR_COMMUNICATION_ERROR_CODE, description) {
-            override fun toString(): String {
-                return "Over Tor communication error(code='$code', description='$description')" // NON-NLS
-            }
+            val cause: Exception
+        ) : Failure<T>(OVER_TOR_COMMUNICATION_ERROR_CODE, cause.message) {
+            override fun toString(): String =
+                "Over Tor communication error(code='$code', description='$description', cause: $cause)"
         }
 
         /**

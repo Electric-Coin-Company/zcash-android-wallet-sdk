@@ -315,27 +315,6 @@ fun Double?.convertUsdToZec(zecPrice: Double): Double {
 }
 
 /**
- * Convert this value from one currency to the other, based on given price and whether this value is
- * USD.
- * If starting with USD -> End with ZEC.
- * If starting with ZEC -> End with USD.
- *
- * @param isUSD whether this value represents USD or not (ZEC)
- *
- * @return this BigDecimal value converted from one currency into the other, based on the given
- * price.
- */
-fun BigDecimal.convertCurrency(
-    zecPrice: BigDecimal,
-    isUsd: Boolean
-): BigDecimal =
-    if (isUsd) {
-        this.convertUsdToZec(zecPrice)
-    } else {
-        this.convertZecToUsd(zecPrice)
-    }
-
-/**
  * Parse this string into a BigDecimal, ignoring all non numeric characters.
  *
  * @return this string as a BigDecimal or null when parsing fails.
@@ -355,20 +334,6 @@ fun String?.safelyConvertToBigDecimal(decimalSeparator: Char): BigDecimal? {
         }
     return result
 }
-
-/**
- * Abbreviates this string which is assumed to be an address.
- *
- * @param startLength the number of characters to show before the elipsis.
- * @param endLength the number of characters to show after the elipsis.
- *
- * @return the abbreviated string unless the string is too short, in which case the original string
- * is returned.
- */
-fun String.toAbbreviatedAddress(
-    startLength: Int = 8,
-    endLength: Int = 8
-) = if (length > startLength + endLength) "${take(startLength)}…${takeLast(endLength)}" else this
 
 /**
  * Masks the current string for use in logs. If this string appears to be an address, the last

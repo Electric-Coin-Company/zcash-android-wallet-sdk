@@ -20,7 +20,6 @@ import co.electriccoin.lightwallet.client.LightWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
-import co.electriccoin.lightwallet.client.new
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -166,6 +165,7 @@ class TestnetIntegrationTest : ScopedTest() {
                     // Using existing wallet init mode as simplification for the test
                     walletInitMode = WalletInitMode.ExistingWallet,
                     zcashNetwork = ZcashNetwork.Testnet,
+                    isTorEnabled = false
                 )
         }
     }

@@ -17,12 +17,8 @@ plugins {
     id("zcash-sdk.publishing-conventions")
 }
 
-publishing {
-    publications {
-        publications.withType<MavenPublication>().all {
-            artifactId = "lightwallet-client"
-        }
-    }
+mavenPublishing {
+    coordinates(artifactId = "lightwallet-client")
 }
 
 android {

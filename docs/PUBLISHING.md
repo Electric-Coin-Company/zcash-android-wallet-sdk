@@ -66,8 +66,8 @@ would need to be configured in a repository fork.
 * Set up environment to [compile the SDK](https://github.com/zcash/zcash-android-wallet-sdk/#compiling-sources)
 * Create file `~/.gradle/gradle.properties`
   * add your sonotype credentials with these properties
-      * `ZCASH_MAVEN_PUBLISH_USERNAME`
-      * `ZCASH_MAVEN_PUBLISH_PASSWORD`
+      * `mavenCentralUsername`
+      * `mavenCentralPassword`
   * Point it to a passwordless GPG key that has been ASCII armored, then base64 encoded.
      * `ZCASH_ASCII_GPG_KEY`
 

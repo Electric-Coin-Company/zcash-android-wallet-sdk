@@ -29,6 +29,7 @@ import cash.z.ecc.android.sdk.model.ObserveFiatCurrencyResult
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.SdkFlags
 import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionOutput
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -43,6 +44,7 @@ import cash.z.ecc.android.sdk.type.AddressType
 import cash.z.ecc.android.sdk.type.ConsensusMatchType
 import cash.z.ecc.android.sdk.type.ServerValidation
 import cash.z.ecc.android.sdk.util.WalletClientFactory
+import co.electriccoin.lightwallet.client.ServiceMode
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
 import kotlinx.coroutines.flow.Flow
@@ -146,6 +148,11 @@ interface Synchronizer {
      * @throws [InitializeException.GetAccountsException] in case of the operation failure
      */
     val accountsFlow: Flow<List<Account>?>
+
+    /**
+     * Emits error states of the synchronizer.
+     */
+    val initializationError: InitializationError?
 
     /**
      * Tells the wallet to track an account using a unified full viewing key.
@@ -698,6 +705,16 @@ interface Synchronizer {
         SYNCED
     }
 
+    enum class InitializationError {
+        /**
+         * Indicates that tor is required but not available.
+         *
+         * Typically this means that [SdkFlags.isTorEnabled] is set to true but Tor instantiation
+         * failed.
+         */
+        TOR_NOT_AVAILABLE,
+    }
+
     companion object {
         /**
          * Primary method that SDK clients will use to construct a synchronizer.
@@ -736,7 +753,7 @@ interface Synchronizer {
          * If customized initialization is required (e.g. for dependency injection or testing), see
          * [DefaultSynchronizerFactory].
          */
-        @Suppress("LongParameterList", "LongMethod")
+        @Suppress("LongParameterList", "LongMethod", "TooGenericExceptionCaught")
         suspend fun new(
             alias: String = ZcashSdk.DEFAULT_ALIAS,
             birthday: BlockHeight?,
@@ -745,8 +762,11 @@ interface Synchronizer {
             setup: AccountCreateSetup?,
             walletInitMode: WalletInitMode,
             zcashNetwork: ZcashNetwork,
+            isTorEnabled: Boolean
         ): CloseableSynchronizer {
             val applicationContext = context.applicationContext
+
+            val sdkFlags = SdkFlags(isTorEnabled = isTorEnabled)
 
             validateAlias(alias)
 
@@ -776,7 +796,21 @@ interface Synchronizer {
                     .defaultCompactBlockRepository(coordinator.fsBlockDbRoot(zcashNetwork, alias), backend)
 
             val torDir = Files.getTorDir(context)
-            val torClient = TorClient.new(torDir)
+            val torClient =
+                try {
+                    if (sdkFlags.isTorEnabled) TorClient.new(torDir) else null
+                } catch (e: Exception) {
+                    Twig.error(e) { "Error instantiating Tor Client" }
+                    null
+                }
+
+            val exchangeRateIsolatedTorClient =
+                try {
+                    torClient?.isolatedTorClient()
+                } catch (e: Exception) {
+                    Twig.error(e) { "Error instantiating an isolated Tor Client" }
+                    null
+                }
 
             val walletClientFactory =
                 WalletClientFactory(
@@ -790,7 +824,9 @@ interface Synchronizer {
             val chainTip =
                 when (walletInitMode) {
                     is RestoreWallet -> {
-                        when (val response = downloader.getLatestBlockHeight()) {
+                        when (
+                            val response = downloader.getLatestBlockHeight(sdkFlags ifTor ServiceMode.UniqueTor)
+                        ) {
                             is Response.Success -> {
                                 Twig.info { "Chain tip for recovery until param fetched: ${response.result.value}" }
                                 runCatching { response.result.toBlockHeight() }.getOrNull()
@@ -822,7 +858,7 @@ interface Synchronizer {
 
             val encoder = DefaultSynchronizerFactory.defaultEncoder(backend, saplingParamTool, repository)
 
-            val txManager = DefaultSynchronizerFactory.defaultTxManager(encoder, walletClient)
+            val txManager = DefaultSynchronizerFactory.defaultTxManager(encoder, walletClient, sdkFlags)
             val processor =
                 DefaultSynchronizerFactory.defaultProcessor(
                     backend = backend,
@@ -830,6 +866,7 @@ interface Synchronizer {
                     downloader = downloader,
                     repository = repository,
                     txManager = txManager,
+                    sdkFlags = sdkFlags
                 )
 
             val standardPreferenceProvider = StandardPreferenceProvider(context)
@@ -846,13 +883,18 @@ interface Synchronizer {
                     FastestServerFetcher(
                         backend = backend,
                         network = processor.network,
-                        walletClientFactory = walletClientFactory
+                        walletClientFactory = walletClientFactory,
+                        sdkFlags = sdkFlags
                     ),
-                fetchExchangeChangeUsd = UsdExchangeRateFetcher(isolatedTorClient = torClient.isolatedTorClient()),
+                fetchExchangeChangeUsd =
+                    exchangeRateIsolatedTorClient?.let {
+                        UsdExchangeRateFetcher(isolatedTorClient = it)
+                    },
                 preferenceProvider = standardPreferenceProvider(),
                 torClient = torClient,
                 walletClient = walletClient,
-                walletClientFactory = walletClientFactory
+                walletClientFactory = walletClientFactory,
+                sdkFlags = sdkFlags
             )
         }
 
@@ -872,6 +914,7 @@ interface Synchronizer {
             setup: AccountCreateSetup?,
             walletInitMode: WalletInitMode,
             zcashNetwork: ZcashNetwork,
+            isTorEnabled: Boolean
         ): CloseableSynchronizer =
             runBlocking {
                 new(
@@ -882,6 +925,7 @@ interface Synchronizer {
                     setup = setup,
                     walletInitMode = walletInitMode,
                     zcashNetwork = zcashNetwork,
+                    isTorEnabled = isTorEnabled
                 )
             }
 
