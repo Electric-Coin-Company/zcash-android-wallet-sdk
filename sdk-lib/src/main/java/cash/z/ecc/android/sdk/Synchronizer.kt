@@ -798,7 +798,7 @@ interface Synchronizer {
             val torDir = Files.getTorDir(context)
             val torClient =
                 try {
-                    if (sdkFlags.isTorEnabled) TorClient.new(torDir) else null
+                    TorClient.new(torDir)
                 } catch (e: Exception) {
                     Twig.error(e) { "Error instantiating Tor Client" }
                     null
@@ -815,7 +815,7 @@ interface Synchronizer {
             val walletClientFactory =
                 WalletClientFactory(
                     context = applicationContext,
-                    torClient = torClient
+                    torClient = torClient.takeIf { sdkFlags.isTorEnabled }
                 )
 
             val walletClient = walletClientFactory.create(endpoint = lightWalletEndpoint)
@@ -887,9 +887,7 @@ interface Synchronizer {
                         sdkFlags = sdkFlags
                     ),
                 fetchExchangeChangeUsd =
-                    exchangeRateIsolatedTorClient?.let {
-                        UsdExchangeRateFetcher(isolatedTorClient = it)
-                    },
+                    exchangeRateIsolatedTorClient?.let { UsdExchangeRateFetcher(isolatedTorClient = it) },
                 preferenceProvider = standardPreferenceProvider(),
                 torClient = torClient,
                 walletClient = walletClient,
