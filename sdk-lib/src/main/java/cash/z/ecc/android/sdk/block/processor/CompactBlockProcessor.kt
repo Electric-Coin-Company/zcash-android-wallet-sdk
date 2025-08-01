@@ -1702,10 +1702,20 @@ class CompactBlockProcessor internal constructor(
             val resultList =
                 buildList {
                     while (end != syncRange.endInclusive.value) {
-                        end = calculateBatchEnd(start, syncRange.endInclusive.value, SYNC_BATCH_SIZE)
+                        end =
+                            calculateBatchEnd(
+                                start = start,
+                                rangeEnd = syncRange.endInclusive.value,
+                                batchSize = SYNC_BATCH_SIZE
+                            )
 
                         if (((start..end)).overlaps(SANDBLASTING_RANGE)) {
-                            end = calculateBatchEnd(start, syncRange.endInclusive.value, SYNC_BATCH_SMALL_SIZE)
+                            end =
+                                calculateBatchEnd(
+                                    start = start,
+                                    rangeEnd = syncRange.endInclusive.value,
+                                    batchSize = SYNC_BATCH_SMALL_SIZE
+                                )
                         }
 
                         val range = BlockHeight.new(start)..BlockHeight.new(end)
