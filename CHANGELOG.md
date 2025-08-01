@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Exchange rate calculation is now decoupled from Tor flag
+
 ## [2.3.0] - 2025-07-28
 
 ### Added
