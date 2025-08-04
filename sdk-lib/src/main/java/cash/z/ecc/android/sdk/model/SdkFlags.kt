@@ -7,7 +7,8 @@ import co.electriccoin.lightwallet.client.ServiceMode
  * null if disabled and not explicitly set
  */
 data class SdkFlags(
-    val isTorEnabled: Boolean
+    val isTorEnabled: Boolean,
+    val isExchangeRateEnabled: Boolean
 ) {
     infix fun ifTor(other: ServiceMode): ServiceMode = if (isTorEnabled) other else ServiceMode.Direct
 }

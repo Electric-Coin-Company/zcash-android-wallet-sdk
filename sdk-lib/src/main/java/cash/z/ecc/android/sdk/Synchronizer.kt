@@ -762,11 +762,16 @@ interface Synchronizer {
             setup: AccountCreateSetup?,
             walletInitMode: WalletInitMode,
             zcashNetwork: ZcashNetwork,
-            isTorEnabled: Boolean
+            isTorEnabled: Boolean,
+            isExchangeRateEnabled: Boolean
         ): CloseableSynchronizer {
             val applicationContext = context.applicationContext
 
-            val sdkFlags = SdkFlags(isTorEnabled = isTorEnabled)
+            val sdkFlags =
+                SdkFlags(
+                    isTorEnabled = isTorEnabled,
+                    isExchangeRateEnabled = isExchangeRateEnabled
+                )
 
             validateAlias(alias)
 
@@ -797,18 +802,26 @@ interface Synchronizer {
 
             val torDir = Files.getTorDir(context)
             val torClient =
-                try {
-                    TorClient.new(torDir)
-                } catch (e: Exception) {
-                    Twig.error(e) { "Error instantiating Tor Client" }
+                if (sdkFlags.isTorEnabled || sdkFlags.isExchangeRateEnabled) {
+                    try {
+                        TorClient.new(torDir)
+                    } catch (e: Exception) {
+                        Twig.error(e) { "Error instantiating Tor Client" }
+                        null
+                    }
+                } else {
                     null
                 }
 
             val exchangeRateIsolatedTorClient =
-                try {
-                    torClient?.isolatedTorClient()
-                } catch (e: Exception) {
-                    Twig.error(e) { "Error instantiating an isolated Tor Client" }
+                if (sdkFlags.isExchangeRateEnabled) {
+                    try {
+                        torClient?.isolatedTorClient()
+                    } catch (e: Exception) {
+                        Twig.error(e) { "Error instantiating an isolated Tor Client" }
+                        null
+                    }
+                } else {
                     null
                 }
 
@@ -912,7 +925,8 @@ interface Synchronizer {
             setup: AccountCreateSetup?,
             walletInitMode: WalletInitMode,
             zcashNetwork: ZcashNetwork,
-            isTorEnabled: Boolean
+            isTorEnabled: Boolean,
+            isExchangeRateEnabled: Boolean
         ): CloseableSynchronizer =
             runBlocking {
                 new(
@@ -923,7 +937,8 @@ interface Synchronizer {
                     setup = setup,
                     walletInitMode = walletInitMode,
                     zcashNetwork = zcashNetwork,
-                    isTorEnabled = isTorEnabled
+                    isTorEnabled = isTorEnabled,
+                    isExchangeRateEnabled = isExchangeRateEnabled
                 )
             }
 
