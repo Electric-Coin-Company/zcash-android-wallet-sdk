@@ -98,7 +98,8 @@ class SharedViewModel(
                             // We use restore mode as this is always initialization with an older seed
                             walletInitMode = WalletInitMode.RestoreWallet,
                             zcashNetwork = network,
-                            isTorEnabled = false
+                            isTorEnabled = false,
+                            isExchangeRateEnabled = false
                         )
 
                     send(InternalSynchronizerStatus.Available(synchronizer))
