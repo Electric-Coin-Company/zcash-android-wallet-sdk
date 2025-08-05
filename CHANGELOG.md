@@ -6,10 +6,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.1] - 2025-08-05
+
 ### Changed
 - Exchange rate calculation is now decoupled from Tor flag
 - [WalletCoordinator] now takes [isExchangeRateEnabled] as a constructor parameter
-- [Synchronizer] now exposes [exchangeRateUsd] property containing exchange rate
   - When set to `true`, exchange rate fetching will be enabled
   - When set to `false` or `null`, exchange rate fetching will be disabled
 
