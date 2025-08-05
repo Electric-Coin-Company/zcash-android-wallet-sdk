@@ -165,7 +165,8 @@ class TestnetIntegrationTest : ScopedTest() {
                     // Using existing wallet init mode as simplification for the test
                     walletInitMode = WalletInitMode.ExistingWallet,
                     zcashNetwork = ZcashNetwork.Testnet,
-                    isTorEnabled = false
+                    isTorEnabled = false,
+                    isExchangeRateEnabled = false
                 )
         }
     }
