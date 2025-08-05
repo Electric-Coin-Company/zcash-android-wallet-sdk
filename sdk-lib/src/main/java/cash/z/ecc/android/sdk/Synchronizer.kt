@@ -762,11 +762,16 @@ interface Synchronizer {
             setup: AccountCreateSetup?,
             walletInitMode: WalletInitMode,
             zcashNetwork: ZcashNetwork,
-            isTorEnabled: Boolean
+            isTorEnabled: Boolean,
+            isExchangeRateEnabled: Boolean
         ): CloseableSynchronizer {
             val applicationContext = context.applicationContext
 
-            val sdkFlags = SdkFlags(isTorEnabled = isTorEnabled)
+            val sdkFlags =
+                SdkFlags(
+                    isTorEnabled = isTorEnabled,
+                    isExchangeRateEnabled = isExchangeRateEnabled
+                )
 
             validateAlias(alias)
 
@@ -797,25 +802,33 @@ interface Synchronizer {
 
             val torDir = Files.getTorDir(context)
             val torClient =
-                try {
-                    if (sdkFlags.isTorEnabled) TorClient.new(torDir) else null
-                } catch (e: Exception) {
-                    Twig.error(e) { "Error instantiating Tor Client" }
+                if (sdkFlags.isTorEnabled || sdkFlags.isExchangeRateEnabled) {
+                    try {
+                        TorClient.new(torDir)
+                    } catch (e: Exception) {
+                        Twig.error(e) { "Error instantiating Tor Client" }
+                        null
+                    }
+                } else {
                     null
                 }
 
             val exchangeRateIsolatedTorClient =
-                try {
-                    torClient?.isolatedTorClient()
-                } catch (e: Exception) {
-                    Twig.error(e) { "Error instantiating an isolated Tor Client" }
+                if (sdkFlags.isExchangeRateEnabled) {
+                    try {
+                        torClient?.isolatedTorClient()
+                    } catch (e: Exception) {
+                        Twig.error(e) { "Error instantiating an isolated Tor Client" }
+                        null
+                    }
+                } else {
                     null
                 }
 
             val walletClientFactory =
                 WalletClientFactory(
                     context = applicationContext,
-                    torClient = torClient
+                    torClient = torClient.takeIf { sdkFlags.isTorEnabled }
                 )
 
             val walletClient = walletClientFactory.create(endpoint = lightWalletEndpoint)
@@ -887,9 +900,7 @@ interface Synchronizer {
                         sdkFlags = sdkFlags
                     ),
                 fetchExchangeChangeUsd =
-                    exchangeRateIsolatedTorClient?.let {
-                        UsdExchangeRateFetcher(isolatedTorClient = it)
-                    },
+                    exchangeRateIsolatedTorClient?.let { UsdExchangeRateFetcher(isolatedTorClient = it) },
                 preferenceProvider = standardPreferenceProvider(),
                 torClient = torClient,
                 walletClient = walletClient,
@@ -914,7 +925,8 @@ interface Synchronizer {
             setup: AccountCreateSetup?,
             walletInitMode: WalletInitMode,
             zcashNetwork: ZcashNetwork,
-            isTorEnabled: Boolean
+            isTorEnabled: Boolean,
+            isExchangeRateEnabled: Boolean
         ): CloseableSynchronizer =
             runBlocking {
                 new(
@@ -925,7 +937,8 @@ interface Synchronizer {
                     setup = setup,
                     walletInitMode = walletInitMode,
                     zcashNetwork = zcashNetwork,
-                    isTorEnabled = isTorEnabled
+                    isTorEnabled = isTorEnabled,
+                    isExchangeRateEnabled = isExchangeRateEnabled
                 )
             }
 

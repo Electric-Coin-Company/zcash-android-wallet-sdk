@@ -40,6 +40,7 @@ class SdkSynchronizerTest {
                     walletInitMode = WalletInitMode.ExistingWallet,
                     zcashNetwork = ZcashNetwork.Mainnet,
                     isTorEnabled = false,
+                    isExchangeRateEnabled = false
                 ).use {
                     assertFailsWith<IllegalStateException> {
                         Synchronizer.new(
@@ -56,6 +57,7 @@ class SdkSynchronizerTest {
                             walletInitMode = WalletInitMode.ExistingWallet,
                             zcashNetwork = ZcashNetwork.Mainnet,
                             isTorEnabled = false,
+                            isExchangeRateEnabled = false
                         )
                     }
                 }
@@ -86,6 +88,7 @@ class SdkSynchronizerTest {
                     walletInitMode = WalletInitMode.ExistingWallet,
                     zcashNetwork = ZcashNetwork.Mainnet,
                     isTorEnabled = false,
+                    isExchangeRateEnabled = false
                 ).use {}
 
             // Second instance should succeed because first one was closed
@@ -103,6 +106,7 @@ class SdkSynchronizerTest {
                     walletInitMode = WalletInitMode.ExistingWallet,
                     zcashNetwork = ZcashNetwork.Mainnet,
                     isTorEnabled = false,
+                    isExchangeRateEnabled = false
                 ).use {}
         }
 
@@ -131,6 +135,7 @@ class SdkSynchronizerTest {
                     walletInitMode = WalletInitMode.ExistingWallet,
                     zcashNetwork = ZcashNetwork.Mainnet,
                     isTorEnabled = false,
+                    isExchangeRateEnabled = false
                 ).use {
                     it.getSaplingAddress(it.getAccounts()[0])
                 }
@@ -153,6 +158,7 @@ class SdkSynchronizerTest {
                             walletInitMode = WalletInitMode.ExistingWallet,
                             zcashNetwork = ZcashNetwork.Mainnet,
                             isTorEnabled = false,
+                            isExchangeRateEnabled = false
                         ).use {}
                 }
             assertEquals(InitializeException.SeedNotRelevant, error)
