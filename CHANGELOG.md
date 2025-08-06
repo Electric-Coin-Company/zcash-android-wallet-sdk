@@ -7,15 +7,23 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ###
-- `Synchronizer.getTorHttpClient` function added which now returns Ktors' `HttpClient` which does http requests over 
+- `Synchronizer.getTorHttpClient` function added which now returns Ktors' `HttpClient` which does http requests over
   Tor Network
+
+## [2.3.1] - 2025-08-05
+
+### Changed
+- Exchange rate calculation is now decoupled from Tor flag
+- [WalletCoordinator] now takes [isExchangeRateEnabled] as a constructor parameter
+  - When set to `true`, exchange rate fetching will be enabled
+  - When set to `false` or `null`, exchange rate fetching will be disabled
 
 ## [2.3.0] - 2025-07-28
 
 ### Added
 - [WalletCoordinator] now takes [isTorEnabled] as a constructor parameter.
   - When set to `true`, lightwalletd RPC queries will be made over Tor (where possible and beneficial).
-  - When set to `false`, lightwalletd RPC queries will always be made directly to the server.
+  - When set to `false` or `null`, lightwalletd RPC queries will always be made directly to the server.
 - [Synchronizer] now exposes [initializationError] property containing synchronizer errors that happened during 
   synchronizer init
 

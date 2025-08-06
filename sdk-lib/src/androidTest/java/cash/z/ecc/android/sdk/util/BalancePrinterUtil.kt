@@ -102,6 +102,7 @@ class BalancePrinterUtil {
                             walletInitMode = WalletInitMode.ExistingWallet,
                             zcashNetwork = network,
                             isTorEnabled = false,
+                            isExchangeRateEnabled = false
                         )
 
 //            deleteDb(dataDbPath)

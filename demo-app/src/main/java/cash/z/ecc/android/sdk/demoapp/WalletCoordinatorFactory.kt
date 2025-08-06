@@ -28,7 +28,8 @@ private val lazy =
             persistableWallet = persistableWalletFlow,
             accountName = "Zcash Account 1",
             keySource = "ZCASH",
-            isTorEnabled = flowOf(null)
+            isTorEnabled = flowOf(null),
+            isExchangeRateEnabled = flowOf(null)
         )
     }
 

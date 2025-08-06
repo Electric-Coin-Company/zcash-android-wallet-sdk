@@ -48,6 +48,7 @@ class WalletCoordinator(
     context: Context,
     val persistableWallet: Flow<PersistableWallet?>,
     val isTorEnabled: Flow<Boolean?>,
+    val isExchangeRateEnabled: Flow<Boolean?>,
     val accountName: String,
     val keySource: String?,
 ) {
@@ -82,7 +83,8 @@ class WalletCoordinator(
             persistableWallet,
             synchronizerLockoutId,
             isTorEnabled,
-        ) { persistableWallet, lockoutId, isTorEnabled ->
+            isExchangeRateEnabled
+        ) { persistableWallet, lockoutId, isTorEnabled, isExchangeRateEnabled ->
             if (null != lockoutId) { // this one needs to come first
                 flowOf(InternalSynchronizerStatus.Lockout(lockoutId))
             } else if (null == persistableWallet) {
@@ -102,7 +104,8 @@ class WalletCoordinator(
                                     seed = FirstClassByteArray(persistableWallet.seedPhrase.toByteArray())
                                 ),
                             walletInitMode = persistableWallet.walletInitMode,
-                            isTorEnabled = isTorEnabled == true
+                            isTorEnabled = isTorEnabled == true,
+                            isExchangeRateEnabled = isExchangeRateEnabled == true
                         )
 
                     trySend(InternalSynchronizerStatus.Available(closeableSynchronizer))

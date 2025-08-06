@@ -214,7 +214,8 @@ class SampleCodeTest {
                     // Using existing wallet init mode as simplification for the test
                     walletInitMode = WalletInitMode.ExistingWallet,
                     zcashNetwork = network,
-                    isTorEnabled = false
+                    isTorEnabled = false,
+                    isExchangeRateEnabled = false
                 )
             }
 
