@@ -119,6 +119,7 @@ dependencyResolutionManagement {
             val kotlinxCoroutinesVersion = extra["KOTLINX_COROUTINES_VERSION"].toString()
             val kotlinxDateTimeVersion = extra["KOTLINX_DATETIME_VERSION"].toString()
             val kotlinxImmutableCollectionsVersion = extra["KOTLINX_IMMUTABLE_COLLECTIONS_VERSION"].toString()
+            val ktorVersion = extra["KTOR_VERSION"].toString()
             val mockitoVersion = extra["MOCKITO_VERSION"].toString()
             val protocVersion = extra["PROTOC_VERSION"].toString()
             val rustGradlePluginVersion = extra["RUST_GRADLE_PLUGIN_VERSION"].toString()
@@ -173,6 +174,7 @@ dependencyResolutionManagement {
             library("kotlinx-coroutines-core", "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
             library("kotlinx-datetime", "org.jetbrains.kotlinx:kotlinx-datetime:$kotlinxDateTimeVersion")
             library("kotlinx-immutable", "org.jetbrains.kotlinx:kotlinx-collections-immutable:$kotlinxImmutableCollectionsVersion")
+            library("ktor-core", "io.ktor:ktor-client-core:$ktorVersion")
             library("material", "com.google.android.material:material:$googleMaterialVersion")
             library("zcashwalletplgn", "com.github.zcash:zcash-android-wallet-plugins:$zcashWalletPluginVersion")
 

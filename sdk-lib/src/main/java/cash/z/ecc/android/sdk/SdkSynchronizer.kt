@@ -14,6 +14,8 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Synced
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.State.Syncing
 import cash.z.ecc.android.sdk.exception.CompactBlockProcessorException
 import cash.z.ecc.android.sdk.exception.InitializeException
+import cash.z.ecc.android.sdk.exception.TorInitializationErrorException
+import cash.z.ecc.android.sdk.exception.TorUnavailableException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.internal.FastestServerFetcher
@@ -32,6 +34,7 @@ import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.internal.model.TorClient
 import cash.z.ecc.android.sdk.internal.model.TorDormantMode
+import cash.z.ecc.android.sdk.internal.model.TorHttp
 import cash.z.ecc.android.sdk.internal.model.TreeState
 import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.internal.model.ext.toBlockHeight
@@ -83,6 +86,9 @@ import co.electriccoin.lightwallet.client.ServiceMode
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.util.use
+import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.engine.HttpClientEngineConfig
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -573,6 +579,35 @@ class SdkSynchronizer private constructor(
     override fun refreshExchangeRateUsd() {
         coroutineScope.launch { refreshExchangeRateUsd.emit(Unit) }
     }
+
+    @Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught")
+    override suspend fun getTorHttpClient(
+        config: HttpClientConfig<HttpClientEngineConfig>.() -> Unit
+    ): HttpClient =
+        if (sdkFlags.isTorEnabled) {
+            if (torClient == null) {
+                throw TorInitializationErrorException(
+                    NullPointerException("Tor has not been initialized during synchronizer setup")
+                )
+            }
+
+            val isolatedTor =
+                try {
+                    torClient.isolatedTorClient()
+                } catch (e: Exception) {
+                    throw TorInitializationErrorException(e)
+                }
+
+            HttpClient(TorHttp) {
+                engine {
+                    tor = isolatedTor
+                    retryLimit = 1
+                }
+                config(this as HttpClientConfig<HttpClientEngineConfig>)
+            }
+        } else {
+            throw TorUnavailableException()
+        }
 
     suspend fun isValidAddress(address: String): Boolean = !validateAddress(address).isNotValid
 

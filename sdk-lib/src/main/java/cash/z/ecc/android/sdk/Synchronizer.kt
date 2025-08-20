@@ -8,6 +8,8 @@ import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.InitializeException
 import cash.z.ecc.android.sdk.exception.PcztException
 import cash.z.ecc.android.sdk.exception.RustLayerException
+import cash.z.ecc.android.sdk.exception.TorInitializationErrorException
+import cash.z.ecc.android.sdk.exception.TorUnavailableException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.FastestServerFetcher
 import cash.z.ecc.android.sdk.internal.Files
@@ -47,6 +49,9 @@ import cash.z.ecc.android.sdk.util.WalletClientFactory
 import co.electriccoin.lightwallet.client.ServiceMode
 import co.electriccoin.lightwallet.client.model.LightWalletEndpoint
 import co.electriccoin.lightwallet.client.model.Response
+import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.engine.HttpClientEngineConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
@@ -603,6 +608,18 @@ interface Synchronizer {
     fun onBackground()
 
     fun onForeground()
+
+    /**
+     *
+     * @param config to configure [HttpClient]
+     *
+     * @return http client that does http communication over Tor network
+     *
+     * @throws TorInitializationErrorException if an error occurred during Tor setup
+     * @throws TorUnavailableException if Tor is not enabled
+     */
+    @Throws(TorInitializationErrorException::class, TorUnavailableException::class)
+    suspend fun getTorHttpClient(config: HttpClientConfig<HttpClientEngineConfig>.() -> Unit = {}): HttpClient
 
     //
     // Error Handling

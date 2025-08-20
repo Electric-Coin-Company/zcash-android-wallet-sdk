@@ -5978,8 +5978,11 @@ version = "2.2.10"
 dependencies = [
  "anyhow",
  "bitflags 2.8.0",
+ "bytes",
  "dlopen2",
  "fs-mistrust",
+ "http",
+ "http-body-util",
  "jni",
  "libc",
  "log-panics",

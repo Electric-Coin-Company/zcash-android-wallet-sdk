@@ -130,6 +130,7 @@ protobuf {
 
 dependencies {
     api(projects.lightwalletClientLib)
+    api(libs.ktor.core)
 
     implementation(libs.androidx.annotation)
     implementation(libs.bundles.protobuf)

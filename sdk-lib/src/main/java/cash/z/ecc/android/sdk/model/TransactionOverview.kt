@@ -13,7 +13,7 @@ import cash.z.ecc.android.sdk.internal.repository.DerivedDataRepository
  * Pending transactions are identified by a null [minedHeight].  Pending transactions are considered expired if the
  * last synced block exceeds the [expiryHeight].
  */
-data class TransactionOverview internal constructor(
+data class TransactionOverview(
     val txId: TransactionId,
     val minedHeight: BlockHeight?,
     val expiryHeight: BlockHeight?,

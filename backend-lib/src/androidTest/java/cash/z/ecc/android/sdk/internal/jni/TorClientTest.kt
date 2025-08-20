@@ -2,10 +2,17 @@ package cash.z.ecc.android.sdk.internal.jni
 
 import cash.z.ecc.android.sdk.internal.model.TorClient
 import cash.z.ecc.android.sdk.internal.model.TorDormantMode
+import cash.z.ecc.android.sdk.internal.model.TorHttp
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
 import co.electriccoin.lightwallet.client.model.LightWalletEndpointInfoUnsafe
 import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.io.path.createTempDirectory
@@ -18,7 +25,7 @@ class TorClientTest {
     @OptIn(ExperimentalStdlibApi::class)
     @Test
     @Ignore("requires network access")
-    fun tor_lwd_can_fetch_and_submit_tx() =
+    fun tor_apis() =
         runTest {
             // Spin up a new Tor client.
             val torDir = createTempDirectory("tor-client-").toFile()
@@ -67,5 +74,36 @@ class TorClientTest {
 
             // We can background the Tor client.
             torClient.setDormant(TorDormantMode.SOFT)
+            // Usage of the Tor client after this point should un-background it automatically.
+
+            // Set up an HttpClient using the Tor client.
+            val httpTorClient = torClient.isolatedTorClient()
+            val httpClient =
+                HttpClient(TorHttp) {
+                    engine {
+                        tor = httpTorClient
+                        retryLimit = 3
+                    }
+                }
+
+            // Test HTTP GET.
+            val getUrl = "https://httpbin.org/get"
+            val getResponse = httpClient.get(getUrl)
+            assertEquals(200, getResponse.status.value)
+            // TODO [#1782]: Parse the response body as JSON and check its contents.
+
+            // Test HTTP GET with 419 response.
+            val getErrorResponse = httpClient.get("https://httpbin.org/status/419")
+            assertEquals(419, getErrorResponse.status.value)
+
+            // Test HTTP POST.
+            val postUrl = "https://httpbin.org/post"
+            val postResponse =
+                httpClient.post(postUrl) {
+                    contentType(ContentType.Application.Json)
+                    setBody("{\"body\": \"Some body\"}")
+                }
+            assertEquals(200, postResponse.status.value)
+            // TODO [#1782]: Parse the response body as JSON and check its contents.
         }
 }
