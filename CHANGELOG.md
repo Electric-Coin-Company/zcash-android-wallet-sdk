@@ -6,7 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-###
+## [2.3.2] - 2025-08-22
+
+### Added
 - `Synchronizer.getTorHttpClient` function added which now returns Ktors' `HttpClient` which does http requests over
   Tor Network
 
