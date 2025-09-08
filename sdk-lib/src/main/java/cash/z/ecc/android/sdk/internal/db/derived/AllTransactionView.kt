@@ -125,6 +125,7 @@ internal class AllTransactionView(
             val memoCountIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_MEMO_COUNT)
             val blockTimeIndex = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_INTEGER_BLOCK_TIME)
             val isShielding = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_BOOLEAN_IS_SHIELDING)
+            val isExpiredUnmined = cursor.getColumnIndex(AllTransactionViewDefinition.COLUMN_EXPIRED_UNMINED)
 
             val netValueLong = cursor.getLong(netValueIndex)
             val isSent = netValueLong < 0
@@ -157,6 +158,12 @@ internal class AllTransactionView(
                 memoCount = cursor.getInt(memoCountIndex),
                 blockTimeEpochSeconds = cursor.getLongOrNull(blockTimeIndex),
                 isShielding = cursor.getIntOrNull(isShielding) == 1,
+                isExpiredUnmined =
+                    when (cursor.getIntOrNull(isExpiredUnmined)) {
+                        1 -> true
+                        null -> null
+                        else -> false
+                    }
             )
         }
 
@@ -260,4 +267,6 @@ internal object AllTransactionViewDefinition {
     const val COLUMN_BOOLEAN_IS_SHIELDING = "is_shielding" // $NON-NLS
 
     const val COLUMN_BLOB_ACCOUNT_UUID = "account_uuid" // $NON-NLS
+
+    const val COLUMN_EXPIRED_UNMINED = "expired_unmined"
 }
