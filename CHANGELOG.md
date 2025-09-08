@@ -9,6 +9,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Transactions received on a transparent address should now appear in history views when they are detected before any
   compact blocks have been scanned.
+- Column expired_unmined in v_transactions is now propagated to transaction state as expired if non-null and true
 
 ## [2.3.2] - 2025-08-22
 
