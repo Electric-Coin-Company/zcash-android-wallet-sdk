@@ -25,7 +25,7 @@ zcash_client_backend = { version = "0.19", features = [
     "unstable",
     "pczt",
 ] }
-zcash_client_sqlite = { version = "0.17", features = ["orchard", "transparent-inputs", "unstable", "serde"] }
+zcash_client_sqlite = { version = "0.17.3", features = ["orchard", "transparent-inputs", "unstable", "serde"] }
 zcash_note_encryption = "0.4.1"
 zcash_primitives = "0.23"
 zcash_proofs = "0.23"
