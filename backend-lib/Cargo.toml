@@ -15,7 +15,7 @@ rust-version = "1.85"
 orchard = "0.11"
 pczt = { version = "0.3", features = ["prover", "orchard", "sapling"] }
 sapling = { package = "sapling-crypto", version = "0.5", default-features = false }
-transparent = { package = "zcash_transparent", version = "0.3", default-features = false }
+transparent = { package = "zcash_transparent", version = "0.4", default-features = false }
 zcash_address = "0.9"
 zcash_client_backend = { version = "0.19", features = [
     "orchard",
