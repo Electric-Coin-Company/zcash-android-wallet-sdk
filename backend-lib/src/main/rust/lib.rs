@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::ptr;
 use std::time::UNIX_EPOCH;
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use bitflags::bitflags;
 use bytes::Bytes;
 use http_body_util::BodyExt;
@@ -46,9 +46,9 @@ use zcash_client_backend::{
         chain::{scan_cached_blocks, CommitmentTreeRoot, ScanSummary},
         scanning::{ScanPriority, ScanRange},
         wallet::{
-            create_pczt_from_proposal, create_proposed_transactions, decrypt_and_store_transaction,
-            extract_and_store_transaction_from_pczt, input_selection::GreedyInputSelector,
-            propose_shielding, propose_transfer,
+            self, create_pczt_from_proposal, create_proposed_transactions,
+            decrypt_and_store_transaction, extract_and_store_transaction_from_pczt,
+            input_selection::GreedyInputSelector, propose_shielding, propose_transfer,
         },
         Account, AccountBalance, AccountBirthday, InputSource, SeedRelevance,
         WalletCommitmentTrees, WalletRead, WalletSummary, WalletWrite,
@@ -99,8 +99,9 @@ use crate::utils::{catch_unwind, exception::unwrap_exc_or};
 mod tor;
 mod utils;
 
-const ANCHOR_OFFSET_U32: u32 = 10;
-const ANCHOR_OFFSET: NonZeroU32 = unsafe { NonZeroU32::new_unchecked(ANCHOR_OFFSET_U32) };
+// The default here is trusted=3, untrusted=10
+static DEFAULT_CONFIRMATIONS_POLICY: std::sync::LazyLock<wallet::ConfirmationsPolicy> =
+    std::sync::LazyLock::new(wallet::ConfirmationsPolicy::default);
 
 #[cfg(debug_assertions)]
 fn print_debug_state() {
@@ -997,21 +998,20 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTotalT
 
         let min_confirmations = NonZeroU32::MIN;
 
-        let amount = db_data
+        let (target, _) = db_data
             .get_target_and_anchor_heights(min_confirmations)
-            .map_err(|e| anyhow!("Error while fetching target height: {}", e))
-            .and_then(|opt_target| {
-                opt_target
-                    .map(|(target, _)| target)
-                    .ok_or(anyhow!("Target height not available; scan required."))
-            })
-            .and_then(|target| {
-                db_data
-                    .get_spendable_transparent_outputs(&taddr, target, 0)
-                    .map_err(|e| anyhow!("Error while fetching verified balance: {}", e))
-            })?
+            .map_err(|e| anyhow!("Error while fetching target height: {}", e))?
+            .context("Target height not available; scan required.")?;
+
+        let amount = db_data
+            .get_spendable_transparent_outputs(
+                &taddr,
+                target,
+                wallet::ConfirmationsPolicy::new_symmetrical(NonZeroU32::MIN, true),
+            )
+            .map_err(|e| anyhow!("Error while fetching verified balance: {}", e))?
             .iter()
-            .map(|utxo| utxo.txout().value)
+            .map(|utxo| utxo.txout().value())
             .sum::<Option<Zatoshis>>()
             .ok_or_else(|| anyhow!("Balance overflowed MAX_MONEY"))?;
 
@@ -1521,7 +1521,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getWallet
         let db_data = wallet_db(env, network, db_data)?;
 
         match db_data
-            .get_wallet_summary(ANCHOR_OFFSET_U32)
+            .get_wallet_summary(wallet::ConfirmationsPolicy::default())
             .map_err(|e| anyhow!("Error while fetching scan progress: {}", e))?
         {
             Some(summary) => Ok(encode_wallet_summary(env, summary)?.into_raw()),
@@ -1658,14 +1658,14 @@ fn encode_transaction_data_request<'a>(
             "([B)V",
             &[(&env.byte_array_from_slice(txid.as_ref())?).into()],
         ),
-        TransactionDataRequest::TransactionsInvolvingAddress {
-            address,
-            block_range_start,
-            block_range_end,
-            request_at,
-            tx_status_filter,
-            output_status_filter,
-        } => {
+        TransactionDataRequest::TransactionsInvolvingAddress(txs) => {
+            let address = txs.address();
+            let block_range_start = txs.block_range_start();
+            let block_range_end = txs.block_range_end();
+            let request_at = txs.request_at();
+            let tx_status_filter = txs.tx_status_filter();
+            let output_status_filter = txs.output_status_filter();
+
             let taddr = match address {
                 TransparentAddress::PublicKeyHash(data) => {
                     ZcashAddress::from_transparent_p2pkh(net, data)
@@ -1945,7 +1945,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
             &input_selector,
             &change_strategy,
             request,
-            ANCHOR_OFFSET,
+            *DEFAULT_CONFIRMATIONS_POLICY,
         )
         .map_err(|e| anyhow!("Error creating transaction proposal: {}", e))?;
 
@@ -2007,7 +2007,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
             &input_selector,
             &change_strategy,
             request,
-            ANCHOR_OFFSET,
+            *DEFAULT_CONFIRMATIONS_POLICY,
         )
         .map_err(|e| anyhow!("Error creating transaction proposal: {}", e))?;
 
@@ -2040,7 +2040,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         let account_uuid = account_id_from_jni(env, account_uuid)?;
         let shielding_threshold = Zatoshis::from_nonnegative_i64(shielding_threshold)
             .map_err(|_| anyhow!("Invalid shielding threshold, out of range"))?;
-
+        let confirmations_policy = wallet::ConfirmationsPolicy::MIN;
         let transparent_receiver =
             match utils::java_nullable_string_to_rust(env, &transparent_receiver)? {
                 None => Ok(None),
@@ -2068,7 +2068,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
             .chain_height()?
             .ok_or_else(|| anyhow!("Chain tip height must be known to shield funds."))?;
         let account_receivers = db_data
-            .get_transparent_balances(account_uuid, chain_tip_height)
+            .get_transparent_balances(
+                account_uuid,
+                wallet::TargetHeight::from(chain_tip_height),
+                confirmations_policy,
+            )
             .map_err(|e| {
                 anyhow!(
                     "Error while fetching transparent balances for {:?}: {}",
@@ -2081,11 +2085,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
             Some(addr) => account_receivers
                 .get(&addr)
                 .into_iter()
-                .filter_map(|v| (*v >= shielding_threshold).then_some(addr))
+                .filter_map(|v| (v.spendable_value() >= shielding_threshold).then_some(addr))
                 .collect(),
             None => account_receivers
                 .into_iter()
-                .filter_map(|(a, v)| (v >= shielding_threshold).then_some(a))
+                .filter_map(|(a, v)| (v.spendable_value() >= shielding_threshold).then_some(a))
                 .collect(),
         };
 
@@ -2103,7 +2107,6 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         // Always use ZIP 317 fees
         let (change_strategy, input_selector) = zip317_helper(memo);
 
-        let min_confirmations = 0;
         let proposal = propose_shielding::<_, _, _, _, Infallible>(
             &mut db_data,
             &network,
@@ -2112,7 +2115,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
             shielding_threshold,
             &from_addrs,
             account_uuid,
-            min_confirmations,
+            confirmations_policy,
         )
         .map_err(|e| anyhow!("Error while shielding transaction: {}", e))?;
 
