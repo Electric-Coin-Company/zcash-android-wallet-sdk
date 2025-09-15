@@ -6,6 +6,8 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.3] - 2025-09-15
+
 ### Fixed
 - Transactions received on a transparent address should now appear in history views when they are detected before any
   compact blocks have been scanned.
