@@ -99,10 +99,6 @@ use crate::utils::{catch_unwind, exception::unwrap_exc_or};
 mod tor;
 mod utils;
 
-// The default here is trusted=3, untrusted=10
-static DEFAULT_CONFIRMATIONS_POLICY: std::sync::LazyLock<wallet::ConfirmationsPolicy> =
-    std::sync::LazyLock::new(wallet::ConfirmationsPolicy::default);
-
 #[cfg(debug_assertions)]
 fn print_debug_state() {
     debug!("WARNING! Debugging enabled! This will likely slow things down 10X!");
@@ -1945,7 +1941,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
             &input_selector,
             &change_strategy,
             request,
-            *DEFAULT_CONFIRMATIONS_POLICY,
+            wallet::ConfirmationsPolicy::default(),
         )
         .map_err(|e| anyhow!("Error creating transaction proposal: {}", e))?;
 
@@ -2007,7 +2003,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
             &input_selector,
             &change_strategy,
             request,
-            *DEFAULT_CONFIRMATIONS_POLICY,
+            wallet::ConfirmationsPolicy::default(),
         )
         .map_err(|e| anyhow!("Error creating transaction proposal: {}", e))?;
 
