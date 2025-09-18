@@ -3213,6 +3213,63 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_get
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
+/// Returns the transactions corresponding to the given t-address within the given block range.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_updateTransparentAddressTransactions<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    lwd_conn: jlong,
+    db_data: JString<'local>,
+    address: JString<'local>,
+    start: jlong,
+    end: jlong,
+    network_id: jint,
+) {
+    let res = catch_unwind(&mut env, |env| {
+        let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
+        let lwd_conn = unsafe { lwd_conn.as_mut() }
+            .ok_or_else(|| anyhow!("A Tor lightwalletd connection is required"))?;
+
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)
+            .map_err(|e| anyhow!("Error while opening data DB: {}", e))?;
+
+        let address = match Address::decode(&network, &utils::java_string_to_rust(env, &address)?) {
+            None => Err(anyhow!("Address is for the wrong network")),
+            Some(addr) => match addr {
+                Address::Sapling(_) | Address::Unified(_) | Address::Tex(_) => {
+                    Err(anyhow!("Address is not a transparent address"))
+                }
+                Address::Transparent(addr) => Ok(addr),
+            },
+        }?;
+        let start = parse_optional_height(start)?;
+        let end = parse_optional_height(end)?;
+
+        lwd_conn.with_taddress_transactions(
+            &network,
+            address,
+            start,
+            end,
+            |tx_bytes, mined_height| {
+                // The consensus branch ID passed in here does not matter:
+                // - v4 and below cache it internally, but all we do with this transaction
+                //   while it is in memory is decryption and serialization, neither of
+                //   which use the consensus branch ID.
+                // - v5 and above transactions ignore the argument, and parse the correct
+                //   value from their encoding.
+                let tx = Transaction::read(&tx_bytes[..], BranchId::Sapling)?;
+
+                decrypt_and_store_transaction(&network, &mut db_data, &tx, mined_height)
+                    .map_err(|e| anyhow!("Error while decrypting transaction: {}", e))
+            },
+        )
+    });
+    unwrap_exc_or(&mut env, res, ())
+}
+
 //
 // Utility functions
 //
@@ -3231,6 +3288,13 @@ fn parse_network(value: u32) -> anyhow::Result<Network> {
         1 => Ok(MainNetwork),
         _ => Err(anyhow!("Invalid network type: {}. Expected either 0 or 1 for Testnet or Mainnet, respectively.", value))
     }
+}
+
+fn parse_optional_height(value: i64) -> anyhow::Result<Option<BlockHeight>> {
+    Ok(match value {
+        -1 => None,
+        _ => Some(BlockHeight::try_from(value)?),
+    })
 }
 
 fn path_from_jni(env: &mut JNIEnv, path: JString) -> anyhow::Result<PathBuf> {

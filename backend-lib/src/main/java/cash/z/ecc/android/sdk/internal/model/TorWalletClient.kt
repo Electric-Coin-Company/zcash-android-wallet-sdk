@@ -1,5 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model
 
+import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.PartialTorWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
@@ -65,6 +66,25 @@ class TorWalletClient private constructor(
             TreeStateUnsafe.new(Service.TreeState.parseFrom(treeState))
         }
 
+    suspend fun updateTransparentAddressTransactions(
+        backend: RustBackend,
+        address: String,
+        startHeight: BlockHeightUnsafe?,
+        endHeight: BlockHeightUnsafe?,
+    ) =
+        backend.withWallet { dataDbFile, networkId ->
+            execute {
+                updateTransparentAddressTransactions(
+                    it,
+                    dataDbFile.absolutePath,
+                    address,
+                    startHeight?.value ?: -1,
+                    endHeight?.value ?: -1,
+                    networkId = networkId
+                )
+            }
+        }
+
     @Suppress("TooGenericExceptionCaught")
     private suspend fun <T> execute(
         block: (handle: Long) -> T
@@ -123,5 +143,19 @@ class TorWalletClient private constructor(
         @JvmStatic
         @Throws(RuntimeException::class)
         private external fun getTreeState(nativeHandle: Long, fromHeight: Long): ByteArray
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        private external fun updateTransparentAddressTransactions(
+            nativeHandle: Long,
+            dbDataPath: String,
+            address: String,
+            startHeight: Long,
+            endHeight: Long,
+            networkId: Int,
+        )
     }
 }
