@@ -51,7 +51,7 @@ internal class TxOutputsView(
             String.format(
                 Locale.ROOT,
                 // $NON-NLS
-                "%s LIKE ?",
+                "LOWER(%s) LIKE LOWER(?)",
                 TxOutputsViewDefinition.COLUMN_BLOB_MEMO,
             )
     }
@@ -75,7 +75,7 @@ internal class TxOutputsView(
             }
         )
 
-    fun getTransactionsByMemoSubstring(query: String): Flow<List<FirstClassByteArray>> =
+    fun getTransactionsByMemoSubstring(query: String): Flow<FirstClassByteArray> =
         // This query could be optimized by joining with v_transactions and querying only those transactions whose
         // memo_count is greater than 0
         sqliteDatabase.queryAndMap(
@@ -87,11 +87,7 @@ internal class TxOutputsView(
             cursorParser = {
                 val idColumnTrxIdIndex = it.getColumnIndex(TxOutputsViewDefinition.COLUMN_BLOB_TRANSACTION_ID)
 
-                if (!it.isNull(idColumnTrxIdIndex)) {
-                    listOf(FirstClassByteArray(it.getBlob(idColumnTrxIdIndex)))
-                } else {
-                    emptyList()
-                }
+                FirstClassByteArray(it.getBlob(idColumnTrxIdIndex))
             }
         )
 

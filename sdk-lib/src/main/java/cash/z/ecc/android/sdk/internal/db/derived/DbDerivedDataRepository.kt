@@ -11,6 +11,7 @@ import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionRecipient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import java.util.UUID
@@ -57,14 +58,15 @@ internal class DbDerivedDataRepository(
             .getOutputProperties(transactionId.value)
 
     override fun getTransactionsByMemoSubstring(query: String): Flow<List<TransactionId>> =
-        derivedDataDb
-            .txOutputsView
-            .getTransactionsByMemoSubstring(query)
-            .map { listOfFirstClassByteArray ->
-                listOfFirstClassByteArray.map {
-                    TransactionId(it)
-                }
-            }
+        flow {
+            emit(
+                derivedDataDb
+                    .txOutputsView
+                    .getTransactionsByMemoSubstring(query)
+                    .map { byteArray -> TransactionId(byteArray) }
+                    .toList()
+            )
+        }
 
     override fun getRecipients(transactionId: TransactionId): Flow<TransactionRecipient> =
         derivedDataDb.txOutputsView.getRecipients(transactionId.value)
