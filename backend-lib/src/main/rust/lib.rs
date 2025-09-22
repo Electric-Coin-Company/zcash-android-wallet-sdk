@@ -1000,11 +1000,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTotalT
             .context("Target height not available; scan required.")?;
 
         let amount = db_data
-            .get_spendable_transparent_outputs(
-                &taddr,
-                target,
-                wallet::ConfirmationsPolicy::new_symmetrical(NonZeroU32::MIN, true),
-            )
+            .get_spendable_transparent_outputs(&taddr, target, wallet::ConfirmationsPolicy::MIN)
             .map_err(|e| anyhow!("Error while fetching verified balance: {}", e))?
             .iter()
             .map(|utxo| utxo.txout().value())
@@ -2036,8 +2032,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
         let account_uuid = account_id_from_jni(env, account_uuid)?;
         let shielding_threshold = Zatoshis::from_nonnegative_i64(shielding_threshold)
             .map_err(|_| anyhow!("Invalid shielding threshold, out of range"))?;
-        let confirmations_policy =
-            wallet::ConfirmationsPolicy::new_symmetrical(NonZeroU32::MIN, true);
+        let confirmations_policy = wallet::ConfirmationsPolicy::MIN;
         let transparent_receiver =
             match utils::java_nullable_string_to_rust(env, &transparent_receiver)? {
                 None => Ok(None),
