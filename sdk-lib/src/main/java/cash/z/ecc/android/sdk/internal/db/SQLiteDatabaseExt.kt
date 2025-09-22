@@ -84,7 +84,7 @@ internal fun <T> SupportSQLiteDatabase.queryAndMap(
     limit: String? = null,
     offset: String? = null,
     cursorParser: CursorParser<T>
-) = flow<T> {
+) = flow {
     val qb =
         SupportSQLiteQueryBuilder.builder(table).apply {
             columns(columns)

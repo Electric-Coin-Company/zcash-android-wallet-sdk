@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Filtering transactions by memo now returns more than one item
+
 ## [2.3.3] - 2025-09-15
 
 ### Fixed
