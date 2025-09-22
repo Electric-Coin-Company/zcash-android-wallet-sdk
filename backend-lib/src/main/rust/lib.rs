@@ -828,7 +828,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTrans
         let db_data = wallet_db(env, network, db_data)?;
         let account = account_id_from_jni(env, account_uuid)?;
 
-        match db_data.get_transparent_receivers(account, true) {
+        match db_data.get_transparent_receivers(account, true, true) {
             Ok(receivers) => {
                 let transparent_receivers = receivers
                     .keys()
@@ -2049,7 +2049,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
                         }
                         Address::Transparent(addr) => {
                             if db_data
-                                .get_transparent_receivers(account_uuid, true)?
+                                .get_transparent_receivers(account_uuid, true, true)?
                                 .contains_key(&addr)
                             {
                                 Ok(Some(addr))
@@ -2159,7 +2159,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createPro
             &network,
             &prover,
             &prover,
-            &usk,
+            &wallet::SpendingKeys::from_unified_spending_key(usk),
             OvkPolicy::Sender,
             &proposal,
         )
