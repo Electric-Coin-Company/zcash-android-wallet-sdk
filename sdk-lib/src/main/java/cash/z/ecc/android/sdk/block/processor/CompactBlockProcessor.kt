@@ -62,6 +62,7 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountBalance
 import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.RawTransaction
 import cash.z.ecc.android.sdk.model.SdkFlags
@@ -2219,15 +2220,17 @@ class CompactBlockProcessor internal constructor(
         private suspend fun decryptTransaction(
             rawTransaction: RawTransaction,
             backend: TypesafeBackend,
-        ) {
+        ): FirstClassByteArray {
             val traceScope = TraceScope("CompactBlockProcessor.decryptTransaction")
-            runCatching {
-                backend.decryptAndStoreTransaction(rawTransaction.data, rawTransaction.height)
-            }.onFailure {
-                traceScope.end()
-                throw EnhanceTxDecryptError(rawTransaction.height, it)
-            }
+            val txid =
+                runCatching {
+                    backend.decryptAndStoreTransaction(rawTransaction.data, rawTransaction.height)
+                }.getOrElse {
+                    traceScope.end()
+                    throw EnhanceTxDecryptError(rawTransaction.height, it)
+                }
             traceScope.end()
+            return txid
         }
 
         @Throws(EnhanceTxDataRequestsError::class)

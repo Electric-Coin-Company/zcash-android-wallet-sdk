@@ -118,7 +118,7 @@ interface Backend {
     suspend fun decryptAndStoreTransaction(
         tx: ByteArray,
         minedHeight: Long?
-    )
+    ): ByteArray
 
     /**
      * Sets up the internal structure of the data database.
