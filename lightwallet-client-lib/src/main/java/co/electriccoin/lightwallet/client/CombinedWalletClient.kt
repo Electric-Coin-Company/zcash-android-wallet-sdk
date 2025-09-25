@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Client for interacting with lightwalletd.
  */
+@Suppress("TooManyFunctions")
 interface CombinedWalletClient : Disposable {
     /**
      * @param tAddresses the array containing the transparent addresses to use.
@@ -76,6 +77,11 @@ interface CombinedWalletClient : Disposable {
         maxEntries: UInt,
         serviceMode: ServiceMode
     ): Flow<Response<SubtreeRootUnsafe>>
+
+    /**
+     * @return a flow of transactions in the mempool.
+     */
+    suspend fun observeMempool(serviceMode: ServiceMode): Flow<Response<RawTransactionUnsafe>>
 
     /**
      * @return useful server details.

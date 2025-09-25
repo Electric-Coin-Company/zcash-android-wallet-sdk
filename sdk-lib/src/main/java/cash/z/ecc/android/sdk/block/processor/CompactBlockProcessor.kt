@@ -3,6 +3,8 @@ package cash.z.ecc.android.sdk.block.processor
 import androidx.annotation.VisibleForTesting
 import cash.z.ecc.android.sdk.BuildConfig
 import cash.z.ecc.android.sdk.annotation.OpenForTesting
+import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.Companion.RETRIES
+import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor.Companion.SYNC_BATCH_SIZE
 import cash.z.ecc.android.sdk.block.processor.model.BatchSyncProgress
 import cash.z.ecc.android.sdk.block.processor.model.GetMaxScannedHeightResult
 import cash.z.ecc.android.sdk.block.processor.model.GetSubtreeRootsResult
@@ -76,14 +78,19 @@ import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
 import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
@@ -91,6 +98,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.Locale
@@ -180,6 +188,8 @@ class CompactBlockProcessor internal constructor(
     internal val walletBalances = MutableStateFlow<Map<AccountUuid, AccountBalance>?>(null)
 
     private val processingMutex = Mutex()
+
+    private val decryptSemaphore = Mutex()
 
     /**
      * Flow of birthday heights. The birthday is essentially the first block that the wallet cares
@@ -405,6 +415,43 @@ class CompactBlockProcessor internal constructor(
         stop()
     }
 
+    suspend fun startObservingMempool() {
+        channelFlow<Unit> {
+            launch {
+                downloader
+                    .observeMempool(ServiceMode.Direct)
+                    .filterIsInstance<Response.Success<RawTransactionUnsafe>>()
+                    .map { RawTransaction.new(it.result) }
+                    .collect {
+                        decryptSemaphore.withLock {
+                            try {
+                                val oldTransactions = repository.allTransactions.first()
+                                decryptTransaction(it)
+                                val newTransactions = repository.allTransactions.first()
+                                if (oldTransactions != newTransactions) {
+                                    checkTransactions()
+                                }
+                            } catch (_: EnhanceTxDecryptError) {
+                                // ignored
+                            }
+                        }
+                    }
+            }
+
+            launch {
+                state.collect {
+                    if (it == State.Stopped) {
+                        cancel(CancellationException("Stopping mempool observing"))
+                    }
+                }
+            }
+
+            awaitClose {
+                // do nothing
+            }
+        }.collect()
+    }
+
     private fun resetErrorCounters() {
         consecutiveBlockProcessingErrors.set(0)
         consecutiveChainErrors.set(0)
@@ -535,7 +582,7 @@ class CompactBlockProcessor internal constructor(
                     SyncingResult.EnhanceSuccess -> {
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data
-                        checkTransactions(transactionStorage = repository)
+                        checkTransactions()
                     }
 
                     is SyncingResult.Failure -> {
@@ -644,7 +691,7 @@ class CompactBlockProcessor internal constructor(
                     SyncingResult.EnhanceSuccess -> {
                         Twig.info { "Triggering transaction refresh now" }
                         // Invalidate transaction data and return the common batch syncing success result to the caller
-                        checkTransactions(transactionStorage = repository)
+                        checkTransactions()
                         SyncingResult.AllSuccess
                     }
 
@@ -794,8 +841,8 @@ class CompactBlockProcessor internal constructor(
     /**
      * This invalidates transaction storage to trigger data refreshing for its subscribers.
      */
-    private fun checkTransactions(transactionStorage: DerivedDataRepository) {
-        transactionStorage.invalidate()
+    private fun checkTransactions() {
+        repository.invalidate()
     }
 
     /**
@@ -1138,1155 +1185,6 @@ class CompactBlockProcessor internal constructor(
         ): Boolean = (currentTimeMillis - lastPreparationTime) >= limitTime
 
         /**
-         * This operation fetches and returns the latest block height (chain tip)
-         *
-         * @return Latest block height wrapped in BlockHeight object, or null in case of failure
-         */
-        @VisibleForTesting
-        internal suspend fun fetchLatestBlockHeight(
-            downloader: CompactBlockDownloader,
-            sdkFlags: SdkFlags,
-        ): BlockHeight? {
-            Twig.debug { "Fetching latest block height..." }
-            val traceScope = TraceScope("CompactBlockProcessor.fetchLatestBlockHeight")
-
-            var latestBlockHeight: BlockHeight? = null
-
-            retryUpToAndContinue(FETCH_LATEST_BLOCK_HEIGHT_RETRIES) {
-                when (
-                    val response =
-                        downloader.getLatestBlockHeight(sdkFlags ifTor ServiceMode.DefaultTor)
-                ) {
-                    is Response.Success -> {
-                        Twig.debug { "Latest block height fetched successfully with value: ${response.result.value}" }
-                        latestBlockHeight =
-                            runCatching {
-                                response.result.toBlockHeight()
-                            }.getOrNull()
-                    }
-
-                    is Response.Failure -> {
-                        Twig.error { "Fetching latest block height failed with: ${response.toThrowable()}" }
-                        traceScope.end()
-                        throw LightWalletException.GetLatestBlockHeightException(
-                            response.code,
-                            response.description,
-                            response.toThrowable()
-                        )
-                    }
-                }
-            }
-
-            traceScope.end()
-            return latestBlockHeight
-        }
-
-        /**
-         * This operation downloads note commitment tree data from the lightwalletd server, to decide whether or not
-         * the lightwalletd and its backing node support spend-before-sync.
-         *
-         * @return GetSubtreeRootsResult as a wrapper for the lightwalletd response result
-         */
-        @VisibleForTesting
-        @Suppress("LongMethod")
-        internal suspend fun getSubtreeRoots(
-            downloader: CompactBlockDownloader,
-            saplingStartIndex: UInt,
-            orchardStartIndex: UInt
-        ): GetSubtreeRootsResult {
-            Twig.debug { "Fetching SubtreeRoots..." }
-            val traceScope = TraceScope("CompactBlockProcessor.getSubtreeRoots")
-
-            var result: GetSubtreeRootsResult = GetSubtreeRootsResult.Linear
-
-            var saplingSubtreeRootList: List<SubtreeRoot> = emptyList()
-            var orchardSubtreeRootList: List<SubtreeRoot> = emptyList()
-
-            retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
-                downloader
-                    .getSubtreeRoots(
-                        saplingStartIndex,
-                        shieldedProtocol = ShieldedProtocolEnum.SAPLING,
-                        maxEntries = UInt.MIN_VALUE,
-                        serviceMode = ServiceMode.Direct
-                    ).onEach { response ->
-                        when (response) {
-                            is Response.Success -> {
-                                Twig.verbose {
-                                    "Sapling SubtreeRoot fetched successfully: its completingHeight is: ${
-                                        response.result
-                                            .completingBlockHeight
-                                    }"
-                                }
-                            }
-
-                            is Response.Failure -> {
-                                val error =
-                                    LightWalletException.GetSubtreeRootsException(
-                                        response.code,
-                                        response.description,
-                                        response.toThrowable()
-                                    )
-                                if (response is Response.Failure.Server.Unavailable) {
-                                    Twig.error {
-                                        "Fetching Sapling SubtreeRoot failed due to server communication problem with" +
-                                            " failure: ${response.toThrowable()}"
-                                    }
-                                    result = GetSubtreeRootsResult.FailureConnection
-                                } else {
-                                    Twig.error {
-                                        "Fetching Sapling SubtreeRoot failed with failure: ${response.toThrowable()}"
-                                    }
-                                    result = GetSubtreeRootsResult.OtherFailure(error)
-                                }
-                                traceScope.end()
-                                throw error
-                            }
-                        }
-                    }.filterIsInstance<Response.Success<SubtreeRootUnsafe>>()
-                    .map { response ->
-                        response.result
-                    }.toList()
-                    .map {
-                        SubtreeRoot.new(it)
-                    }.let {
-                        saplingSubtreeRootList = it
-                    }
-            }
-
-            retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
-                downloader
-                    .getSubtreeRoots(
-                        startIndex = orchardStartIndex,
-                        shieldedProtocol = ShieldedProtocolEnum.ORCHARD,
-                        maxEntries = UInt.MIN_VALUE,
-                        serviceMode = ServiceMode.Direct
-                    ).onEach { response ->
-                        when (response) {
-                            is Response.Success -> {
-                                Twig.verbose {
-                                    "Orchard SubtreeRoot fetched successfully: its completingHeight is: ${
-                                        response.result
-                                            .completingBlockHeight
-                                    }"
-                                }
-                            }
-
-                            is Response.Failure -> {
-                                val error =
-                                    LightWalletException.GetSubtreeRootsException(
-                                        response.code,
-                                        response.description,
-                                        response.toThrowable()
-                                    )
-                                if (response is Response.Failure.Server.Unavailable) {
-                                    Twig.error {
-                                        "Fetching Orchard SubtreeRoot failed due to server communication problem with" +
-                                            " failure: ${response.toThrowable()}"
-                                    }
-                                    result = GetSubtreeRootsResult.FailureConnection
-                                } else {
-                                    Twig.error {
-                                        "Fetching Orchard SubtreeRoot failed with failure: ${response.toThrowable()}"
-                                    }
-                                    result = GetSubtreeRootsResult.OtherFailure(error)
-                                }
-                                traceScope.end()
-                                throw error
-                            }
-                        }
-                    }.filterIsInstance<Response.Success<SubtreeRootUnsafe>>()
-                    .map { response ->
-                        response.result
-                    }.toList()
-                    .map {
-                        SubtreeRoot.new(it)
-                    }.let {
-                        orchardSubtreeRootList = it
-                    }
-            }
-
-            // Intentionally omitting [orchardSubtreeRootList], e.g., for Mainnet usage, we could check it, but on
-            // custom networks without NU5 activation, it wouldn't work. If the Orchard subtree roots are empty, it's
-            // technically still ok (as Orchard activates after Sapling, so on a network that doesn't have NU5
-            // activated, this would behave correctly). In contrast, if the Sapling subtree roots are empty, we
-            // cannot do SbS at all.
-            if (saplingSubtreeRootList.isNotEmpty()) {
-                result =
-                    GetSubtreeRootsResult.SpendBeforeSync(
-                        saplingStartIndex,
-                        saplingSubtreeRootList,
-                        orchardStartIndex,
-                        orchardSubtreeRootList
-                    )
-            }
-
-            traceScope.end()
-            return result
-        }
-
-        /**
-         * Pass the commitment tree data to the database.
-         *
-         * @param backend Typesafe Rust backend
-         * @param startIndex Index to which put the data
-         * @param lastValidHeight The height to which rewind in case of any trouble
-         * @return PutSaplingSubtreeRootsResult
-         */
-        @VisibleForTesting
-        @Suppress("LongParameterList")
-        internal suspend fun putSaplingSubtreeRoots(
-            backend: TypesafeBackend,
-            saplingStartIndex: UInt,
-            saplingSubtreeRootList: List<SubtreeRoot>,
-            orchardStartIndex: UInt,
-            orchardSubtreeRootList: List<SubtreeRoot>,
-            lastValidHeight: BlockHeight
-        ): PutSaplingSubtreeRootsResult =
-            runCatching {
-                backend.putSubtreeRoots(
-                    saplingStartIndex = saplingStartIndex,
-                    saplingRoots = saplingSubtreeRootList,
-                    orchardStartIndex = orchardStartIndex,
-                    orchardRoots = orchardSubtreeRootList,
-                )
-            }.onSuccess {
-                Twig.info {
-                    "Subtree roots put successfully with saplingStartIndex: $saplingStartIndex and " +
-                        "orchardStartIndex: $orchardStartIndex"
-                }
-            }.onFailure {
-                Twig.error { "Sapling subtree roots put failed with: $it" }
-            }.fold(
-                onSuccess = { PutSaplingSubtreeRootsResult.Success },
-                onFailure = { PutSaplingSubtreeRootsResult.Failure(lastValidHeight, it) }
-            )
-
-        /**
-         * Notify the wallet of the updated chain tip.
-         *
-         * @param backend Typesafe Rust backend
-         * @param chainTip Height of latest block
-         * @param lastValidHeight The height to which rewind in case of any trouble
-         * @return UpdateChainTipResult
-         */
-        @VisibleForTesting
-        internal suspend fun updateChainTip(
-            backend: TypesafeBackend,
-            chainTip: BlockHeight,
-            lastValidHeight: BlockHeight
-        ): UpdateChainTipResult {
-            val traceScope = TraceScope("CompactBlockProcessor.updateChainTip")
-            val result =
-                runCatching {
-                    backend.updateChainTip(chainTip)
-                }.onSuccess {
-                    Twig.info { "Chain tip updated successfully with height: $chainTip" }
-                }.onFailure {
-                    Twig.info { "Chain tip update failed with: $it" }
-                }.fold(
-                    onSuccess = { UpdateChainTipResult.Success(chainTip) },
-                    onFailure = { UpdateChainTipResult.Failure(lastValidHeight, it) }
-                )
-            traceScope.end()
-            return result
-        }
-
-        /**
-         * Get the suggested scan ranges from the wallet database via the rust layer.
-         *
-         * @param backend Typesafe Rust backend
-         * @param lastValidHeight The height to which rewind in case of any trouble
-         * @return SuggestScanRangesResult
-         */
-        @VisibleForTesting
-        internal suspend fun suggestScanRanges(
-            backend: TypesafeBackend,
-            lastValidHeight: BlockHeight
-        ): SuggestScanRangesResult {
-            val traceScope = TraceScope("CompactBlockProcessor.suggestScanRanges")
-            val result =
-                runCatching {
-                    backend.suggestScanRanges()
-                }.onSuccess { ranges ->
-                    Twig.info { "Successfully got newly suggested ranges: $ranges" }
-                }.onFailure { exception ->
-                    Twig.error { "Failed to get newly suggested ranges with: $exception" }
-                }.fold(
-                    onSuccess = { SuggestScanRangesResult.Success(it) },
-                    onFailure = { SuggestScanRangesResult.Failure(lastValidHeight, it) }
-                )
-            traceScope.end()
-            return result
-        }
-
-        /**
-         * Parse and process ranges. If it recognizes a range with Priority.Verify at the first position, it runs the
-         * verification part.
-         *
-         * @param suggestedRangesResult Wrapper for list of ranges to process
-         * @return VerifySuggestedScanRange
-         */
-        @VisibleForTesting
-        @Suppress("MaxLineLength")
-        internal fun shouldVerifySuggestedScanRanges(suggestedRangesResult: SuggestScanRangesResult.Success): VerifySuggestedScanRange {
-            Twig.debug { "Check for Priority.Verify scan range result: ${suggestedRangesResult.ranges}" }
-
-            return if (suggestedRangesResult.ranges.isEmpty()) {
-                VerifySuggestedScanRange.NoRangeToVerify
-            } else {
-                val firstRangePriority = suggestedRangesResult.ranges[0].getSuggestScanRangePriority()
-                if (firstRangePriority == SuggestScanRangePriority.Verify) {
-                    VerifySuggestedScanRange.ShouldVerify(suggestedRangesResult.ranges[0])
-                } else {
-                    VerifySuggestedScanRange.NoRangeToVerify
-                }
-            }
-        }
-
-        /**
-         * Get the current wallet summary.
-         *
-         * @return the latest wallet summary calculated by the Rust layer and wrapped in [GetWalletSummaryResult]
-         */
-        @VisibleForTesting
-        internal suspend fun getWalletSummary(backend: TypesafeBackend): GetWalletSummaryResult =
-            runCatching {
-                backend.getWalletSummary()
-            }.onSuccess {
-                Twig.verbose { "Successfully called getWalletSummary with result: $it" }
-            }.onFailure {
-                Twig.error { "Failed to call getWalletSummary with result: $it" }
-            }.fold(
-                onSuccess = {
-                    if (it == null) {
-                        GetWalletSummaryResult.None
-                    } else {
-                        GetWalletSummaryResult.Success(it)
-                    }
-                },
-                onFailure = {
-                    GetWalletSummaryResult.Failure(it)
-                }
-            )
-
-        /**
-         * Requests, processes and persists all blocks from the given range.
-         *
-         * @param backend the Rust backend component
-         * @param downloader the compact block downloader component
-         * @param repository the derived data repository component
-         * @param syncRange the range of blocks to download
-         * @param enhanceStartHeight the height in which the enhancing should start, or null in case of no previous
-         * transaction enhancing done yet
-         *
-         * @return Flow of [BatchSyncProgress] sync and enhancement results
-         */
-        @VisibleForTesting
-        @Suppress("CyclomaticComplexMethod", "LongParameterList", "LongMethod")
-        internal suspend fun runSyncingAndEnhancingOnRange(
-            backend: TypesafeBackend,
-            downloader: CompactBlockDownloader,
-            repository: DerivedDataRepository,
-            syncRange: ClosedRange<BlockHeight>,
-            enhanceStartHeight: BlockHeight?,
-            sdkFlags: SdkFlags
-        ): Flow<BatchSyncProgress> =
-            flow {
-                if (syncRange.isEmpty()) {
-                    Twig.debug { "No blocks to sync" }
-                    emit(
-                        BatchSyncProgress(
-                            resultState = SyncingResult.AllSuccess
-                        )
-                    )
-                } else {
-                    Twig.info { "Syncing blocks in range $syncRange" }
-
-                    val batches = getBatchedBlockList(syncRange)
-
-                    // Check for the last enhanced height and eventually set it as the beginning of the next
-                    // enhancing range
-                    var enhancingRange =
-                        if (enhanceStartHeight != null) {
-                            BlockHeight(min(syncRange.start.value, enhanceStartHeight.value))..syncRange.start
-                        } else {
-                            syncRange.start..syncRange.start
-                        }
-
-                    batches
-                        .asFlow()
-                        .map {
-                            Twig.debug { "Syncing process starts for batch: $it" }
-
-                            // Run downloading stage
-                            SyncStageResult(
-                                batch = it,
-                                stageResult =
-                                    downloadBatchOfBlocks(
-                                        downloader = downloader,
-                                        batch = it
-                                    )
-                            )
-                        }.buffer(1)
-                        .map { downloadStageResult ->
-                            Twig.debug { "Download stage done with result: $downloadStageResult" }
-
-                            if (downloadStageResult.stageResult !is SyncingResult.DownloadSuccess) {
-                                // In case of any failure, we just propagate the result
-                                downloadStageResult
-                            } else {
-                                // Enrich batch model with fetched blocks. It's useful for later blocks deletion
-                                downloadStageResult.batch.blocks = downloadStageResult.stageResult.downloadedBlocks
-
-                                // Run scanning stage (which also validates the fetched blocks)
-                                SyncStageResult(
-                                    downloadStageResult.batch,
-                                    scanBatchOfBlocks(
-                                        backend = backend,
-                                        batch = downloadStageResult.batch,
-                                        fromState = downloadStageResult.stageResult.fromState
-                                    )
-                                )
-                            }
-                        }.map { scanResult ->
-                            Twig.debug { "Scan stage done with result: $scanResult" }
-
-                            val resultState =
-                                when (scanResult.stageResult) {
-                                    is SyncingResult.ScanSuccess -> {
-                                        SyncingResult.AllSuccess
-                                    }
-
-                                    else -> {
-                                        scanResult.stageResult
-                                    }
-                                }
-
-                            // We don't need to wait for the cached blocks to be deleted, or newly-discovered
-                            // transactions to be enhanced, to report that a block range has been scanned.
-                            emit(
-                                BatchSyncProgress(
-                                    order = scanResult.batch.order,
-                                    range = scanResult.batch.range,
-                                    resultState = resultState
-                                )
-                            )
-
-                            when (scanResult.stageResult) {
-                                is SyncingResult.ScanSuccess -> {
-                                    // TODO [#1369]: Use the scan summary to trigger balance updates.
-                                    // TODO [#1369]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1369
-                                    val scannedRange = scanResult.stageResult.summary.scannedRange
-                                    assert(scanResult.batch.range.start <= scannedRange.start)
-                                    assert(scannedRange.endInclusive <= scanResult.batch.range.endInclusive)
-
-                                    // Run deletion stage
-                                    SyncStageResult(
-                                        scanResult.batch,
-                                        deleteFilesOfBatchOfBlocks(
-                                            downloader = downloader,
-                                            batch = scanResult.batch
-                                        )
-                                    )
-                                }
-
-                                else -> {
-                                    scanResult
-                                }
-                            }
-                        }.onEach { continuousResult ->
-                            Twig.debug { "Deletion stage done with result: $continuousResult" }
-
-                            var resultState =
-                                if (continuousResult.stageResult == SyncingResult.DeleteSuccess) {
-                                    SyncingResult.AllSuccess
-                                } else {
-                                    // Emitting the possible [SyncingResult.DeleteFailed] state here is necessary
-                                    emit(
-                                        BatchSyncProgress(
-                                            order = continuousResult.batch.order,
-                                            range = continuousResult.batch.range,
-                                            resultState = continuousResult.stageResult
-                                        )
-                                    )
-                                    continuousResult.stageResult
-                                }
-
-                            // Increment and compare the range for triggering the enhancing
-                            enhancingRange = enhancingRange.start..continuousResult.batch.range.endInclusive
-
-                            // Enhancing is run when the range is on or over its limit, or there is any failure
-                            // from previous stages, or if the end of the sync range is reached.
-                            if (enhancingRange.length() >= ENHANCE_BATCH_SIZE ||
-                                resultState != SyncingResult.AllSuccess ||
-                                continuousResult.batch.order == batches.size.toLong()
-                            ) {
-                                // Copy the range for use and reset for the next iteration
-                                val currentEnhancingRange = enhancingRange
-                                enhancingRange = enhancingRange.endInclusive..enhancingRange.endInclusive
-
-                                enhanceTransactionDetails(
-                                    range = currentEnhancingRange,
-                                    repository = repository,
-                                    backend = backend,
-                                    downloader = downloader,
-                                    sdkFlags = sdkFlags
-                                ).collect { enhancingResult ->
-                                    Twig.info { "Enhancing result: $enhancingResult" }
-                                    resultState =
-                                        when (enhancingResult) {
-                                            is SyncingResult.UpdateBirthday -> {
-                                                Twig.info { "Birthday height update reporting" }
-                                                enhancingResult
-                                            }
-
-                                            is SyncingResult.EnhanceFailed -> {
-                                                Twig.error {
-                                                    "Enhancing failed for: $enhancingRange with $enhancingResult"
-                                                }
-                                                enhancingResult
-                                            }
-
-                                            else -> {
-                                                // Transactions enhanced correctly. Let's continue with block processing
-                                                enhancingResult
-                                            }
-                                        }
-                                    emit(
-                                        BatchSyncProgress(
-                                            order = continuousResult.batch.order,
-                                            range = continuousResult.batch.range,
-                                            resultState = resultState
-                                        )
-                                    )
-                                }
-                            }
-                            Twig.info {
-                                "All sync stages done for the batch ${continuousResult.batch.order}/${batches.size}:" +
-                                    " ${continuousResult.batch} with result state: $resultState"
-                            }
-                        }.takeWhile { batchProcessResult ->
-                            batchProcessResult.stageResult == SyncingResult.DeleteSuccess ||
-                                batchProcessResult.stageResult == SyncingResult.UpdateBirthday
-                        }.collect()
-                }
-            }
-
-        private fun calculateBatchEnd(
-            start: Long,
-            rangeEnd: Long,
-            batchSize: Int
-        ): Long =
-            min(
-                // Subtract 1 on the first value because the range is inclusive
-                (start + batchSize) - 1,
-                rangeEnd
-            )
-
-        /**
-         * Prepare list of all [ClosedRange<BlockBatch>] internal objects to be processed during a range of
-         * blocks processing
-         *
-         * @param syncRange Current range to be processed
-         *
-         * @return List of [ClosedRange<BlockBatch>] to prepare for synchronization
-         */
-        private fun getBatchedBlockList(syncRange: ClosedRange<BlockHeight>): List<BlockBatch> {
-            var order = 1L
-            var start = syncRange.start.value
-            var end = 0L
-
-            Twig.verbose { "Get batched logic input: $syncRange" }
-
-            val resultList =
-                buildList {
-                    while (end != syncRange.endInclusive.value) {
-                        end =
-                            calculateBatchEnd(
-                                start = start,
-                                rangeEnd = syncRange.endInclusive.value,
-                                batchSize = SYNC_BATCH_SIZE
-                            )
-
-                        if (((start..end)).overlaps(SANDBLASTING_RANGE)) {
-                            end =
-                                calculateBatchEnd(
-                                    start = start,
-                                    rangeEnd = syncRange.endInclusive.value,
-                                    batchSize = SYNC_BATCH_SMALL_SIZE
-                                )
-                        }
-
-                        val range = BlockHeight.new(start)..BlockHeight.new(end)
-                        add(
-                            BlockBatch(
-                                order = order,
-                                range = range,
-                                size = range.length()
-                            )
-                        )
-
-                        start = end + 1
-                        order++
-                    }
-                }
-
-            Twig.verbose {
-                "Get batched output: ${resultList.size}: ${resultList.joinToString(prefix = "\n", separator = "\n")}"
-            }
-
-            return resultList
-        }
-
-        /**
-         * Request and download all blocks in the given range and persist them locally for processing, later.
-         *
-         * @param batch the batch of blocks to download.
-         */
-        @VisibleForTesting
-        internal suspend fun downloadBatchOfBlocks(
-            downloader: CompactBlockDownloader,
-            batch: BlockBatch
-        ): SyncingResult {
-            val traceScope = TraceScope("CompactBlockProcessor.downloadBatchOfBlocks")
-
-            val fromState =
-                fetchTreeStateForHeight(
-                    height = batch.range.start - 1,
-                    downloader = downloader
-                ) ?: return SyncingResult.DownloadFailed(
-                    batch.range.start,
-                    CompactBlockProcessorException.FailedDownloadException()
-                )
-
-            var downloadedBlocks = listOf<JniBlockMeta>()
-            var downloadException: CompactBlockProcessorException.FailedDownloadException? = null
-
-            retryUpToAndContinue(
-                retries = RETRIES,
-                exceptionWrapper = {
-                    downloadException = CompactBlockProcessorException.FailedDownloadException(it)
-                    downloadException!!
-                }
-            ) { failedAttempts ->
-                if (failedAttempts == 0) {
-                    Twig.verbose { "Starting to download batch $batch" }
-                } else {
-                    Twig.warn { "Retrying to download batch $batch after $failedAttempts failure(s)..." }
-                }
-                downloadedBlocks =
-                    downloader.downloadBlockRange(
-                        heightRange = batch.range,
-                        serviceMode = ServiceMode.Direct
-                    )
-            }
-            traceScope.end()
-            Twig.verbose { "Successfully downloaded batch: $batch of $downloadedBlocks blocks" }
-
-            return if (downloadedBlocks.isNotEmpty()) {
-                SyncingResult.DownloadSuccess(fromState, downloadedBlocks)
-            } else {
-                SyncingResult.DownloadFailed(
-                    batch.range.start,
-                    downloadException ?: CompactBlockProcessorException.FailedDownloadException()
-                )
-            }
-        }
-
-        @VisibleForTesting
-        internal suspend fun fetchTreeStateForHeight(
-            height: BlockHeight,
-            downloader: CompactBlockDownloader,
-        ): TreeState? {
-            retryUpToAndContinue(retries = RETRIES) { failedAttempts ->
-                if (failedAttempts == 0) {
-                    Twig.debug { "Starting to fetch tree state for height ${height.value}" }
-                } else {
-                    Twig.warn {
-                        "Retrying to fetch tree state for height ${height.value} after $failedAttempts failure(s)..."
-                    }
-                }
-                // Directly correlated with `downloadBatchOfBlocks()` ranges.
-                when (
-                    val response =
-                        downloader.getTreeState(
-                            height = BlockHeightUnsafe(height.value),
-                            serviceMode = ServiceMode.Direct
-                        )
-                ) {
-                    is Response.Success -> {
-                        return TreeState.new(response.result)
-                    }
-
-                    is Response.Failure -> {
-                        Twig.error(response.toThrowable()) { "Tree state fetch failed" }
-                        throw response.toThrowable()
-                    }
-                }
-            }
-
-            return null
-        }
-
-        @VisibleForTesting
-        internal suspend fun scanBatchOfBlocks(
-            batch: BlockBatch,
-            fromState: TreeState,
-            backend: TypesafeBackend
-        ): SyncingResult {
-            val traceScope = TraceScope("CompactBlockProcessor.scanBatchOfBlocks")
-            val result =
-                runCatching {
-                    backend.scanBlocks(batch.range.start, fromState, batch.range.length())
-                }.onSuccess {
-                    Twig.verbose { "Successfully scanned batch $batch" }
-                }.onFailure {
-                    Twig.error { "Failed while scanning batch $batch with $it" }
-                }.fold(
-                    onSuccess = { SyncingResult.ScanSuccess(it) },
-                    onFailure = {
-                        // Check if the error is continuity type
-                        if (it.isScanContinuityError()) {
-                            SyncingResult.ContinuityError(
-                                // To ensure we later rewind below the failed height
-                                failedAtHeight = batch.range.start - 1,
-                                exception = CompactBlockProcessorException.FailedScanException(it)
-                            )
-                        } else {
-                            SyncingResult.ScanFailed(
-                                failedAtHeight = batch.range.start,
-                                exception = CompactBlockProcessorException.FailedScanException(it)
-                            )
-                        }
-                    }
-                )
-            traceScope.end()
-            return result
-        }
-
-        @VisibleForTesting
-        internal suspend fun deleteAllBlockFiles(
-            downloader: CompactBlockDownloader,
-            lastKnownHeight: BlockHeight?
-        ): SyncingResult {
-            Twig.verbose { "Starting to delete all temporary block files" }
-            val traceScope = TraceScope("CompactBlockProcessor.deleteAllBlockFiles")
-            val result =
-                if (downloader.compactBlockRepository.deleteAllCompactBlockFiles()) {
-                    Twig.verbose { "Successfully deleted all temporary block files" }
-                    SyncingResult.DeleteSuccess
-                } else {
-                    SyncingResult.DeleteFailed(
-                        lastKnownHeight,
-                        CompactBlockProcessorException.FailedDeleteException()
-                    )
-                }
-            traceScope.end()
-            return result
-        }
-
-        @VisibleForTesting
-        internal suspend fun deleteFilesOfBatchOfBlocks(
-            batch: BlockBatch,
-            downloader: CompactBlockDownloader
-        ): SyncingResult {
-            Twig.verbose { "Starting to delete temporary block files from batch: $batch" }
-            val traceScope = TraceScope("CompactBlockProcessor.deleteFilesOfBatchOfBlocks")
-
-            val result =
-                batch.blocks?.let { blocks ->
-                    val deleted = downloader.compactBlockRepository.deleteCompactBlockFiles(blocks)
-                    if (deleted) {
-                        Twig.verbose { "Successfully deleted all temporary batched block files" }
-                        SyncingResult.DeleteSuccess
-                    } else {
-                        SyncingResult.DeleteFailed(
-                            batch.range.start,
-                            CompactBlockProcessorException.FailedDeleteException()
-                        )
-                    }
-                } ?: SyncingResult.DeleteSuccess
-            traceScope.end()
-            return result
-        }
-
-        @VisibleForTesting
-        internal suspend fun enhanceTransactionDetails(
-            range: ClosedRange<BlockHeight>,
-            repository: DerivedDataRepository,
-            backend: TypesafeBackend,
-            downloader: CompactBlockDownloader,
-            sdkFlags: SdkFlags
-        ): Flow<SyncingResult> =
-            flow {
-                Twig.debug { "Enhancing transaction details for blocks $range" }
-
-                val newTxDataRequests =
-                    runCatching {
-                        transactionDataRequests(backend)
-                    }.onFailure {
-                        Twig.error(it) { "Failed to get transaction data requests" }
-                    }.getOrElse {
-                        emit(
-                            SyncingResult.EnhanceFailed(
-                                range.start,
-                                it as CompactBlockProcessorException.EnhanceTransactionError
-                            )
-                        )
-                        return@flow
-                    }
-
-                if (newTxDataRequests.isEmpty()) {
-                    Twig.debug { "No new transactions found in $range" }
-                } else {
-                    Twig.debug { "Enhancing ${newTxDataRequests.size} transaction(s)!" }
-
-                    // If the first transaction has been added
-                    // Ideally, we could remove this last reference to the transaction view from the enhancing logic
-                    if (newTxDataRequests.size.toLong() == repository.getTransactionCount()) {
-                        Twig.debug { "Encountered the first transaction. This changes the birthday height!" }
-                        emit(SyncingResult.UpdateBirthday)
-                    }
-
-                    newTxDataRequests.forEach {
-                        Twig.debug { "Transaction data request: $it" }
-
-                        when (it) {
-                            is TransactionDataRequest.EnhancementRequired -> {
-                                val trxEnhanceResult = enhanceTransaction(it, backend, downloader, sdkFlags)
-                                if (trxEnhanceResult is SyncingResult.EnhanceFailed) {
-                                    Twig.error(trxEnhanceResult.exception) { "Encountered transaction enhancing error" }
-                                    emit(trxEnhanceResult)
-                                    // We intentionally do not terminate the batch enhancing here, just reporting it
-                                }
-                            }
-
-                            is TransactionDataRequest.TransactionsInvolvingAddress -> {
-                                val processTaddrTxidsResult =
-                                    processTransparentAddressTxids(
-                                        transactionRequest = it,
-                                        backend = backend,
-                                        downloader = downloader
-                                    )
-                                if (processTaddrTxidsResult is SyncingResult.EnhanceFailed) {
-                                    Twig.error(processTaddrTxidsResult.exception) {
-                                        "Encountered SpendsFromAddress transactions error"
-                                    }
-                                    emit(processTaddrTxidsResult)
-                                    // We intentionally do not terminate the batch enhancing here, just reporting it
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Twig.debug { "Done enhancing transaction details" }
-                emit(SyncingResult.EnhanceSuccess)
-            }
-
-        @Suppress("ReturnCount", "ForbiddenComment", "ComplexCondition")
-        private suspend fun processTransparentAddressTxids(
-            transactionRequest: TransactionDataRequest.TransactionsInvolvingAddress,
-            backend: TypesafeBackend,
-            downloader: CompactBlockDownloader
-        ): SyncingResult {
-            Twig.debug { "Starting to get transparent address transactions ids" }
-
-            when {
-                transactionRequest.endHeight == null -> {
-                    // TODO [#1564]: Support empty block range end
-                    Twig.debug { "TransactionsInvolvingAddress is missing blockRangeEnd, ignoring the request." }
-                    return SyncingResult.EnhanceSuccess
-                }
-                transactionRequest.requestAt != null -> {
-                    // TODO: [#1757] Support this.
-                    Twig.debug { "TransactionsInvolvingAddress has requestAt set, ignoring the unsupported request." }
-                    return SyncingResult.EnhanceSuccess
-                }
-                transactionRequest.outputStatusFilter == OutputStatusFilter.Unspent -> {
-                    // TODO: [#1758] Support the OutputStatusFilter.
-                    Twig.debug { "TransactionsInvolvingAddress is unspent, ignoring the unsupported request." }
-                    return SyncingResult.EnhanceSuccess
-                }
-            }
-
-            val traceScope = TraceScope("CompactBlockProcessor.processTransparentAddressTxids")
-            val result =
-                try {
-                    // Fetching transactions is done with retries to eliminate a bad network condition
-                    getTransparentAddressTransactions(
-                        transactionRequest = transactionRequest,
-                        downloader = downloader
-                    ).onEach { rawTransactionUnsafe ->
-                        val rawTransaction = RawTransaction.new(rawTransactionUnsafe = rawTransactionUnsafe)
-
-                        // Ignore transactions that don't match the status filter.
-                        if (
-                            (
-                                transactionRequest.txStatusFilter == TransactionStatusFilter.Mined &&
-                                    rawTransaction.height == null
-                            ) ||
-                            (
-                                transactionRequest.txStatusFilter == TransactionStatusFilter.Mempool &&
-                                    rawTransaction.height != null
-                            )
-                        ) {
-                            return@onEach
-                        }
-
-                        // Decrypting and storing transaction is run just once, since we consider it more stable
-                        Twig.verbose { "Decrypting and storing rawTransactionUnsafe" }
-                        decryptTransaction(
-                            rawTransaction = RawTransaction.new(rawTransactionUnsafe = rawTransactionUnsafe),
-                            backend = backend
-                        )
-                    }.onCompletion {
-                        Twig.verbose { "Done Decrypting and storing of all transaction" }
-                    }.collect()
-
-                    SyncingResult.EnhanceSuccess
-                } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
-                    SyncingResult.EnhanceFailed(transactionRequest.startHeight, exception)
-                }
-            traceScope.end()
-            return result
-        }
-
-        @Throws(EnhanceTxDownloadError::class)
-        private suspend fun getTransparentAddressTransactions(
-            transactionRequest: TransactionDataRequest.TransactionsInvolvingAddress,
-            downloader: CompactBlockDownloader,
-        ): Flow<RawTransactionUnsafe> {
-            val traceScope = TraceScope("CompactBlockProcessor.getTransparentAddressTransactions")
-            var resultFlow: Flow<RawTransactionUnsafe>? = null
-
-            retryUpToAndThrow(
-                retries = TRANSACTION_FETCH_RETRIES,
-                exceptionWrapper = { EnhanceTxDownloadError(it) }
-            ) { failedAttempts ->
-                if (failedAttempts == 0) {
-                    Twig.debug { "Starting to get transactions for tAddr: ${transactionRequest.address}" }
-                } else {
-                    Twig.warn {
-                        "Retrying to fetch transactions for tAddr: ${transactionRequest.address}" +
-                            " after $failedAttempts failure(s)..."
-                    }
-                }
-
-                // We can safely assert non-nullability here as we check in the function caller
-                // - 1 for the end height because the GRPC request is end-inclusive whereas we use end-exclusive
-                // ranges everywhere in the Rust code
-                val requestedRange = transactionRequest.startHeight..(transactionRequest.endHeight!! - 1)
-                resultFlow =
-                    downloader.getTAddressTransactions(
-                        transparentAddress = transactionRequest.address,
-                        blockHeightRange = requestedRange,
-                        serviceMode = ServiceMode.Direct
-                    )
-            }
-            traceScope.end()
-            // The flow is initialized or the EnhanceTxDownloadError is thrown after all the attempts failed
-            return resultFlow!!
-        }
-
-        @Suppress("LongMethod")
-        private suspend fun enhanceTransaction(
-            transactionRequest: TransactionDataRequest.EnhancementRequired,
-            backend: TypesafeBackend,
-            downloader: CompactBlockDownloader,
-            sdkFlags: SdkFlags
-        ): SyncingResult {
-            Twig.debug { "Starting enhancing transaction: txid: ${transactionRequest.txIdString()}" }
-
-            val traceScope = TraceScope("CompactBlockProcessor.enhanceTransaction")
-            val result =
-                try {
-                    // Fetching transaction is done with retries to eliminate a bad network condition
-                    val rawTransactionUnsafe =
-                        fetchTransaction(
-                            transactionRequest = transactionRequest,
-                            downloader = downloader,
-                            sdkFlags = sdkFlags
-                        )
-
-                    Twig.debug { "Transaction fetched: $rawTransactionUnsafe" }
-
-                    // We need to distinct between the two possible states of [transactionRequest]
-                    when (transactionRequest) {
-                        is TransactionDataRequest.GetStatus -> {
-                            Twig.debug {
-                                "Resolving TransactionDataRequest.GetStatus by setting status of " +
-                                    "transaction: txid: ${transactionRequest.txIdString()}"
-                            }
-                            val status =
-                                rawTransactionUnsafe?.toTransactionStatus()
-                                    ?: TransactionStatus.TxidNotRecognized
-                            setTransactionStatus(
-                                transactionRawId = transactionRequest.txid,
-                                status = status,
-                                backend = backend
-                            )
-                        }
-
-                        is TransactionDataRequest.Enhancement -> {
-                            if (rawTransactionUnsafe == null) {
-                                Twig.debug {
-                                    "Resolving TransactionDataRequest.Enhancement by setting status of " +
-                                        "transaction. Txid not recognized: ${transactionRequest.txIdString()}"
-                                }
-                                setTransactionStatus(
-                                    transactionRawId = transactionRequest.txid,
-                                    status = TransactionStatus.TxidNotRecognized,
-                                    backend = backend
-                                )
-                            } else {
-                                Twig.debug {
-                                    "Resolving TransactionDataRequest.Enhancement by decrypting and storing " +
-                                        "transaction: txid: ${transactionRequest.txIdString()}"
-                                }
-                                decryptTransaction(
-                                    rawTransaction = RawTransaction.new(rawTransactionUnsafe = rawTransactionUnsafe),
-                                    backend = backend
-                                )
-                            }
-                        }
-                    }
-
-                    Twig.debug { "Done enhancing transaction: txid: ${transactionRequest.txIdString()}" }
-                    SyncingResult.EnhanceSuccess
-                } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
-                    SyncingResult.EnhanceFailed(null, exception)
-                }
-            traceScope.end()
-            return result
-        }
-
-        /**
-         * Fetch the transaction complete data by [TransactionDataRequest.EnhancementRequired.txid] from Light Wallet
-         * server. This function handles [Response.Failure.Server.NotFound] by returning null.
-         *
-         * @return [RawTransactionUnsafe] if the transaction has been found, null otherwise.
-         *
-         * @throws CompactBlockProcessorException.EnhanceTransactionError in case of any other error
-         */
-        @Throws(EnhanceTxDownloadError::class)
-        private suspend fun fetchTransaction(
-            transactionRequest: TransactionDataRequest.EnhancementRequired,
-            downloader: CompactBlockDownloader,
-            sdkFlags: SdkFlags
-        ): RawTransactionUnsafe? {
-            var transactionResult: RawTransactionUnsafe? = null
-            val traceScope = TraceScope("CompactBlockProcessor.fetchTransaction")
-
-            retryUpToAndThrow(TRANSACTION_FETCH_RETRIES) { failedAttempts ->
-                if (failedAttempts == 0) {
-                    Twig.debug { "Starting to fetch transaction: txid: ${transactionRequest.txIdString()}" }
-                } else {
-                    Twig.warn {
-                        "Retrying to fetch transaction: txid: ${transactionRequest.txIdString()}" +
-                            " after $failedAttempts failure(s)..."
-                    }
-                }
-
-                transactionResult =
-                    when (
-                        val response =
-                            downloader.fetchTransaction(
-                                transactionRequest.txid,
-                                sdkFlags ifTor ServiceMode.Group("fetch-${transactionRequest.txIdString()}")
-                            )
-                    ) {
-                        is Response.Success -> response.result
-                        is Response.Failure ->
-                            when {
-                                response is Response.Failure.Server.NotFound -> null
-                                response.description.orEmpty().contains(NOT_FOUND_MESSAGE_WORKAROUND, true) ->
-                                    null
-
-                                response.description.orEmpty().contains(NOT_FOUND_MESSAGE_WORKAROUND_2, true) ->
-                                    null
-
-                                else -> throw EnhanceTxDownloadError(response.toThrowable())
-                            }
-                    }
-            }
-            traceScope.end()
-            return transactionResult
-        }
-
-        @Throws(EnhanceTxDecryptError::class)
-        private suspend fun decryptTransaction(
-            rawTransaction: RawTransaction,
-            backend: TypesafeBackend,
-        ) {
-            val traceScope = TraceScope("CompactBlockProcessor.decryptTransaction")
-            runCatching {
-                backend.decryptAndStoreTransaction(rawTransaction.data, rawTransaction.height)
-            }.onFailure {
-                traceScope.end()
-                throw EnhanceTxDecryptError(rawTransaction.height, it)
-            }
-            traceScope.end()
-        }
-
-        @Throws(EnhanceTxDataRequestsError::class)
-        private suspend fun transactionDataRequests(backend: TypesafeBackend): List<TransactionDataRequest> {
-            val traceScope = TraceScope("CompactBlockProcessor.transactionDataRequests")
-            val result =
-                runCatching {
-                    backend.transactionDataRequests()
-                }.getOrElse {
-                    traceScope.end()
-                    throw EnhanceTxDataRequestsError(it)
-                }
-            traceScope.end()
-            return result
-        }
-
-        @Throws(EnhanceTxSetStatusError::class)
-        private suspend fun setTransactionStatus(
-            transactionRawId: ByteArray,
-            status: TransactionStatus,
-            backend: TypesafeBackend,
-        ) {
-            val traceScope = TraceScope("CompactBlockProcessor.setTransactionStatus")
-            runCatching {
-                backend.setTransactionStatus(transactionRawId, status)
-            }.onFailure {
-                traceScope.end()
-                throw EnhanceTxSetStatusError(it)
-            }
-            traceScope.end()
-        }
-
-        /**
-         * Get the height of the last block that was scanned by this processor.
-         *
-         * @return the last scanned height reported by the repository.
-         */
-        @VisibleForTesting
-        internal suspend fun getMaxScannedHeight(backend: TypesafeBackend): GetMaxScannedHeightResult =
-            runCatching {
-                backend.getMaxScannedHeight()
-            }.onSuccess {
-                Twig.verbose { "Successfully called getMaxScannedHeight with result: $it" }
-            }.onFailure {
-                Twig.error { "Failed to call getMaxScannedHeight with result: $it" }
-            }.fold(
-                onSuccess = {
-                    if (it == null) {
-                        GetMaxScannedHeightResult.None
-                    } else {
-                        GetMaxScannedHeightResult.Success(it)
-                    }
-                },
-                onFailure = {
-                    GetMaxScannedHeightResult.Failure(it)
-                }
-            )
-
-        /**
          * Get the height of the first un-enhanced transaction detail from the repository.
          *
          * @return the oldest transaction which hasn't been enhanced yet, or null in case of all transaction enhanced
@@ -2353,6 +1251,1156 @@ class CompactBlockProcessor internal constructor(
     }
 
     /**
+     * This operation fetches and returns the latest block height (chain tip)
+     *
+     * @return Latest block height wrapped in BlockHeight object, or null in case of failure
+     */
+    @VisibleForTesting
+    internal suspend fun fetchLatestBlockHeight(
+        downloader: CompactBlockDownloader,
+        sdkFlags: SdkFlags,
+    ): BlockHeight? {
+        Twig.debug { "Fetching latest block height..." }
+        val traceScope = TraceScope("CompactBlockProcessor.fetchLatestBlockHeight")
+
+        var latestBlockHeight: BlockHeight? = null
+
+        retryUpToAndContinue(FETCH_LATEST_BLOCK_HEIGHT_RETRIES) {
+            when (
+                val response =
+                    downloader.getLatestBlockHeight(sdkFlags ifTor ServiceMode.DefaultTor)
+            ) {
+                is Response.Success -> {
+                    Twig.debug { "Latest block height fetched successfully with value: ${response.result.value}" }
+                    latestBlockHeight =
+                        runCatching {
+                            response.result.toBlockHeight()
+                        }.getOrNull()
+                }
+
+                is Response.Failure -> {
+                    Twig.error { "Fetching latest block height failed with: ${response.toThrowable()}" }
+                    traceScope.end()
+                    throw LightWalletException.GetLatestBlockHeightException(
+                        response.code,
+                        response.description,
+                        response.toThrowable()
+                    )
+                }
+            }
+        }
+
+        traceScope.end()
+        return latestBlockHeight
+    }
+
+    /**
+     * This operation downloads note commitment tree data from the lightwalletd server, to decide whether or not
+     * the lightwalletd and its backing node support spend-before-sync.
+     *
+     * @return GetSubtreeRootsResult as a wrapper for the lightwalletd response result
+     */
+    @VisibleForTesting
+    @Suppress("LongMethod")
+    internal suspend fun getSubtreeRoots(
+        downloader: CompactBlockDownloader,
+        saplingStartIndex: UInt,
+        orchardStartIndex: UInt
+    ): GetSubtreeRootsResult {
+        Twig.debug { "Fetching SubtreeRoots..." }
+        val traceScope = TraceScope("CompactBlockProcessor.getSubtreeRoots")
+
+        var result: GetSubtreeRootsResult = GetSubtreeRootsResult.Linear
+
+        var saplingSubtreeRootList: List<SubtreeRoot> = emptyList()
+        var orchardSubtreeRootList: List<SubtreeRoot> = emptyList()
+
+        retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
+            downloader
+                .getSubtreeRoots(
+                    saplingStartIndex,
+                    shieldedProtocol = ShieldedProtocolEnum.SAPLING,
+                    maxEntries = UInt.MIN_VALUE,
+                    serviceMode = ServiceMode.Direct
+                ).onEach { response ->
+                    when (response) {
+                        is Response.Success -> {
+                            Twig.verbose {
+                                "Sapling SubtreeRoot fetched successfully: its completingHeight is: ${
+                                    response.result
+                                        .completingBlockHeight
+                                }"
+                            }
+                        }
+
+                        is Response.Failure -> {
+                            val error =
+                                LightWalletException.GetSubtreeRootsException(
+                                    response.code,
+                                    response.description,
+                                    response.toThrowable()
+                                )
+                            if (response is Response.Failure.Server.Unavailable) {
+                                Twig.error {
+                                    "Fetching Sapling SubtreeRoot failed due to server communication problem with" +
+                                        " failure: ${response.toThrowable()}"
+                                }
+                                result = GetSubtreeRootsResult.FailureConnection
+                            } else {
+                                Twig.error {
+                                    "Fetching Sapling SubtreeRoot failed with failure: ${response.toThrowable()}"
+                                }
+                                result = GetSubtreeRootsResult.OtherFailure(error)
+                            }
+                            traceScope.end()
+                            throw error
+                        }
+                    }
+                }.filterIsInstance<Response.Success<SubtreeRootUnsafe>>()
+                .map { response ->
+                    response.result
+                }.toList()
+                .map {
+                    SubtreeRoot.new(it)
+                }.let {
+                    saplingSubtreeRootList = it
+                }
+        }
+
+        retryUpToAndContinue(GET_SUBTREE_ROOTS_RETRIES) {
+            downloader
+                .getSubtreeRoots(
+                    startIndex = orchardStartIndex,
+                    shieldedProtocol = ShieldedProtocolEnum.ORCHARD,
+                    maxEntries = UInt.MIN_VALUE,
+                    serviceMode = ServiceMode.Direct
+                ).onEach { response ->
+                    when (response) {
+                        is Response.Success -> {
+                            Twig.verbose {
+                                "Orchard SubtreeRoot fetched successfully: its completingHeight is: ${
+                                    response.result
+                                        .completingBlockHeight
+                                }"
+                            }
+                        }
+
+                        is Response.Failure -> {
+                            val error =
+                                LightWalletException.GetSubtreeRootsException(
+                                    response.code,
+                                    response.description,
+                                    response.toThrowable()
+                                )
+                            if (response is Response.Failure.Server.Unavailable) {
+                                Twig.error {
+                                    "Fetching Orchard SubtreeRoot failed due to server communication problem with" +
+                                        " failure: ${response.toThrowable()}"
+                                }
+                                result = GetSubtreeRootsResult.FailureConnection
+                            } else {
+                                Twig.error {
+                                    "Fetching Orchard SubtreeRoot failed with failure: ${response.toThrowable()}"
+                                }
+                                result = GetSubtreeRootsResult.OtherFailure(error)
+                            }
+                            traceScope.end()
+                            throw error
+                        }
+                    }
+                }.filterIsInstance<Response.Success<SubtreeRootUnsafe>>()
+                .map { response ->
+                    response.result
+                }.toList()
+                .map {
+                    SubtreeRoot.new(it)
+                }.let {
+                    orchardSubtreeRootList = it
+                }
+        }
+
+        // Intentionally omitting [orchardSubtreeRootList], e.g., for Mainnet usage, we could check it, but on
+        // custom networks without NU5 activation, it wouldn't work. If the Orchard subtree roots are empty, it's
+        // technically still ok (as Orchard activates after Sapling, so on a network that doesn't have NU5
+        // activated, this would behave correctly). In contrast, if the Sapling subtree roots are empty, we
+        // cannot do SbS at all.
+        if (saplingSubtreeRootList.isNotEmpty()) {
+            result =
+                GetSubtreeRootsResult.SpendBeforeSync(
+                    saplingStartIndex,
+                    saplingSubtreeRootList,
+                    orchardStartIndex,
+                    orchardSubtreeRootList
+                )
+        }
+
+        traceScope.end()
+        return result
+    }
+
+    /**
+     * Pass the commitment tree data to the database.
+     *
+     * @param backend Typesafe Rust backend
+     * @param startIndex Index to which put the data
+     * @param lastValidHeight The height to which rewind in case of any trouble
+     * @return PutSaplingSubtreeRootsResult
+     */
+    @VisibleForTesting
+    @Suppress("LongParameterList")
+    internal suspend fun putSaplingSubtreeRoots(
+        backend: TypesafeBackend,
+        saplingStartIndex: UInt,
+        saplingSubtreeRootList: List<SubtreeRoot>,
+        orchardStartIndex: UInt,
+        orchardSubtreeRootList: List<SubtreeRoot>,
+        lastValidHeight: BlockHeight
+    ): PutSaplingSubtreeRootsResult =
+        runCatching {
+            backend.putSubtreeRoots(
+                saplingStartIndex = saplingStartIndex,
+                saplingRoots = saplingSubtreeRootList,
+                orchardStartIndex = orchardStartIndex,
+                orchardRoots = orchardSubtreeRootList,
+            )
+        }.onSuccess {
+            Twig.info {
+                "Subtree roots put successfully with saplingStartIndex: $saplingStartIndex and " +
+                    "orchardStartIndex: $orchardStartIndex"
+            }
+        }.onFailure {
+            Twig.error { "Sapling subtree roots put failed with: $it" }
+        }.fold(
+            onSuccess = { PutSaplingSubtreeRootsResult.Success },
+            onFailure = { PutSaplingSubtreeRootsResult.Failure(lastValidHeight, it) }
+        )
+
+    /**
+     * Notify the wallet of the updated chain tip.
+     *
+     * @param backend Typesafe Rust backend
+     * @param chainTip Height of latest block
+     * @param lastValidHeight The height to which rewind in case of any trouble
+     * @return UpdateChainTipResult
+     */
+    @VisibleForTesting
+    internal suspend fun updateChainTip(
+        backend: TypesafeBackend,
+        chainTip: BlockHeight,
+        lastValidHeight: BlockHeight
+    ): UpdateChainTipResult {
+        val traceScope = TraceScope("CompactBlockProcessor.updateChainTip")
+        val result =
+            runCatching {
+                backend.updateChainTip(chainTip)
+            }.onSuccess {
+                Twig.info { "Chain tip updated successfully with height: $chainTip" }
+            }.onFailure {
+                Twig.info { "Chain tip update failed with: $it" }
+            }.fold(
+                onSuccess = { UpdateChainTipResult.Success(chainTip) },
+                onFailure = { UpdateChainTipResult.Failure(lastValidHeight, it) }
+            )
+        traceScope.end()
+        return result
+    }
+
+    /**
+     * Get the suggested scan ranges from the wallet database via the rust layer.
+     *
+     * @param backend Typesafe Rust backend
+     * @param lastValidHeight The height to which rewind in case of any trouble
+     * @return SuggestScanRangesResult
+     */
+    @VisibleForTesting
+    internal suspend fun suggestScanRanges(
+        backend: TypesafeBackend,
+        lastValidHeight: BlockHeight
+    ): SuggestScanRangesResult {
+        val traceScope = TraceScope("CompactBlockProcessor.suggestScanRanges")
+        val result =
+            runCatching {
+                backend.suggestScanRanges()
+            }.onSuccess { ranges ->
+                Twig.info { "Successfully got newly suggested ranges: $ranges" }
+            }.onFailure { exception ->
+                Twig.error { "Failed to get newly suggested ranges with: $exception" }
+            }.fold(
+                onSuccess = { SuggestScanRangesResult.Success(it) },
+                onFailure = { SuggestScanRangesResult.Failure(lastValidHeight, it) }
+            )
+        traceScope.end()
+        return result
+    }
+
+    /**
+     * Parse and process ranges. If it recognizes a range with Priority.Verify at the first position, it runs the
+     * verification part.
+     *
+     * @param suggestedRangesResult Wrapper for list of ranges to process
+     * @return VerifySuggestedScanRange
+     */
+    @VisibleForTesting
+    @Suppress("MaxLineLength")
+    internal fun shouldVerifySuggestedScanRanges(suggestedRangesResult: SuggestScanRangesResult.Success): VerifySuggestedScanRange {
+        Twig.debug { "Check for Priority.Verify scan range result: ${suggestedRangesResult.ranges}" }
+
+        return if (suggestedRangesResult.ranges.isEmpty()) {
+            VerifySuggestedScanRange.NoRangeToVerify
+        } else {
+            val firstRangePriority = suggestedRangesResult.ranges[0].getSuggestScanRangePriority()
+            if (firstRangePriority == SuggestScanRangePriority.Verify) {
+                VerifySuggestedScanRange.ShouldVerify(suggestedRangesResult.ranges[0])
+            } else {
+                VerifySuggestedScanRange.NoRangeToVerify
+            }
+        }
+    }
+
+    /**
+     * Get the current wallet summary.
+     *
+     * @return the latest wallet summary calculated by the Rust layer and wrapped in [GetWalletSummaryResult]
+     */
+    @VisibleForTesting
+    internal suspend fun getWalletSummary(backend: TypesafeBackend): GetWalletSummaryResult =
+        runCatching {
+            backend.getWalletSummary()
+        }.onSuccess {
+            Twig.verbose { "Successfully called getWalletSummary with result: $it" }
+        }.onFailure {
+            Twig.error { "Failed to call getWalletSummary with result: $it" }
+        }.fold(
+            onSuccess = {
+                if (it == null) {
+                    GetWalletSummaryResult.None
+                } else {
+                    GetWalletSummaryResult.Success(it)
+                }
+            },
+            onFailure = {
+                GetWalletSummaryResult.Failure(it)
+            }
+        )
+
+    /**
+     * Requests, processes and persists all blocks from the given range.
+     *
+     * @param backend the Rust backend component
+     * @param downloader the compact block downloader component
+     * @param repository the derived data repository component
+     * @param syncRange the range of blocks to download
+     * @param enhanceStartHeight the height in which the enhancing should start, or null in case of no previous
+     * transaction enhancing done yet
+     *
+     * @return Flow of [BatchSyncProgress] sync and enhancement results
+     */
+    @VisibleForTesting
+    @Suppress("CyclomaticComplexMethod", "LongParameterList", "LongMethod")
+    internal fun runSyncingAndEnhancingOnRange(
+        backend: TypesafeBackend,
+        downloader: CompactBlockDownloader,
+        repository: DerivedDataRepository,
+        syncRange: ClosedRange<BlockHeight>,
+        enhanceStartHeight: BlockHeight?,
+        sdkFlags: SdkFlags
+    ): Flow<BatchSyncProgress> =
+        flow {
+            if (syncRange.isEmpty()) {
+                Twig.debug { "No blocks to sync" }
+                emit(
+                    BatchSyncProgress(
+                        resultState = SyncingResult.AllSuccess
+                    )
+                )
+            } else {
+                Twig.info { "Syncing blocks in range $syncRange" }
+
+                val batches = getBatchedBlockList(syncRange)
+
+                // Check for the last enhanced height and eventually set it as the beginning of the next
+                // enhancing range
+                var enhancingRange =
+                    if (enhanceStartHeight != null) {
+                        BlockHeight(min(syncRange.start.value, enhanceStartHeight.value))..syncRange.start
+                    } else {
+                        syncRange.start..syncRange.start
+                    }
+
+                batches
+                    .asFlow()
+                    .map {
+                        Twig.debug { "Syncing process starts for batch: $it" }
+
+                        // Run downloading stage
+                        SyncStageResult(
+                            batch = it,
+                            stageResult =
+                                downloadBatchOfBlocks(
+                                    downloader = downloader,
+                                    batch = it
+                                )
+                        )
+                    }.buffer(1)
+                    .map { downloadStageResult ->
+                        Twig.debug { "Download stage done with result: $downloadStageResult" }
+
+                        if (downloadStageResult.stageResult !is SyncingResult.DownloadSuccess) {
+                            // In case of any failure, we just propagate the result
+                            downloadStageResult
+                        } else {
+                            // Enrich batch model with fetched blocks. It's useful for later blocks deletion
+                            downloadStageResult.batch.blocks = downloadStageResult.stageResult.downloadedBlocks
+
+                            // Run scanning stage (which also validates the fetched blocks)
+                            SyncStageResult(
+                                downloadStageResult.batch,
+                                scanBatchOfBlocks(
+                                    backend = backend,
+                                    batch = downloadStageResult.batch,
+                                    fromState = downloadStageResult.stageResult.fromState
+                                )
+                            )
+                        }
+                    }.map { scanResult ->
+                        Twig.debug { "Scan stage done with result: $scanResult" }
+
+                        val resultState =
+                            when (scanResult.stageResult) {
+                                is SyncingResult.ScanSuccess -> {
+                                    SyncingResult.AllSuccess
+                                }
+
+                                else -> {
+                                    scanResult.stageResult
+                                }
+                            }
+
+                        // We don't need to wait for the cached blocks to be deleted, or newly-discovered
+                        // transactions to be enhanced, to report that a block range has been scanned.
+                        emit(
+                            BatchSyncProgress(
+                                order = scanResult.batch.order,
+                                range = scanResult.batch.range,
+                                resultState = resultState
+                            )
+                        )
+
+                        when (scanResult.stageResult) {
+                            is SyncingResult.ScanSuccess -> {
+                                // TODO [#1369]: Use the scan summary to trigger balance updates.
+                                // TODO [#1369]: https://github.com/Electric-Coin-Company/zcash-android-wallet-sdk/issues/1369
+                                val scannedRange = scanResult.stageResult.summary.scannedRange
+                                assert(scanResult.batch.range.start <= scannedRange.start)
+                                assert(scannedRange.endInclusive <= scanResult.batch.range.endInclusive)
+
+                                // Run deletion stage
+                                SyncStageResult(
+                                    scanResult.batch,
+                                    deleteFilesOfBatchOfBlocks(
+                                        downloader = downloader,
+                                        batch = scanResult.batch
+                                    )
+                                )
+                            }
+
+                            else -> {
+                                scanResult
+                            }
+                        }
+                    }.onEach { continuousResult ->
+                        Twig.debug { "Deletion stage done with result: $continuousResult" }
+
+                        var resultState =
+                            if (continuousResult.stageResult == SyncingResult.DeleteSuccess) {
+                                SyncingResult.AllSuccess
+                            } else {
+                                // Emitting the possible [SyncingResult.DeleteFailed] state here is necessary
+                                emit(
+                                    BatchSyncProgress(
+                                        order = continuousResult.batch.order,
+                                        range = continuousResult.batch.range,
+                                        resultState = continuousResult.stageResult
+                                    )
+                                )
+                                continuousResult.stageResult
+                            }
+
+                        // Increment and compare the range for triggering the enhancing
+                        enhancingRange = enhancingRange.start..continuousResult.batch.range.endInclusive
+
+                        // Enhancing is run when the range is on or over its limit, or there is any failure
+                        // from previous stages, or if the end of the sync range is reached.
+                        if (enhancingRange.length() >= ENHANCE_BATCH_SIZE ||
+                            resultState != SyncingResult.AllSuccess ||
+                            continuousResult.batch.order == batches.size.toLong()
+                        ) {
+                            // Copy the range for use and reset for the next iteration
+                            val currentEnhancingRange = enhancingRange
+                            enhancingRange = enhancingRange.endInclusive..enhancingRange.endInclusive
+
+                            enhanceTransactionDetails(
+                                range = currentEnhancingRange,
+                                repository = repository,
+                                backend = backend,
+                                downloader = downloader,
+                                sdkFlags = sdkFlags
+                            ).collect { enhancingResult ->
+                                Twig.info { "Enhancing result: $enhancingResult" }
+                                resultState =
+                                    when (enhancingResult) {
+                                        is SyncingResult.UpdateBirthday -> {
+                                            Twig.info { "Birthday height update reporting" }
+                                            enhancingResult
+                                        }
+
+                                        is SyncingResult.EnhanceFailed -> {
+                                            Twig.error {
+                                                "Enhancing failed for: $enhancingRange with $enhancingResult"
+                                            }
+                                            enhancingResult
+                                        }
+
+                                        else -> {
+                                            // Transactions enhanced correctly. Let's continue with block processing
+                                            enhancingResult
+                                        }
+                                    }
+                                emit(
+                                    BatchSyncProgress(
+                                        order = continuousResult.batch.order,
+                                        range = continuousResult.batch.range,
+                                        resultState = resultState
+                                    )
+                                )
+                            }
+                        }
+                        Twig.info {
+                            "All sync stages done for the batch ${continuousResult.batch.order}/${batches.size}:" +
+                                " ${continuousResult.batch} with result state: $resultState"
+                        }
+                    }.takeWhile { batchProcessResult ->
+                        batchProcessResult.stageResult == SyncingResult.DeleteSuccess ||
+                            batchProcessResult.stageResult == SyncingResult.UpdateBirthday
+                    }.collect()
+            }
+        }
+
+    private fun calculateBatchEnd(
+        start: Long,
+        rangeEnd: Long,
+        batchSize: Int
+    ): Long =
+        min(
+            // Subtract 1 on the first value because the range is inclusive
+            (start + batchSize) - 1,
+            rangeEnd
+        )
+
+    /**
+     * Prepare list of all [ClosedRange<BlockBatch>] internal objects to be processed during a range of
+     * blocks processing
+     *
+     * @param syncRange Current range to be processed
+     *
+     * @return List of [ClosedRange<BlockBatch>] to prepare for synchronization
+     */
+    private fun getBatchedBlockList(syncRange: ClosedRange<BlockHeight>): List<BlockBatch> {
+        var order = 1L
+        var start = syncRange.start.value
+        var end = 0L
+
+        Twig.verbose { "Get batched logic input: $syncRange" }
+
+        val resultList =
+            buildList {
+                while (end != syncRange.endInclusive.value) {
+                    end =
+                        calculateBatchEnd(
+                            start = start,
+                            rangeEnd = syncRange.endInclusive.value,
+                            batchSize = SYNC_BATCH_SIZE
+                        )
+
+                    if (((start..end)).overlaps(SANDBLASTING_RANGE)) {
+                        end =
+                            calculateBatchEnd(
+                                start = start,
+                                rangeEnd = syncRange.endInclusive.value,
+                                batchSize = SYNC_BATCH_SMALL_SIZE
+                            )
+                    }
+
+                    val range = BlockHeight.new(start)..BlockHeight.new(end)
+                    add(
+                        BlockBatch(
+                            order = order,
+                            range = range,
+                            size = range.length()
+                        )
+                    )
+
+                    start = end + 1
+                    order++
+                }
+            }
+
+        Twig.verbose {
+            "Get batched output: ${resultList.size}: ${resultList.joinToString(prefix = "\n", separator = "\n")}"
+        }
+
+        return resultList
+    }
+
+    /**
+     * Request and download all blocks in the given range and persist them locally for processing, later.
+     *
+     * @param batch the batch of blocks to download.
+     */
+    @VisibleForTesting
+    internal suspend fun downloadBatchOfBlocks(
+        downloader: CompactBlockDownloader,
+        batch: BlockBatch
+    ): SyncingResult {
+        val traceScope = TraceScope("CompactBlockProcessor.downloadBatchOfBlocks")
+
+        val fromState =
+            fetchTreeStateForHeight(
+                height = batch.range.start - 1,
+                downloader = downloader
+            ) ?: return SyncingResult.DownloadFailed(
+                batch.range.start,
+                CompactBlockProcessorException.FailedDownloadException()
+            )
+
+        var downloadedBlocks = listOf<JniBlockMeta>()
+        var downloadException: CompactBlockProcessorException.FailedDownloadException? = null
+
+        retryUpToAndContinue(
+            retries = RETRIES,
+            exceptionWrapper = {
+                downloadException = CompactBlockProcessorException.FailedDownloadException(it)
+                downloadException!!
+            }
+        ) { failedAttempts ->
+            if (failedAttempts == 0) {
+                Twig.verbose { "Starting to download batch $batch" }
+            } else {
+                Twig.warn { "Retrying to download batch $batch after $failedAttempts failure(s)..." }
+            }
+            downloadedBlocks =
+                downloader.downloadBlockRange(
+                    heightRange = batch.range,
+                    serviceMode = ServiceMode.Direct
+                )
+        }
+        traceScope.end()
+        Twig.verbose { "Successfully downloaded batch: $batch of $downloadedBlocks blocks" }
+
+        return if (downloadedBlocks.isNotEmpty()) {
+            SyncingResult.DownloadSuccess(fromState, downloadedBlocks)
+        } else {
+            SyncingResult.DownloadFailed(
+                batch.range.start,
+                downloadException ?: CompactBlockProcessorException.FailedDownloadException()
+            )
+        }
+    }
+
+    @VisibleForTesting
+    internal suspend fun fetchTreeStateForHeight(
+        height: BlockHeight,
+        downloader: CompactBlockDownloader,
+    ): TreeState? {
+        retryUpToAndContinue(retries = RETRIES) { failedAttempts ->
+            if (failedAttempts == 0) {
+                Twig.debug { "Starting to fetch tree state for height ${height.value}" }
+            } else {
+                Twig.warn {
+                    "Retrying to fetch tree state for height ${height.value} after $failedAttempts failure(s)..."
+                }
+            }
+            // Directly correlated with `downloadBatchOfBlocks()` ranges.
+            when (
+                val response =
+                    downloader.getTreeState(
+                        height = BlockHeightUnsafe(height.value),
+                        serviceMode = ServiceMode.Direct
+                    )
+            ) {
+                is Response.Success -> {
+                    return TreeState.new(response.result)
+                }
+
+                is Response.Failure -> {
+                    Twig.error(response.toThrowable()) { "Tree state fetch failed" }
+                    throw response.toThrowable()
+                }
+            }
+        }
+
+        return null
+    }
+
+    @VisibleForTesting
+    internal suspend fun scanBatchOfBlocks(
+        batch: BlockBatch,
+        fromState: TreeState,
+        backend: TypesafeBackend
+    ): SyncingResult {
+        val traceScope = TraceScope("CompactBlockProcessor.scanBatchOfBlocks")
+        val result =
+            runCatching {
+                backend.scanBlocks(batch.range.start, fromState, batch.range.length())
+            }.onSuccess {
+                Twig.verbose { "Successfully scanned batch $batch" }
+            }.onFailure {
+                Twig.error { "Failed while scanning batch $batch with $it" }
+            }.fold(
+                onSuccess = { SyncingResult.ScanSuccess(it) },
+                onFailure = {
+                    // Check if the error is continuity type
+                    if (it.isScanContinuityError()) {
+                        SyncingResult.ContinuityError(
+                            // To ensure we later rewind below the failed height
+                            failedAtHeight = batch.range.start - 1,
+                            exception = CompactBlockProcessorException.FailedScanException(it)
+                        )
+                    } else {
+                        SyncingResult.ScanFailed(
+                            failedAtHeight = batch.range.start,
+                            exception = CompactBlockProcessorException.FailedScanException(it)
+                        )
+                    }
+                }
+            )
+        traceScope.end()
+        return result
+    }
+
+    @VisibleForTesting
+    internal suspend fun deleteAllBlockFiles(
+        downloader: CompactBlockDownloader,
+        lastKnownHeight: BlockHeight?
+    ): SyncingResult {
+        Twig.verbose { "Starting to delete all temporary block files" }
+        val traceScope = TraceScope("CompactBlockProcessor.deleteAllBlockFiles")
+        val result =
+            if (downloader.compactBlockRepository.deleteAllCompactBlockFiles()) {
+                Twig.verbose { "Successfully deleted all temporary block files" }
+                SyncingResult.DeleteSuccess
+            } else {
+                SyncingResult.DeleteFailed(
+                    lastKnownHeight,
+                    CompactBlockProcessorException.FailedDeleteException()
+                )
+            }
+        traceScope.end()
+        return result
+    }
+
+    @VisibleForTesting
+    internal suspend fun deleteFilesOfBatchOfBlocks(
+        batch: BlockBatch,
+        downloader: CompactBlockDownloader
+    ): SyncingResult {
+        Twig.verbose { "Starting to delete temporary block files from batch: $batch" }
+        val traceScope = TraceScope("CompactBlockProcessor.deleteFilesOfBatchOfBlocks")
+
+        val result =
+            batch.blocks?.let { blocks ->
+                val deleted = downloader.compactBlockRepository.deleteCompactBlockFiles(blocks)
+                if (deleted) {
+                    Twig.verbose { "Successfully deleted all temporary batched block files" }
+                    SyncingResult.DeleteSuccess
+                } else {
+                    SyncingResult.DeleteFailed(
+                        batch.range.start,
+                        CompactBlockProcessorException.FailedDeleteException()
+                    )
+                }
+            } ?: SyncingResult.DeleteSuccess
+        traceScope.end()
+        return result
+    }
+
+    @VisibleForTesting
+    internal fun enhanceTransactionDetails(
+        range: ClosedRange<BlockHeight>,
+        repository: DerivedDataRepository,
+        backend: TypesafeBackend,
+        downloader: CompactBlockDownloader,
+        sdkFlags: SdkFlags
+    ): Flow<SyncingResult> =
+        flow {
+            Twig.debug { "Enhancing transaction details for blocks $range" }
+
+            val newTxDataRequests =
+                runCatching {
+                    transactionDataRequests(backend)
+                }.onFailure {
+                    Twig.error(it) { "Failed to get transaction data requests" }
+                }.getOrElse {
+                    emit(
+                        SyncingResult.EnhanceFailed(
+                            range.start,
+                            it as CompactBlockProcessorException.EnhanceTransactionError
+                        )
+                    )
+                    return@flow
+                }
+
+            if (newTxDataRequests.isEmpty()) {
+                Twig.debug { "No new transactions found in $range" }
+            } else {
+                Twig.debug { "Enhancing ${newTxDataRequests.size} transaction(s)!" }
+
+                // If the first transaction has been added
+                // Ideally, we could remove this last reference to the transaction view from the enhancing logic
+                if (newTxDataRequests.size.toLong() == repository.getTransactionCount()) {
+                    Twig.debug { "Encountered the first transaction. This changes the birthday height!" }
+                    emit(SyncingResult.UpdateBirthday)
+                }
+
+                newTxDataRequests.forEach {
+                    Twig.debug { "Transaction data request: $it" }
+
+                    when (it) {
+                        is TransactionDataRequest.EnhancementRequired -> {
+                            val trxEnhanceResult = enhanceTransaction(it, backend, downloader, sdkFlags)
+                            if (trxEnhanceResult is SyncingResult.EnhanceFailed) {
+                                Twig.error(trxEnhanceResult.exception) { "Encountered transaction enhancing error" }
+                                emit(trxEnhanceResult)
+                                // We intentionally do not terminate the batch enhancing here, just reporting it
+                            }
+                        }
+
+                        is TransactionDataRequest.TransactionsInvolvingAddress -> {
+                            val processTaddrTxidsResult =
+                                processTransparentAddressTxids(
+                                    transactionRequest = it,
+                                    downloader = downloader
+                                )
+                            if (processTaddrTxidsResult is SyncingResult.EnhanceFailed) {
+                                Twig.error(processTaddrTxidsResult.exception) {
+                                    "Encountered SpendsFromAddress transactions error"
+                                }
+                                emit(processTaddrTxidsResult)
+                                // We intentionally do not terminate the batch enhancing here, just reporting it
+                            }
+                        }
+                    }
+                }
+            }
+
+            Twig.debug { "Done enhancing transaction details" }
+            emit(SyncingResult.EnhanceSuccess)
+        }
+
+    @Suppress("ReturnCount", "ForbiddenComment", "ComplexCondition")
+    private suspend fun processTransparentAddressTxids(
+        transactionRequest: TransactionDataRequest.TransactionsInvolvingAddress,
+        downloader: CompactBlockDownloader
+    ): SyncingResult {
+        Twig.debug { "Starting to get transparent address transactions ids" }
+
+        when {
+            transactionRequest.endHeight == null -> {
+                // TODO [#1564]: Support empty block range end
+                Twig.debug { "TransactionsInvolvingAddress is missing blockRangeEnd, ignoring the request." }
+                return SyncingResult.EnhanceSuccess
+            }
+
+            transactionRequest.requestAt != null -> {
+                // TODO: [#1757] Support this.
+                Twig.debug { "TransactionsInvolvingAddress has requestAt set, ignoring the unsupported request." }
+                return SyncingResult.EnhanceSuccess
+            }
+
+            transactionRequest.outputStatusFilter == OutputStatusFilter.Unspent -> {
+                // TODO: [#1758] Support the OutputStatusFilter.
+                Twig.debug { "TransactionsInvolvingAddress is unspent, ignoring the unsupported request." }
+                return SyncingResult.EnhanceSuccess
+            }
+        }
+
+        val traceScope = TraceScope("CompactBlockProcessor.processTransparentAddressTxids")
+        val result =
+            try {
+                // Fetching transactions is done with retries to eliminate a bad network condition
+                getTransparentAddressTransactions(
+                    transactionRequest = transactionRequest,
+                    downloader = downloader
+                ).onEach { rawTransactionUnsafe ->
+                    val rawTransaction = RawTransaction.new(rawTransactionUnsafe = rawTransactionUnsafe)
+
+                    // Ignore transactions that don't match the status filter.
+                    if (
+                        (
+                            transactionRequest.txStatusFilter == TransactionStatusFilter.Mined &&
+                                rawTransaction.height == null
+                        ) ||
+                        (
+                            transactionRequest.txStatusFilter == TransactionStatusFilter.Mempool &&
+                                rawTransaction.height != null
+                        )
+                    ) {
+                        return@onEach
+                    }
+
+                    // Decrypting and storing transaction is run just once, since we consider it more stable
+                    Twig.verbose { "Decrypting and storing rawTransactionUnsafe" }
+
+                    decryptSemaphore.withLock {
+                        decryptTransaction(
+                            rawTransaction = RawTransaction.new(rawTransactionUnsafe = rawTransactionUnsafe),
+                        )
+                    }
+                }.onCompletion {
+                    Twig.verbose { "Done Decrypting and storing of all transaction" }
+                }.collect()
+
+                SyncingResult.EnhanceSuccess
+            } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
+                SyncingResult.EnhanceFailed(transactionRequest.startHeight, exception)
+            }
+        traceScope.end()
+        return result
+    }
+
+    @Throws(EnhanceTxDownloadError::class)
+    private suspend fun getTransparentAddressTransactions(
+        transactionRequest: TransactionDataRequest.TransactionsInvolvingAddress,
+        downloader: CompactBlockDownloader,
+    ): Flow<RawTransactionUnsafe> {
+        val traceScope = TraceScope("CompactBlockProcessor.getTransparentAddressTransactions")
+        var resultFlow: Flow<RawTransactionUnsafe>? = null
+
+        retryUpToAndThrow(
+            retries = TRANSACTION_FETCH_RETRIES,
+            exceptionWrapper = { EnhanceTxDownloadError(it) }
+        ) { failedAttempts ->
+            if (failedAttempts == 0) {
+                Twig.debug { "Starting to get transactions for tAddr: ${transactionRequest.address}" }
+            } else {
+                Twig.warn {
+                    "Retrying to fetch transactions for tAddr: ${transactionRequest.address}" +
+                        " after $failedAttempts failure(s)..."
+                }
+            }
+
+            // We can safely assert non-nullability here as we check in the function caller
+            // - 1 for the end height because the GRPC request is end-inclusive whereas we use end-exclusive
+            // ranges everywhere in the Rust code
+            val requestedRange = transactionRequest.startHeight..(transactionRequest.endHeight!! - 1)
+            resultFlow =
+                downloader.getTAddressTransactions(
+                    transparentAddress = transactionRequest.address,
+                    blockHeightRange = requestedRange,
+                    serviceMode = ServiceMode.Direct
+                )
+        }
+        traceScope.end()
+        // The flow is initialized or the EnhanceTxDownloadError is thrown after all the attempts failed
+        return resultFlow!!
+    }
+
+    @Suppress("LongMethod")
+    private suspend fun enhanceTransaction(
+        transactionRequest: TransactionDataRequest.EnhancementRequired,
+        backend: TypesafeBackend,
+        downloader: CompactBlockDownloader,
+        sdkFlags: SdkFlags
+    ): SyncingResult {
+        Twig.debug { "Starting enhancing transaction: txid: ${transactionRequest.txIdString()}" }
+
+        val traceScope = TraceScope("CompactBlockProcessor.enhanceTransaction")
+        val result =
+            try {
+                // Fetching transaction is done with retries to eliminate a bad network condition
+                val rawTransactionUnsafe =
+                    fetchTransaction(
+                        transactionRequest = transactionRequest,
+                        downloader = downloader,
+                        sdkFlags = sdkFlags
+                    )
+
+                Twig.debug { "Transaction fetched: $rawTransactionUnsafe" }
+
+                // We need to distinct between the two possible states of [transactionRequest]
+                when (transactionRequest) {
+                    is TransactionDataRequest.GetStatus -> {
+                        Twig.debug {
+                            "Resolving TransactionDataRequest.GetStatus by setting status of " +
+                                "transaction: txid: ${transactionRequest.txIdString()}"
+                        }
+                        val status =
+                            rawTransactionUnsafe?.toTransactionStatus()
+                                ?: TransactionStatus.TxidNotRecognized
+                        setTransactionStatus(
+                            transactionRawId = transactionRequest.txid,
+                            status = status,
+                            backend = backend
+                        )
+                    }
+
+                    is TransactionDataRequest.Enhancement -> {
+                        if (rawTransactionUnsafe == null) {
+                            Twig.debug {
+                                "Resolving TransactionDataRequest.Enhancement by setting status of " +
+                                    "transaction. Txid not recognized: ${transactionRequest.txIdString()}"
+                            }
+                            setTransactionStatus(
+                                transactionRawId = transactionRequest.txid,
+                                status = TransactionStatus.TxidNotRecognized,
+                                backend = backend
+                            )
+                        } else {
+                            Twig.debug {
+                                "Resolving TransactionDataRequest.Enhancement by decrypting and storing " +
+                                    "transaction: txid: ${transactionRequest.txIdString()}"
+                            }
+
+                            decryptSemaphore.withLock {
+                                decryptTransaction(
+                                    rawTransaction = RawTransaction.new(rawTransactionUnsafe = rawTransactionUnsafe),
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Twig.debug { "Done enhancing transaction: txid: ${transactionRequest.txIdString()}" }
+                SyncingResult.EnhanceSuccess
+            } catch (exception: CompactBlockProcessorException.EnhanceTransactionError) {
+                SyncingResult.EnhanceFailed(null, exception)
+            }
+        traceScope.end()
+        return result
+    }
+
+    /**
+     * Fetch the transaction complete data by [TransactionDataRequest.EnhancementRequired.txid] from Light Wallet
+     * server. This function handles [Response.Failure.Server.NotFound] by returning null.
+     *
+     * @return [RawTransactionUnsafe] if the transaction has been found, null otherwise.
+     *
+     * @throws CompactBlockProcessorException.EnhanceTransactionError in case of any other error
+     */
+    @Throws(EnhanceTxDownloadError::class)
+    private suspend fun fetchTransaction(
+        transactionRequest: TransactionDataRequest.EnhancementRequired,
+        downloader: CompactBlockDownloader,
+        sdkFlags: SdkFlags
+    ): RawTransactionUnsafe? {
+        var transactionResult: RawTransactionUnsafe? = null
+        val traceScope = TraceScope("CompactBlockProcessor.fetchTransaction")
+
+        retryUpToAndThrow(TRANSACTION_FETCH_RETRIES) { failedAttempts ->
+            if (failedAttempts == 0) {
+                Twig.debug { "Starting to fetch transaction: txid: ${transactionRequest.txIdString()}" }
+            } else {
+                Twig.warn {
+                    "Retrying to fetch transaction: txid: ${transactionRequest.txIdString()}" +
+                        " after $failedAttempts failure(s)..."
+                }
+            }
+
+            transactionResult =
+                when (
+                    val response =
+                        downloader.fetchTransaction(
+                            transactionRequest.txid,
+                            sdkFlags ifTor ServiceMode.Group("fetch-${transactionRequest.txIdString()}")
+                        )
+                ) {
+                    is Response.Success -> response.result
+                    is Response.Failure ->
+                        when {
+                            response is Response.Failure.Server.NotFound -> null
+                            response.description.orEmpty().contains(NOT_FOUND_MESSAGE_WORKAROUND, true) ->
+                                null
+
+                            response.description.orEmpty().contains(NOT_FOUND_MESSAGE_WORKAROUND_2, true) ->
+                                null
+
+                            else -> throw EnhanceTxDownloadError(response.toThrowable())
+                        }
+                }
+        }
+        traceScope.end()
+        return transactionResult
+    }
+
+    @Throws(EnhanceTxDecryptError::class)
+    private suspend fun decryptTransaction(rawTransaction: RawTransaction) {
+        val traceScope = TraceScope("CompactBlockProcessor.decryptTransaction")
+        runCatching {
+            backend.decryptAndStoreTransaction(rawTransaction.data, rawTransaction.height)
+        }.onFailure {
+            traceScope.end()
+            throw EnhanceTxDecryptError(rawTransaction.height, it)
+        }
+        traceScope.end()
+    }
+
+    @Throws(EnhanceTxDataRequestsError::class)
+    private suspend fun transactionDataRequests(backend: TypesafeBackend): List<TransactionDataRequest> {
+        val traceScope = TraceScope("CompactBlockProcessor.transactionDataRequests")
+        val result =
+            runCatching {
+                backend.transactionDataRequests()
+            }.getOrElse {
+                traceScope.end()
+                throw EnhanceTxDataRequestsError(it)
+            }
+        traceScope.end()
+        return result
+    }
+
+    @Throws(EnhanceTxSetStatusError::class)
+    private suspend fun setTransactionStatus(
+        transactionRawId: ByteArray,
+        status: TransactionStatus,
+        backend: TypesafeBackend,
+    ) {
+        val traceScope = TraceScope("CompactBlockProcessor.setTransactionStatus")
+        runCatching {
+            backend.setTransactionStatus(transactionRawId, status)
+        }.onFailure {
+            traceScope.end()
+            throw EnhanceTxSetStatusError(it)
+        }
+        traceScope.end()
+    }
+
+    /**
+     * Get the height of the last block that was scanned by this processor.
+     *
+     * @return the last scanned height reported by the repository.
+     */
+    @VisibleForTesting
+    internal suspend fun getMaxScannedHeight(backend: TypesafeBackend): GetMaxScannedHeightResult =
+        runCatching {
+            backend.getMaxScannedHeight()
+        }.onSuccess {
+            Twig.verbose { "Successfully called getMaxScannedHeight with result: $it" }
+        }.onFailure {
+            Twig.error { "Failed to call getMaxScannedHeight with result: $it" }
+        }.fold(
+            onSuccess = {
+                if (it == null) {
+                    GetMaxScannedHeightResult.None
+                } else {
+                    GetMaxScannedHeightResult.Success(it)
+                }
+            },
+            onFailure = {
+                GetMaxScannedHeightResult.Failure(it)
+            }
+        )
+
+    /**
      * Sets new values of ProcessorInfo and network height corresponding to the provided data for this
      * [CompactBlockProcessor].
      *
@@ -2414,14 +2462,14 @@ class CompactBlockProcessor internal constructor(
      * wallet birthday.
      */
     private fun setFullyScannedHeight(height: BlockHeight) {
-        _fullyScannedHeight.value = height
+        _fullyScannedHeight.update { height }
     }
 
     /**
      * Sets the state of this [CompactBlockProcessor].
      */
     private suspend fun setState(newState: State) {
-        _state.value = newState
+        _state.update { newState }
     }
 
     private suspend fun handleChainError(errorHeight: BlockHeight?) {

@@ -256,6 +256,11 @@ open class CompactBlockDownloader private constructor(
             serviceMode = serviceMode
         )
 
+    /**
+     * @return a flow of transactions in the mempool.
+     */
+    suspend fun observeMempool(serviceMode: ServiceMode) = lightWalletClient.observeMempool(serviceMode)
+
     companion object {
         private const val GET_SERVER_INFO_RETRIES = 6
     }
