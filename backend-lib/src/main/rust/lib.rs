@@ -829,7 +829,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_listTrans
         let db_data = wallet_db(env, network, db_data)?;
         let account = account_id_from_jni(env, account_uuid)?;
 
-        match db_data.get_transparent_receivers(account, true, true) {
+        // Zashi does not support standalone keys, so we do not request standalone receivers.
+        match db_data.get_transparent_receivers(account, true, false) {
             Ok(receivers) => {
                 let transparent_receivers = receivers
                     .keys()
@@ -2044,8 +2045,9 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
                             Err(anyhow!("Transparent receiver is not a transparent address"))
                         }
                         Address::Transparent(addr) => {
+                            // Zashi does not support standalone keys, so we do not request standalone receivers.
                             if db_data
-                                .get_transparent_receivers(account_uuid, true, true)?
+                                .get_transparent_receivers(account_uuid, true, false)?
                                 .contains_key(&addr)
                             {
                                 Ok(Some(addr))
