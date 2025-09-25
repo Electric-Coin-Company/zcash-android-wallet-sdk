@@ -90,6 +90,7 @@ use zcash_protocol::{
     value::{ZatBalance, Zatoshis},
     ShieldedProtocol,
 };
+use zcash_script::script;
 use zip32::{
     fingerprint::SeedFingerprint, registered::PathElement, ChainCode, ChildIndex, DiversifierIndex,
 };
@@ -1800,7 +1801,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_putUtxo<'
         let network = parse_network(network_id as u32)?;
         let txid = parse_txid(env, txid_bytes)?;
 
-        let script_pubkey = Script(utils::java_bytes_to_rust(env, &script)?);
+        let script_pubkey = Script(script::Code(utils::java_bytes_to_rust(env, &script)?));
         let mut db_data = wallet_db(env, network, db_data)?;
 
         let output = WalletTransparentOutput::from_parts(
