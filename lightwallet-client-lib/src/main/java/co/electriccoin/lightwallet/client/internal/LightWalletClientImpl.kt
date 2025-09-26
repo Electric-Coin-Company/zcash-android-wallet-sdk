@@ -21,11 +21,19 @@ import io.grpc.CallOptions
 import io.grpc.Channel
 import io.grpc.ConnectivityState
 import io.grpc.ManagedChannel
+import io.grpc.Status
 import io.grpc.StatusException
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.retryWhen
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -47,6 +55,11 @@ internal class LightWalletClientImpl(
     private val streamingRequestTimeout: Duration = 90.seconds
 ) : LightWalletClient {
     private var channel = channelFactory.newChannel(lightWalletEndpoint)
+
+    // These make the LightWalletClientImpl not thread safe. In the long-term, we should
+    // consider making it thread safe.
+    private var stateCount = 0
+    private var state: ConnectivityState? = null
 
     override fun getBlockRange(heightRange: ClosedRange<BlockHeightUnsafe>): Flow<Response<CompactBlockUnsafe>> {
         require(!heightRange.isEmpty()) {
@@ -260,6 +273,46 @@ internal class LightWalletClientImpl(
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
 
+    override fun observeMempool(): Flow<Response<RawTransactionUnsafe>> =
+        channelFlow {
+            launch {
+                while (true) {
+                    flow {
+                        emitAll(
+                            requireChannel()
+                                .createStub(streamingRequestTimeout)
+                                .getMempoolStream(Service.Empty.newBuilder().build())
+                                .map {
+                                    Response.Success(RawTransactionUnsafe.new(it))
+                                }
+                        )
+                    }.retryWhen { cause, attempt ->
+                        // handle EOF
+                        if (cause is StatusException && cause.status.code == Status.Code.INTERNAL) {
+                            delay(1.seconds)
+                            true
+                        } else {
+                            false
+                        }
+                    }.retryWhen { cause, attempt ->
+                        // handle other exceptions with backoff
+                        if (attempt <= 1) {
+                            delay(1.seconds)
+                        } else {
+                            delay(30.seconds)
+                        }
+                        true
+                    }.collect { send(it) }
+
+                    delay(1.seconds) // collection termination on empty mempool
+                }
+            }
+
+            awaitClose {
+                // do nothing
+            }
+        }
+
     private fun shutdown() {
         channel.shutdown()
     }
@@ -268,11 +321,6 @@ internal class LightWalletClientImpl(
         channel.shutdown()
         channel = channelFactory.newChannel(lightWalletEndpoint)
     }
-
-    // These make the LightWalletClientImpl not thread safe. In the long-term, we should
-    // consider making it thread safe.
-    private var stateCount = 0
-    private var state: ConnectivityState? = null
 
     private fun requireChannel(): ManagedChannel {
         state =

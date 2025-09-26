@@ -8,6 +8,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `RustBackend.decryptAndStoreTransaction` now returns transaction ID
+- Mempool is now being observed in order to store the transactions locally
 
 ### Fixed
 - Filtering transactions by memo now returns more than one item

@@ -111,6 +111,16 @@ class CombinedWalletClientImpl private constructor(
         }
     }
 
+    override suspend fun observeMempool(
+        serviceMode: ServiceMode
+    ): Flow<Response<RawTransactionUnsafe>> {
+        require(serviceMode == ServiceMode.Direct)
+        return executeAsFlow(serviceMode) {
+            require(this is LightWalletClient)
+            observeMempool()
+        }
+    }
+
     override fun reconnect() = lightWalletClient.reconnect()
 
     private suspend inline fun <T> executeAsFlow(

@@ -659,6 +659,10 @@ class SdkSynchronizer private constructor(
             processor.start()
             Twig.debug { "Completed starting synchronizer" }
         }
+
+        launch {
+            processor.startObservingMempool()
+        }
     }
 
     @Suppress("UNUSED_PARAMETER")

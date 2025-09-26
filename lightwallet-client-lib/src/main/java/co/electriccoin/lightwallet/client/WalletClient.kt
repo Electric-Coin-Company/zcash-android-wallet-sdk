@@ -72,6 +72,11 @@ interface WalletClient :
     ): Flow<Response<SubtreeRootUnsafe>>
 
     /**
+     * @return a stream of raw transactions in mempool.
+     */
+    fun observeMempool(): Flow<Response<RawTransactionUnsafe>>
+
+    /**
      * Reconnect to the same or a different server. This is useful when the connection is
      * unrecoverable. That might be time to switch to a mirror or just reconnect.
      */
