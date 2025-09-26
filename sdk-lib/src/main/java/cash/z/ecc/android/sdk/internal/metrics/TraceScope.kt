@@ -36,3 +36,12 @@ class TraceScope {
         cookie = null
     }
 }
+
+inline fun <T> withTraceScope(methodName: String, block: () -> T): T {
+    val scope = TraceScope(methodName)
+    return try {
+        block()
+    } finally {
+        scope.end()
+    }
+}

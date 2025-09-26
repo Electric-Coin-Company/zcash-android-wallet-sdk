@@ -41,6 +41,7 @@ import cash.z.ecc.android.sdk.internal.ext.retryUpToAndThrow
 import cash.z.ecc.android.sdk.internal.ext.retryWithBackoff
 import cash.z.ecc.android.sdk.internal.ext.toHexReversed
 import cash.z.ecc.android.sdk.internal.metrics.TraceScope
+import cash.z.ecc.android.sdk.internal.metrics.withTraceScope
 import cash.z.ecc.android.sdk.internal.model.BlockBatch
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.OutputStatusFilter
@@ -427,9 +428,8 @@ class CompactBlockProcessor internal constructor(
                         decryptSemaphore.withLock {
                             try {
                                 val oldTransactions = repository.allTransactions.first()
-                                decryptTransaction(it)
-                                val newTransactions = repository.allTransactions.first()
-                                if (oldTransactions != newTransactions) {
+                                val decryptedTxId = decryptTransaction(it)
+                                if (oldTransactions.none { overview -> overview.rawId == decryptedTxId }) {
                                     checkTransactions()
                                 }
                             } catch (_: EnhanceTxDecryptError) {
@@ -2334,18 +2334,14 @@ class CompactBlockProcessor internal constructor(
     }
 
     @Throws(EnhanceTxDecryptError::class)
-    private suspend fun decryptTransaction(rawTransaction: RawTransaction): FirstClassByteArray {
-        val traceScope = TraceScope("CompactBlockProcessor.decryptTransaction")
-        val txid =
+    private suspend fun decryptTransaction(rawTransaction: RawTransaction): FirstClassByteArray =
+        withTraceScope("CompactBlockProcessor.decryptTransaction") {
             runCatching {
                 backend.decryptAndStoreTransaction(rawTransaction.data, rawTransaction.height)
             }.getOrElse {
-                traceScope.end()
                 throw EnhanceTxDecryptError(rawTransaction.height, it)
             }
-        traceScope.end()
-        return txid
-    }
+        }
 
     @Throws(EnhanceTxDataRequestsError::class)
     private suspend fun transactionDataRequests(backend: TypesafeBackend): List<TransactionDataRequest> {
