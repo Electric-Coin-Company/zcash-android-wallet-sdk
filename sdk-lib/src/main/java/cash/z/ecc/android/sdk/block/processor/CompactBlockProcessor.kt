@@ -424,12 +424,12 @@ class CompactBlockProcessor internal constructor(
                     .observeMempool(ServiceMode.Direct)
                     .filterIsInstance<Response.Success<RawTransactionUnsafe>>()
                     .map { RawTransaction.new(it.result) }
-                    .collect {
+                    .collect { mempoolTransaction ->
                         decryptSemaphore.withLock {
                             try {
-                                val oldTransactions = repository.allTransactions.first()
-                                val decryptedTxId = decryptTransaction(it)
-                                if (oldTransactions.none { overview -> overview.rawId == decryptedTxId }) {
+                                val decryptedTxId = decryptTransaction(mempoolTransaction)
+                                val newTransactions = repository.allTransactions.first().map { it.rawId }
+                                if (newTransactions.any { it == decryptedTxId }) {
                                     checkTransactions()
                                 }
                             } catch (_: EnhanceTxDecryptError) {
