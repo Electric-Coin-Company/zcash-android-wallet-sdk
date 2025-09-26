@@ -260,7 +260,7 @@ internal interface TypesafeBackend {
     suspend fun decryptAndStoreTransaction(
         tx: ByteArray,
         minedHeight: BlockHeight?
-    )
+    ): FirstClassByteArray
 
     suspend fun setTransactionStatus(
         txId: ByteArray,

@@ -1835,7 +1835,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_decryptAn
     tx: JByteArray<'local>,
     mined_height: jlong,
     network_id: jint,
-) {
+) -> jbyteArray {
     let res = catch_unwind(&mut env, |env| {
         let _span = tracing::info_span!("RustBackend.decryptAndStoreTransaction").entered();
         let network = parse_network(network_id as u32)?;
@@ -1851,10 +1851,12 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_decryptAn
         let mined_height = BlockHeight::try_from(mined_height).ok();
 
         decrypt_and_store_transaction(&network, &mut db_data, &tx, mined_height)
-            .map_err(|e| anyhow!("Error while decrypting transaction: {}", e))
+            .map_err(|e| anyhow!("Error while decrypting transaction: {}", e))?;
+
+        Ok(utils::rust_bytes_to_java(env, tx.txid().as_ref())?.into_raw())
     });
 
-    unwrap_exc_or(&mut env, res, ())
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
 #[unsafe(no_mangle)]

@@ -144,10 +144,7 @@ internal class FakeRustBackend(
         error("Intentionally not implemented yet.")
     }
 
-    override suspend fun decryptAndStoreTransaction(
-        tx: ByteArray,
-        minedHeight: Long?
-    ) {
+    override suspend fun decryptAndStoreTransaction(tx: ByteArray, minedHeight: Long?): ByteArray {
         error("Intentionally not implemented yet.")
     }
 
