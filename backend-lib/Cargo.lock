@@ -528,6 +528,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bounded-vec"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09dc0086e469182132244e9b8d313a0742e1132da43a08c24b9dd3c18e0faf3a"
+dependencies = [
+ "thiserror 2.0.11",
+]
+
+[[package]]
 name = "bounded-vec-deque"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2841,9 +2850,9 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pczt"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fde78e74e05b3f9c596900d980e6eacb2ab9cf321414c8266870817993c9dd04"
+checksum = "916848a865f588c1de0f4e9c1b568efe514f33ce77c0cb9f4a4c41e80d1553ba"
 dependencies = [
  "blake2b_simd",
  "bls12_381",
@@ -2864,6 +2873,7 @@ dependencies = [
  "zcash_note_encryption",
  "zcash_primitives",
  "zcash_protocol",
+ "zcash_script",
  "zcash_transparent",
 ]
 
@@ -6010,15 +6020,16 @@ dependencies = [
  "zcash_primitives",
  "zcash_proofs",
  "zcash_protocol",
+ "zcash_script",
  "zcash_transparent",
  "zip32",
 ]
 
 [[package]]
 name = "zcash_address"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c020e943fc2df6303d22b2bcbb3c0fd25f9d2419cbec508d13e66dcd77e354a6"
+checksum = "7c984ae01367a4a3d20e9d34ae4e4cc0dca004b22d9a10a51eec43f43934612e"
 dependencies = [
  "bech32",
  "bs58",
@@ -6030,9 +6041,9 @@ dependencies = [
 
 [[package]]
 name = "zcash_client_backend"
-version = "0.19.1"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bed6bdec743667d0c3b69fa46aaebcce28a3897ab7317165cd1b719c59a732a0"
+checksum = "2f8837688e6ac8e4abbbc8495a10d5e37f49686b8df005ecb434b0001233f7ce"
 dependencies = [
  "arti-client",
  "base64",
@@ -6046,6 +6057,7 @@ dependencies = [
  "dynosaur",
  "fs-mistrust",
  "futures-util",
+ "getset",
  "group",
  "hex",
  "http-body-util",
@@ -6065,6 +6077,7 @@ dependencies = [
  "rayon",
  "rust_decimal",
  "sapling-crypto",
+ "secp256k1",
  "secrecy",
  "serde",
  "serde_json",
@@ -6088,6 +6101,7 @@ dependencies = [
  "zcash_note_encryption",
  "zcash_primitives",
  "zcash_protocol",
+ "zcash_script",
  "zcash_transparent",
  "zip32",
  "zip321",
@@ -6095,9 +6109,9 @@ dependencies = [
 
 [[package]]
 name = "zcash_client_sqlite"
-version = "0.17.3"
+version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0c74a066ec88876e49a37fed55b8329bf115760b6826b9f587bf0266397d4fe"
+checksum = "1aabbd60eb922ef962e34c922a9fc9d105e78ff3a1fe97c1ff20528691907da5"
 dependencies = [
  "bip32",
  "bitflags 2.8.0",
@@ -6105,6 +6119,7 @@ dependencies = [
  "byteorder",
  "document-features",
  "group",
+ "hex",
  "incrementalmerkletree",
  "jubjub",
  "maybe-rayon",
@@ -6119,6 +6134,7 @@ dependencies = [
  "sapling-crypto",
  "schemerz",
  "schemerz-rusqlite",
+ "secp256k1",
  "secrecy",
  "serde",
  "shardtree",
@@ -6133,6 +6149,7 @@ dependencies = [
  "zcash_keys",
  "zcash_primitives",
  "zcash_protocol",
+ "zcash_script",
  "zcash_transparent",
  "zip32",
 ]
@@ -6149,9 +6166,9 @@ dependencies = [
 
 [[package]]
 name = "zcash_keys"
-version = "0.9.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20664d96a0e4de98f41b6b7a3b40a527e5f5428ca7f34758a084e60778d3b824"
+checksum = "650436433a6636ba41175a7537c44baddf8b09a38bf05c4e066b260a39729117"
 dependencies = [
  "bech32",
  "bip32",
@@ -6192,9 +6209,9 @@ dependencies = [
 
 [[package]]
 name = "zcash_primitives"
-version = "0.23.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0ff99bb0d3aa7558bbaf51a3d4c072733afe364b45df9b3cc31118dcb644a51"
+checksum = "08e60678c8119d878276c9b4f605f9dbe1f0c1b7ab69925f4d694c404b1cefdc"
 dependencies = [
  "bip32",
  "blake2b_simd",
@@ -6227,6 +6244,7 @@ dependencies = [
  "zcash_encoding",
  "zcash_note_encryption",
  "zcash_protocol",
+ "zcash_script",
  "zcash_spec",
  "zcash_transparent",
  "zip32",
@@ -6234,9 +6252,9 @@ dependencies = [
 
 [[package]]
 name = "zcash_proofs"
-version = "0.23.0"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "655f14667be58b93c4105cddb1b39a9ab94c862c0fff83b42fba55e85ca9159d"
+checksum = "4202009c0e54662b8218e9161e5129e6875d58387d6080495107018c10af599f"
 dependencies = [
  "bellman",
  "blake2b_simd",
@@ -6257,14 +6275,29 @@ dependencies = [
 
 [[package]]
 name = "zcash_protocol"
-version = "0.5.4"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42344f5735237d6e0eedd3680f1c92f64e9c4144045d7b5c82f4867c2cbc0a02"
+checksum = "12cc76dd1f77be473e5829dbd34890bcd36d08b1e8dde2da0aea355c812a8f28"
 dependencies = [
  "core2",
  "document-features",
  "hex",
  "memuse",
+]
+
+[[package]]
+name = "zcash_script"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c1d06ec5990ad2c51c3052fd41f87aa5ccab92d02d1ab5173712c2e37c24658"
+dependencies = [
+ "bitflags 2.8.0",
+ "bounded-vec",
+ "ripemd 0.1.3",
+ "secp256k1",
+ "sha1",
+ "sha2 0.10.8",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -6278,9 +6311,9 @@ dependencies = [
 
 [[package]]
 name = "zcash_transparent"
-version = "0.3.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b1302cf726e88326c2c6e9bbd2634064bb344df7740e0b6bacf2245abd1eebe"
+checksum = "5ed1d3b5d7bdb547689bf78a2ca134455cf9d813956c1c734623fdb66446d0c8"
 dependencies = [
  "bip32",
  "blake2b_simd",
@@ -6295,6 +6328,7 @@ dependencies = [
  "zcash_address",
  "zcash_encoding",
  "zcash_protocol",
+ "zcash_script",
  "zcash_spec",
  "zip32",
 ]
@@ -6369,9 +6403,9 @@ dependencies = [
 
 [[package]]
 name = "zip321"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41f92f290c86ae1bdcdc4c41ce67fdabf8cd2a75bc89be8235cd5b1354efae06"
+checksum = "32826502419cb1e87d6c455b1f326cc83123aa0f0f8bcb6050c2cce7066e0c1a"
 dependencies = [
  "base64",
  "nom",

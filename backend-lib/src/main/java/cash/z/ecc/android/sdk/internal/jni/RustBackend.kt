@@ -360,14 +360,15 @@ class RustBackend private constructor(
     override suspend fun decryptAndStoreTransaction(
         tx: ByteArray,
         minedHeight: Long?
-    ) = withContext(SdkDispatchers.DATABASE_IO) {
-        decryptAndStoreTransaction(
-            dataDbFile.absolutePath,
-            tx,
-            minedHeight = minedHeight ?: -1,
-            networkId = networkId
-        )
-    }
+    ): ByteArray =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            decryptAndStoreTransaction(
+                dataDbFile.absolutePath,
+                tx,
+                minedHeight = minedHeight ?: -1,
+                networkId = networkId
+            )
+        }
 
     override suspend fun proposeTransferFromUri(
         accountUuid: ByteArray,
@@ -806,7 +807,7 @@ class RustBackend private constructor(
             tx: ByteArray,
             minedHeight: Long,
             networkId: Int
-        )
+        ): ByteArray
 
         @JvmStatic
         private external fun setTransactionStatus(

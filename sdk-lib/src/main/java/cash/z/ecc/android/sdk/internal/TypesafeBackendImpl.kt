@@ -327,8 +327,10 @@ internal class TypesafeBackendImpl(
     override suspend fun decryptAndStoreTransaction(
         tx: ByteArray,
         minedHeight: BlockHeight?
-    ) = backend
-        .decryptAndStoreTransaction(tx, minedHeight?.value)
+    ): FirstClassByteArray =
+        FirstClassByteArray(
+            backend.decryptAndStoreTransaction(tx, minedHeight?.value)
+        )
 
     override suspend fun setTransactionStatus(
         txId: ByteArray,
