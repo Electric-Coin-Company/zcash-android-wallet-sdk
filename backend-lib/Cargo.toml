@@ -74,6 +74,16 @@ rust_decimal = { version = "1", default-features = false, features = ["c-repr"] 
 # - The "static" feature is required for the "compression" default feature of arti-client.
 xz2 = { version = "0.1", features = ["static"] }
 
+[patch.crates-io]
+pczt = { git = "https://github.com/zcash/librustzcash.git", rev = "88a6423088d84fb01e2ed24b59dae1519e8de94c" }
+transparent = { package = "zcash_transparent", git = "https://github.com/zcash/librustzcash", rev = "88a6423088d84fb01e2ed24b59dae1519e8de94c" }
+zcash_address = { git = "https://github.com/zcash/librustzcash", rev = "88a6423088d84fb01e2ed24b59dae1519e8de94c" }
+zcash_client_backend = { git = "https://github.com/zcash/librustzcash", rev = "88a6423088d84fb01e2ed24b59dae1519e8de94c" }
+zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash", rev = "88a6423088d84fb01e2ed24b59dae1519e8de94c" }
+zcash_primitives = { git = "https://github.com/zcash/librustzcash", rev = "88a6423088d84fb01e2ed24b59dae1519e8de94c" }
+zcash_proofs = { git = "https://github.com/zcash/librustzcash", rev = "88a6423088d84fb01e2ed24b59dae1519e8de94c" }
+zcash_protocol = { git = "https://github.com/zcash/librustzcash", rev = "88a6423088d84fb01e2ed24b59dae1519e8de94c" }
+
 ## Uncomment this to test librustzcash changes locally
 #[patch.crates-io]
 #pczt = { package = "pczt", path = '../../clones/librustzcash/pczt' }
