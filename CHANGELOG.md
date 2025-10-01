@@ -6,6 +6,12 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.5] - 2025-10-01
+
+### Fixed
+- Fully transparent transactions that are added to the wallet as a consequence of mempool scanning are subsequently 
+checked to determine when they are mined into a block.
+
 ## [2.3.4] - 2025-09-29
 
 ### Added
