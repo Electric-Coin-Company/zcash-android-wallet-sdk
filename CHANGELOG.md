@@ -6,6 +6,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.6] - 2025-10-02
+
+### Fixed
+- Updated librustzcash crates to released version
+
 ## [2.3.5] - 2025-10-01
 
 ### Fixed
