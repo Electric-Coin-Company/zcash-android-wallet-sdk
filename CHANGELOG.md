@@ -6,6 +6,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Updated to `zcash_client_sqlite-0.18.4` to fix a problem with balance calculation
+  related to detection of spends of outputs received by the wallet's ephemeral
+  addresses.
+
 ## [2.3.6] - 2025-10-02
 
 ### Fixed
