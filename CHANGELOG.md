@@ -6,6 +6,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Updated to `zcash_client_sqlite-0.18.4` to fix a problem with balance calculation
+  related to detection of spends of outputs received by the wallet's ephemeral
+  addresses.
+
 ## [2.3.6] - 2025-10-02
 
 ### Fixed
@@ -14,7 +19,7 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.3.5] - 2025-10-01
 
 ### Fixed
-- Fully transparent transactions that are added to the wallet as a consequence of mempool scanning are subsequently 
+- Fully transparent transactions that are added to the wallet as a consequence of mempool scanning are subsequently
 checked to determine when they are mined into a block.
 
 ## [2.3.4] - 2025-09-29
@@ -53,7 +58,7 @@ checked to determine when they are mined into a block.
 - [WalletCoordinator] now takes [isTorEnabled] as a constructor parameter.
   - When set to `true`, lightwalletd RPC queries will be made over Tor (where possible and beneficial).
   - When set to `false` or `null`, lightwalletd RPC queries will always be made directly to the server.
-- [Synchronizer] now exposes [initializationError] property containing synchronizer errors that happened during 
+- [Synchronizer] now exposes [initializationError] property containing synchronizer errors that happened during
   synchronizer init
 
 ### Fixed
@@ -70,8 +75,8 @@ checked to determine when they are mined into a block.
 - FFI 0.17.0 introduces retry logic for Tor, significantly improving the reliability of currency conversion fetches.
 
 ### Changed
-- Added a `ServiceOption` parameter for functions `WalletClient.getServerInfo`, `WalletClient.getLatestBlockHeight`, 
-  `WalletClient.fetchTransaction`, `WalletClient.submitTransaction` and `WalletClient.getTreeState` to add the 
+- Added a `ServiceOption` parameter for functions `WalletClient.getServerInfo`, `WalletClient.getLatestBlockHeight`,
+  `WalletClient.fetchTransaction`, `WalletClient.submitTransaction` and `WalletClient.getTreeState` to add the
   option to execute over Tor. Custom lightwalletd servers over VPNs like Tailscape might stop working when using Tor.
 - `Synchronizer.getFastestServers` function signature changed and does not require `Context` parameter anymore
 
@@ -79,15 +84,15 @@ checked to determine when they are mined into a block.
 
 ### Added
 - `Synchronizer.getCustomUnifiedAddress` allows the caller to obtain a newly-generated
-  unified address with user-specified `UnifiedAddressRequest` of type `P2PKH`, `Sapling` and `Orchard` supporting 
+  unified address with user-specified `UnifiedAddressRequest` of type `P2PKH`, `Sapling` and `Orchard` supporting
   the ability to combine these using an infix `and` function.
 
 ## [2.2.12] - 2025-04-28
 
 ### Added
-- `Synchronizer.areFundsSpendable` that indicates whether are the shielded wallet balances spendable or not during 
+- `Synchronizer.areFundsSpendable` that indicates whether are the shielded wallet balances spendable or not during
   the block synchronization process.
-- `SdkSynchronizer.estimateBirthdayHeight(date: Date)` has been added to get an estimated height for a given date, 
+- `SdkSynchronizer.estimateBirthdayHeight(date: Date)` has been added to get an estimated height for a given date,
   typically used for estimating birthday.
 
 ### Changed
@@ -108,7 +113,7 @@ checked to determine when they are mined into a block.
 ## [2.2.9] - 2025-03-25
 
 ### Fixed
-- The note commitment tree bug has been resolved using a new internal `Backend.fixWitnesses()` API 
+- The note commitment tree bug has been resolved using a new internal `Backend.fixWitnesses()` API
 
 ### Changed
 - Dependency update:
@@ -119,7 +124,7 @@ checked to determine when they are mined into a block.
   - Other dependencies update
 - Migrated to `zcash_client_backend 0.18.0`, `zcash_client_sqlite 0.16.0`
 - Added support for gap-limit-based discovery of transparent wallet addresses.
-- The internal `fetch-utxos` logic is now triggered only in every `init` and `complete` block sync phases, and it 
+- The internal `fetch-utxos` logic is now triggered only in every `init` and `complete` block sync phases, and it
   fetches UTXOs from height 0 to support the Ledger funds rescue requirement.
 - Checkpoints update
 
@@ -132,16 +137,16 @@ checked to determine when they are mined into a block.
 - `Synchronizer.getTransactionsByMemoSubstring()` has been added
 - `Synchronizer.redactPcztForSigner`
 - `Synchronizer.pcztRequiresSaplingProofs`
-- `TransactionId` object has been added and used instead of `FirstClassByteArray` in `TransactionOverview` and 
+- `TransactionId` object has been added and used instead of `FirstClassByteArray` in `TransactionOverview` and
   `PendingTransaction` model classes
-- `TransactionOverview.totalSpent` and `TransactionOverview.totalReceived` properties added to provide more 
+- `TransactionOverview.totalSpent` and `TransactionOverview.totalReceived` properties added to provide more
   information about shielding transaction
 
 ### Changed
 - Migrated to Rust 1.84.1.
-- `Synchronizer.getTransactions(accountUuid)` and `Synchronizer.transactions` now internally fill in 
-  `TransactionOverview.blockTimeEpochSeconds` based on the related block time 
-- `Synchronizer.transactions` has been renamed to `Synchronizer.allTransactions` to emphasize the fact the API 
+- `Synchronizer.getTransactions(accountUuid)` and `Synchronizer.transactions` now internally fill in
+  `TransactionOverview.blockTimeEpochSeconds` based on the related block time
+- `Synchronizer.transactions` has been renamed to `Synchronizer.allTransactions` to emphasize the fact the API
   returns transactions for all the wallet accounts
 - `Synchronizer.getRecipients` now returns both address and an account existing in database
 
@@ -150,22 +155,22 @@ checked to determine when they are mined into a block.
 ### Added
 - `Synchronizer.importAccountByUfvk()` has been added
 - `Synchronizer.getAccounts()` returning all the created or imported accounts. See the documentation in `Account`.
-- `Synchronizer.walletBalances: StateFlow<Map<AccountUuid, AccountBalance>?>` that is replacement for the removed 
+- `Synchronizer.walletBalances: StateFlow<Map<AccountUuid, AccountBalance>?>` that is replacement for the removed
   `orchardBalances`, `saplingBalances`, and `transparentBalance`
 - `getTransactions(accountUuid: AccountUuid)` to get transactions belonging to the given account
 - `Synchronizer.createPcztFromProposal`
 - `Synchronizer.addProofsToPczt`
 - `Synchronizer.createTransactionFromPczt`
-- `Zip32AccountIndex`, `AccountUuid`, `AccountUsk`, `AccountPurpose`, `AccountCreateSetup`, `AcountImportSetup`, and 
+- `Zip32AccountIndex`, `AccountUuid`, `AccountUsk`, `AccountPurpose`, `AccountCreateSetup`, `AcountImportSetup`, and
   `Pczt` model classes have been added to support the new or the changed APIs
 
 ### Changed
 - `Account` data class works with `accountUuid: AccountUuid` instead of the previous ZIP 32 account index
 - These functions from `DerivationTool` have been refactored to work with the new `Zip32AccountIndex` instead of the
   `Account` data class: `deriveUnifiedSpendingKey`, `deriveUnifiedAddress`, `deriveArbitraryAccountKey`
-- `WalletCoordinator` now provides a way to instantiate `Synchronizer` with the new `accountName` and `keySource` 
+- `WalletCoordinator` now provides a way to instantiate `Synchronizer` with the new `accountName` and `keySource`
   parameters
-- `UnifiedSpendingKey` does not hold `Account` information anymore, it has been replaced by `AccountUsk` model class 
+- `UnifiedSpendingKey` does not hold `Account` information anymore, it has been replaced by `AccountUsk` model class
   in a few internal cases
 - `Synchronizer.send` extension function receives `Account` on input
 - `PendingTransaction` sealed class descendants have been renamed
@@ -173,13 +178,13 @@ checked to determine when they are mined into a block.
 - Checkpoints update
 
 ### Removed
-- `Synchronizer.sendToAddress` and `Synchronizer.shieldFunds` have been removed, use 
+- `Synchronizer.sendToAddress` and `Synchronizer.shieldFunds` have been removed, use
   `Synchronizer.createProposedTransactions` and `Synchronizer.proposeShielding` instead
 - `Synchronizer.orchardBalances`, `Synchronizer.saplingBalances`, and `Synchronizer.transparentBalance`
   (use `Synchronizer.walletBalances` instead).
 
 ### Fixed
-- The `CompactBlockProcessor` now correctly distinguishes between `Response.Failure.Server.Unavailable` and other 
+- The `CompactBlockProcessor` now correctly distinguishes between `Response.Failure.Server.Unavailable` and other
   errors in its `refreshUtxos` API. It then sets its state to `State.Disconnected` in such a case.
 
 ## [2.2.6] - 2024-11-16
@@ -192,7 +197,7 @@ checked to determine when they are mined into a block.
 ## [2.2.5] - 2024-10-22
 
 ### Added
-- The new `Synchronizer.proposeFulfillingPaymentUri` API has been added. It enables constructing Proposal object from 
+- The new `Synchronizer.proposeFulfillingPaymentUri` API has been added. It enables constructing Proposal object from
   the given ZIP-321 Uri, and then creating transactions from it.
 
 ### Changed
@@ -207,13 +212,13 @@ checked to determine when they are mined into a block.
 - Checkpoints update
 
 ### Fixed
-- `FailedSynchronizationException` reported using `Synchronizer.onProcessorErrorHandler` now contains the full 
+- `FailedSynchronizationException` reported using `Synchronizer.onProcessorErrorHandler` now contains the full
   stacktrace history
 
 ### Removed
 - `Synchronizer.getNearestRewindHeight` (its function is now handled internally
   by `Synchronizer.rewindToNearestHeight`).
-- `Synchronizer.quickRewind` and `CompactBlockProcessor.quickRewind` have been removed as they triggered the block 
+- `Synchronizer.quickRewind` and `CompactBlockProcessor.quickRewind` have been removed as they triggered the block
   rewind action at an invalid height. Use `Synchronizer.rewindToNearestHeight` instead.
 
 ## [2.2.4] - 2024-09-16
@@ -274,9 +279,9 @@ This release adds several important new features:
   cryptocurrency exchanges, and is fetched over Tor connections in order to avoid leaking
   the wallet's IP address to the exchanges.
 - Sending to ZIP 320 (TEX) addresses is now supported. When sending to a ZIP 320 address,
-  the wallet will first automatically de-shield the required funds to a fresh ephemeral 
+  the wallet will first automatically de-shield the required funds to a fresh ephemeral
   transparent address, and then will make a second fully-transparent transaction sending
-  the funds to the eventual recipient that is not linkable via on-chain information to any 
+  the funds to the eventual recipient that is not linkable via on-chain information to any
   other transaction in the  user's wallet.
 - As part of adding ZIP 320 support, the SDK now also provides full support for recovering
   transparent transaction history. Prior to this release, only transactions belonging to the
@@ -286,7 +291,7 @@ This release adds several important new features:
 ### Changed
 - Migrated to Rust 1.80.0.
 - `Synchronizer.proposeTransfer` now supports TEX addresses (ZIP 320).
-- Internal transactions-enhancing logic has changed to support the history of transactions made to TEX addresses 
+- Internal transactions-enhancing logic has changed to support the history of transactions made to TEX addresses
 
 ### Added
 - `Synchronizer.isValidTexAddr` which checks whether the given address is a valid ZIP 320 TEX address
@@ -304,32 +309,32 @@ This release adds several important new features:
 ## [2.1.3] - 2024-08-08
 
 ### Changed
-- The fetch UTXOs action is now hooked up at the beginning of every scanning phase of the block synchronization logic 
-  instead of being called every 1000 blocks together with shielded transactions enhancing. It uses 
+- The fetch UTXOs action is now hooked up at the beginning of every scanning phase of the block synchronization logic
+  instead of being called every 1000 blocks together with shielded transactions enhancing. It uses
   `fullyScannedHeight` as its lower bound.
-- The fetch UTXOs action reports `FetchUtxosException` to the wrapping `onProcessorErrorHandler` or 
-  `onCriticalErrorHandler` in case any error occurs 
-- The internal `CompactBlockProcessor.SYNC_BATCH_SIZE` has changed. Block synchronization logic now works above 
-  batch of blocks with size 1000 blocks instead of just 100 blocks, except the Zcash sandblasting period in which 
+- The fetch UTXOs action reports `FetchUtxosException` to the wrapping `onProcessorErrorHandler` or
+  `onCriticalErrorHandler` in case any error occurs
+- The internal `CompactBlockProcessor.SYNC_BATCH_SIZE` has changed. Block synchronization logic now works above
+  batch of blocks with size 1000 blocks instead of just 100 blocks, except the Zcash sandblasting period in which
   batch size of 100 blocks is still used.
-- The internal `FileCompactBlockRepository.BLOCKS_METADATA_BUFFER_SIZE` constant has been raised from 10 to 1000 to 
-  match the block synchronization batch size. 
-- The overall speed-up of the entire block synchronization logic, thanks to the both mentioned synchronization 
-  improvements above is about 50% out of the Zcash sandblasting period. There is still some improvement in the 
+- The internal `FileCompactBlockRepository.BLOCKS_METADATA_BUFFER_SIZE` constant has been raised from 10 to 1000 to
+  match the block synchronization batch size.
+- The overall speed-up of the entire block synchronization logic, thanks to the both mentioned synchronization
+  improvements above is about 50% out of the Zcash sandblasting period. There is still some improvement in the
   sandblasting period.
 - Checkpoints update
 
 ### Fixed
-- `Synchronizer.refreshUtxos(account: Account, since: BlockHeight)` now correctly uses the `since` parameter in the 
+- `Synchronizer.refreshUtxos(account: Account, since: BlockHeight)` now correctly uses the `since` parameter in the
   underlying logic and fetches UTXOs from that height
 
 ## [2.1.2] - 2024-07-16
 
 ### Added
-- `SdkSynchronizer.closeFlow()` is a Flow-providing version of `Synchronizer.close()`. It safely closes the 
+- `SdkSynchronizer.closeFlow()` is a Flow-providing version of `Synchronizer.close()`. It safely closes the
   Synchronizer together with the related components.
-- `WalletCoordinator.deleteSdkDataFlow` is a Flow-providing function that deletes all the persisted data in the SDK 
-  (databases associated with the wallet, all compact blocks, and data derived from those blocks) but preserves the 
+- `WalletCoordinator.deleteSdkDataFlow` is a Flow-providing function that deletes all the persisted data in the SDK
+  (databases associated with the wallet, all compact blocks, and data derived from those blocks) but preserves the
   wallet secrets.
 
 ### Changed
@@ -338,7 +343,7 @@ This release adds several important new features:
 - Checkpoints update
 
 ### Fixed
-- `MonetarySeparators` API does not signal an unsupported state to clients if used on a device with Locale with the 
+- `MonetarySeparators` API does not signal an unsupported state to clients if used on a device with Locale with the
  same decimal and grouping separators. Instead, it will just omit the grouping separator.
 
 ## [2.1.1] - 2024-04-23
@@ -355,7 +360,7 @@ This release adds several important new features:
 ## [2.1.0] - 2024-04-09
 
 ### Added
-- The Orchard support has been finished, and the SDK now fully supports sending and receiving funds on the Orchard 
+- The Orchard support has been finished, and the SDK now fully supports sending and receiving funds on the Orchard
   addresses
 
 ### Fixed
@@ -370,7 +375,7 @@ This release adds several important new features:
 - The SDK uses ZIP-317 fee system internally
 - `ZcashSdk.MINERS_FEE` has been deprecated, and will be removed in 2.1.x
 - `ZecSend` data class now provides `Proposal?` object initiated using `Synchronizer.proposeTransfer`
-- Wallet initialization using `Synchronizer.new` now could throw a new `SeedNotRelevant` exception when the provided 
+- Wallet initialization using `Synchronizer.new` now could throw a new `SeedNotRelevant` exception when the provided
   seed is not relevant to any of the derived accounts in the wallet database
 - Checkpoints update
 
@@ -382,8 +387,8 @@ This release adds several important new features:
   fails to reach its backing full node's mempool.
 
 ### Changed
-- `WalletBalance` now contains new fields `changePending` and `valuePending`. Fields `total` and `pending` are 
-  still provided. See more in the class documentation 
+- `WalletBalance` now contains new fields `changePending` and `valuePending`. Fields `total` and `pending` are
+  still provided. See more in the class documentation
   `sdk-lib/src/main/java/cash/z/ecc/android/sdk/model/WalletBalance.kt`
 - `Synchronizer.transparentBalances: WalletBalance` to `Synchronizer.transparentBalance: Zatoshi`
 - `WalletSnapshot.transparentBalance: WalletBalance` to `WalletSnapshot.transparentBalance: Zatoshi`
@@ -400,11 +405,11 @@ This release adds several important new features:
   - `Synchronizer.proposeTransfer`
   - `Synchronizer.proposeShielding`
   - `Synchronizer.createProposedTransactions`
-- `WalletBalanceFixture` class with mock values that are supposed to be used only for testing purposes 
+- `WalletBalanceFixture` class with mock values that are supposed to be used only for testing purposes
 - `Memo.countLength(memoString: String)` to count memo length in bytes
-- `PersistableWallet.toSafeString` is a safe alternative for the regular [toString] function that prints only 
+- `PersistableWallet.toSafeString` is a safe alternative for the regular [toString] function that prints only
   non-sensitive parts
-- `Synchronizer.validateServerEndpoint` this function checks whether the provided server endpoint is valid. 
+- `Synchronizer.validateServerEndpoint` this function checks whether the provided server endpoint is valid.
   The validation is based on comparing:
   * network type
   * sapling activation height
@@ -445,12 +450,12 @@ This release adds several important new features:
 
 ### Added
 - `TransactionOverview.txIdString()` to provide a readable transaction ID to SDK-consuming apps
-- `MonetarySeparators.current(locale: Locale? = null)` now accepts `Locale` on input to force separators locale. If 
-  no value is provided, the default one is used. 
+- `MonetarySeparators.current(locale: Locale? = null)` now accepts `Locale` on input to force separators locale. If
+  no value is provided, the default one is used.
 
 ### Removed
-- `LightWalletEndpointExt` and its functions and variables were removed from the SDK's public APIs entirely. It's 
-  preserved only for testing and wallet Demo app purposes. The calling wallet app should provide its own 
+- `LightWalletEndpointExt` and its functions and variables were removed from the SDK's public APIs entirely. It's
+  preserved only for testing and wallet Demo app purposes. The calling wallet app should provide its own
   `LightWalletEndpoint` instance within `PersistableWallet` or `SdkSynchronizer` APIs.
 
 ### Changed
@@ -465,19 +470,19 @@ This release adds several important new features:
 ## [2.0.3] - 2023-11-08
 
 ### Added
-- `Synchronizer.getExistingDataDbFilePath` public API to check and provide file path to the existing data database 
+- `Synchronizer.getExistingDataDbFilePath` public API to check and provide file path to the existing data database
   file or throws [InitializeException.MissingDatabaseException] if the database doesn't exist yet. See #1292.
 
 ### Changed
-- `CompactBlockProcessor` switched internally from balance and progress FFIs to wallet summary FFI APIs. This change 
+- `CompactBlockProcessor` switched internally from balance and progress FFIs to wallet summary FFI APIs. This change
   brings a block synchronization speed up. No action is required on the client side. See #1282.
 - Checkpoints update
 
 ## [2.0.2] - 2023-10-20
 
 ### Fixed
-- Incorrect note deduplication in the `v_transactions` database view: This is a fix in the Rust layer. The amount 
-  sent in the transaction was incorrectly reported even though the actual amount was correctly sent. Now, clients 
+- Incorrect note deduplication in the `v_transactions` database view: This is a fix in the Rust layer. The amount
+  sent in the transaction was incorrectly reported even though the actual amount was correctly sent. Now, clients
   should see the amount they expect to see.
 
 ### Changed
@@ -486,11 +491,11 @@ This release adds several important new features:
 ## [2.0.1] - 2023-10-02
 
 ### Changed
-- `PersistableWallet` API provides a new `endpoint` parameter of type `LightWalletEndpoint`, which could be used for 
-  the Lightwalletd server customization. The new parameter is part of PersistableWallet persistence. The SDK handles 
+- `PersistableWallet` API provides a new `endpoint` parameter of type `LightWalletEndpoint`, which could be used for
+  the Lightwalletd server customization. The new parameter is part of PersistableWallet persistence. The SDK handles
   the persistence migration internally.
-- The **1_000** Zatoshi fee proposed in ZIP-313 is deprecated now, so the minimum is **10_000** Zatoshi, defined in 
-  ZIP-317—the `ZcashSdk.MINERS_FEE` now returns the correct value as described above. Note that the actual fee is 
+- The **1_000** Zatoshi fee proposed in ZIP-313 is deprecated now, so the minimum is **10_000** Zatoshi, defined in
+  ZIP-317—the `ZcashSdk.MINERS_FEE` now returns the correct value as described above. Note that the actual fee is
   handled in a rust layer.
 - Adopted the latest Bip39 library v1.0.6
 
@@ -505,8 +510,8 @@ created, instead of only once the transaction is mined.
 ## [2.0.0-rc.3] - 2023-09-21
 
 ### Fixed
-The Kotlin layer of the SDK now correctly matches the Rust layer `PrevHashMismatch` exception with `ContinuityError` 
-and triggers rewind action. 
+The Kotlin layer of the SDK now correctly matches the Rust layer `PrevHashMismatch` exception with `ContinuityError`
+and triggers rewind action.
 
 ## [2.0.0-rc.2] - 2023-09-20
 
