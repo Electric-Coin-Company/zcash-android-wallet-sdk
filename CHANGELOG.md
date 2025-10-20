@@ -8,6 +8,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.8] - PLANNED
 
+### Fixed
+- A state when transaction is not found in mempool or main chain is now correctly handled
+
 ### Changed
 - Updated to `zcash_client_sqlite-0.18.7` to improve consistency of spentness
   determination, reliability of transaction status request generation,
