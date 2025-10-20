@@ -6,11 +6,12 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.3.7] - PLANNED
+## [2.3.8] - PLANNED
 
 ### Changed
-- Updated to `zcash_client_sqlite-0.18.5` to improve consistency of spentness
-  determination and the reliability of transaction status request generation.
+- Updated to `zcash_client_sqlite-0.18.7` to improve consistency of spentness
+  determination, reliability of transaction status request generation,
+  and fix removal of already-fulfilled transaction enhancement requests.
 
 ## [2.3.7] - 2025-10-09
 
