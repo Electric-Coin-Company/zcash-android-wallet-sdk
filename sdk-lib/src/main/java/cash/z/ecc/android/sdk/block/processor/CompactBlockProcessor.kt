@@ -2316,17 +2316,18 @@ class CompactBlockProcessor internal constructor(
                         )
                 ) {
                     is Response.Success -> response.result
-                    is Response.Failure ->
+                    is Response.Failure -> {
+                        val description = response.description.orEmpty()
                         when {
-                            response is Response.Failure.Server.NotFound -> null
-                            response.description.orEmpty().contains(NOT_FOUND_MESSAGE_WORKAROUND, true) ->
-                                null
-
-                            response.description.orEmpty().contains(NOT_FOUND_MESSAGE_WORKAROUND_2, true) ->
+                            response is Response.Failure.Server.NotFound ||
+                                description.contains(NOT_FOUND_MESSAGE_WORKAROUND, true) ||
+                                description.contains(NOT_FOUND_MESSAGE_WORKAROUND_2, true) ||
+                                description.contains(NOT_FOUND_MESSAGE_WORKAROUND_3, true) ->
                                 null
 
                             else -> throw EnhanceTxDownloadError(response.toThrowable())
                         }
+                    }
                 }
         }
         traceScope.end()
@@ -2800,3 +2801,5 @@ class CompactBlockProcessor internal constructor(
 private const val NOT_FOUND_MESSAGE_WORKAROUND = "Transaction not found"
 private const val NOT_FOUND_MESSAGE_WORKAROUND_2 =
     "No such mempool or blockchain transaction. Use gettransaction for wallet transactions."
+
+private const val NOT_FOUND_MESSAGE_WORKAROUND_3 = "No such mempool or main chain transaction"

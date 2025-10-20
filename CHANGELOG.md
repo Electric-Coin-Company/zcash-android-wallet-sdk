@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- A state when transaction is not found in mempool or main chain is now correctly handled 
+
 ## [2.3.7] - PLANNED
 
 ### Changed
