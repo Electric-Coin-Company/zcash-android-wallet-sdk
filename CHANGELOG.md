@@ -6,6 +6,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Updated to `zcash_client_sqlite-0.18.9` to fix problems in transparent UTXO
+  selection for shielding, including incorrect handling of outputs received at
+  ephemeral addresses and selection of dust transparent outputs for shielding.
+
 ## [2.3.8] - 2025-10-20
 
 ### Fixed
