@@ -16,6 +16,9 @@ import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
 import cash.z.ecc.android.sdk.internal.model.RustLogging
 import cash.z.ecc.android.sdk.internal.model.isNotLoggingInProduction
+import co.electriccoin.lightwallet.client.model.Response
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -58,6 +61,16 @@ class RustBackend private constructor(
             }
         }
         return cacheClearResult && dataClearResult
+    }
+
+    //
+    // Helper Functions
+    //
+
+    internal suspend fun <T> withWallet(
+        block: (dataDbFile: File, networkId: Int) -> T
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
+        block(dataDbFile, networkId)
     }
 
     //
