@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniScanSummary
+import cash.z.ecc.android.sdk.internal.model.JniSingleUseTransparentAddress
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
@@ -194,6 +195,9 @@ interface Backend {
 
     @Throws(RuntimeException::class)
     suspend fun getCurrentAddress(accountUuid: ByteArray): String
+
+    @Throws(RuntimeException::class)
+    suspend fun getSingleUseTransparentAddress(accountUuid: ByteArray): JniSingleUseTransparentAddress
 
     @Throws(RuntimeException::class)
     suspend fun getNextAvailableAddress(

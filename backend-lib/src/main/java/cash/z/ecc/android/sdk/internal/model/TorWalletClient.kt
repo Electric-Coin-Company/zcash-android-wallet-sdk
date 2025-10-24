@@ -66,6 +66,21 @@ class TorWalletClient private constructor(
             TreeStateUnsafe.new(Service.TreeState.parseFrom(treeState))
         }
 
+    suspend fun checkSingleUseTransparentAddress(
+        backend: RustBackend,
+        accountUuid: ByteArray,
+    ) =
+        backend.withWallet { dataDbFile, networkId ->
+            execute {
+                checkSingleUseTaddr(
+                    it,
+                    dataDbFile.absolutePath,
+                    networkId,
+                    accountUuid,
+                )
+            }
+        }
+
     suspend fun updateTransparentAddressTransactions(
         backend: RustBackend,
         address: String,
@@ -143,6 +158,19 @@ class TorWalletClient private constructor(
         @JvmStatic
         @Throws(RuntimeException::class)
         private external fun getTreeState(nativeHandle: Long, fromHeight: Long): ByteArray
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        @Suppress("LongParameterList")
+        private external fun checkSingleUseTaddr(
+            nativeHandle: Long,
+            dbDataPath: String,
+            networkId: Int,
+            accountUuid: ByteArray,
+        ): String?
 
         /**
          * @throws RuntimeException as a common indicator of the operation failure

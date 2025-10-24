@@ -10,6 +10,7 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniScanSummary
+import cash.z.ecc.android.sdk.internal.model.JniSingleUseTransparentAddress
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
@@ -166,6 +167,15 @@ class RustBackend private constructor(
                 dataDbFile.absolutePath,
                 accountUuid,
                 networkId = networkId
+            )
+        }
+
+    override suspend fun getSingleUseTransparentAddress(accountUuid: ByteArray) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            getSingleUseTaddr(
+                dataDbFile.absolutePath,
+                networkId,
+                accountUuid,
             )
         }
 
@@ -639,6 +649,13 @@ class RustBackend private constructor(
             accountUuid: ByteArray,
             networkId: Int
         ): String
+
+        @JvmStatic
+        private external fun getSingleUseTaddr(
+            dbDataPath: String,
+            networkId: Int,
+            accountUuid: ByteArray,
+        ): JniSingleUseTransparentAddress
 
         @JvmStatic
         private external fun getNextAvailableAddress(

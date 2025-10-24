@@ -21,6 +21,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.SingleUseTransparentAddress
 import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
@@ -181,6 +182,13 @@ internal class TypesafeBackendImpl(
             backend.getCurrentAddress(account.accountUuid.value)
         }.onFailure {
             Twig.warn(it) { "Currently unable to get current address" }
+        }.getOrElse { throw RustLayerException.GetAddressException(it) }
+
+    override suspend fun getSingleUseTransparentAddress(account: Account): SingleUseTransparentAddress =
+        runCatching {
+            SingleUseTransparentAddress.new(backend.getSingleUseTransparentAddress(account.accountUuid.value))
+        }.onFailure {
+            Twig.warn(it) { "Currently unable to get single-use transparent address" }
         }.getOrElse { throw RustLayerException.GetAddressException(it) }
 
     override suspend fun getNextAvailableAddress(
