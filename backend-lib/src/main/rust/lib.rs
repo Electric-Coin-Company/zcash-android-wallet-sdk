@@ -5,7 +5,7 @@ use std::num::{NonZeroU32, NonZeroUsize};
 use std::panic;
 use std::path::PathBuf;
 use std::ptr;
-use std::time::UNIX_EPOCH;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Context};
 use bitflags::bitflags;
@@ -34,6 +34,7 @@ use pczt::{
 use transparent::{
     address::{Script, TransparentAddress},
     bundle::{OutPoint, TxOut},
+    keys::TransparentKeyScope,
 };
 use zcash_address::{
     unified::{self, Container, Encoding, Item as _},
@@ -65,7 +66,7 @@ use zcash_client_backend::{
         http::{cryptex, HttpError},
         DormantMode,
     },
-    wallet::{NoteId, OvkPolicy, WalletTransparentOutput},
+    wallet::{Exposure, NoteId, OvkPolicy, WalletTransparentOutput},
     zip321::{Payment, TransactionRequest},
 };
 use zcash_client_sqlite::{
@@ -637,6 +638,46 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getCurren
             }
             Ok(None) => Err(anyhow!("{:?} is not known to the wallet", account_uuid)),
             Err(e) => Err(anyhow!("Error while fetching address: {}", e)),
+        }
+    });
+
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Generates and returns an ephemeral address for one-time use, such as when receiving a swap from
+/// a decentralized exchange.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getSingleUseTaddr<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    network_id: jint,
+    account_uuid: JByteArray<'local>,
+) -> jstring {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.getSingleUseTaddr").entered();
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+        let account_uuid = account_id_from_jni(env, account_uuid)?;
+
+        match db_data.reserve_next_n_ephemeral_addresses(account_uuid, 1) {
+            Ok(addrs) => {
+                if let Some((addr, _)) = addrs.first() {
+                    let addr_str = addr.encode(&network);
+                    let output = env
+                        .new_string(addr_str)
+                        .expect("Couldn't create Java string!");
+                    Ok(output.into_raw())
+                } else {
+                    Err(anyhow!("Unable to reserve a new one-time-use address"))
+                }
+            }
+            Err(e) => Err(anyhow!(
+                "Error while generating one-time-use address: {}",
+                e
+            )),
         }
     });
 
@@ -2062,33 +2103,58 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
                 },
             }?;
 
-        let chain_tip_height = db_data
-            .chain_height()?
-            .ok_or_else(|| anyhow!("Chain tip height must be known to shield funds."))?;
         let account_receivers = db_data
-            .get_transparent_balances(
-                account_uuid,
-                wallet::TargetHeight::from(chain_tip_height),
-                confirmations_policy,
-            )
-            .map_err(|e| {
-                anyhow!(
-                    "Error while fetching transparent balances for {:?}: {}",
-                    account_uuid,
-                    e
-                )
+            .get_target_and_anchor_heights(NonZeroU32::MIN)
+            .map_err(|e| anyhow!("Error while fetching anchor height: {}", e))
+            .and_then(|opt| {
+                opt.map(|(target, _)| target) // Include unconfirmed funds.
+                    .ok_or_else(|| anyhow!("height not available; scan required."))
+            })
+            .and_then(|target_height| {
+                db_data
+                    .get_transparent_balances(account_uuid, target_height, confirmations_policy)
+                    .map_err(|e| {
+                        anyhow!(
+                            "Error while fetching transparent balances for {:?}: {}",
+                            account_uuid,
+                            e,
+                        )
+                    })
             })?;
 
+        // If a specific address is specified, or balance only exists for one address, select the
+        // value for that address.
+        //
+        // Otherwise, if there are any non-ephemeral addresses, select value for all those
+        // addresses. See the warnings associated with the documentation of the
+        // `transparent_receiver` argument in the method documentation for privacy considerations.
+        //
+        // Finally, if there are only ephemeral addresses, select value for exactly one of those
+        // addresses.
         let from_addrs: Vec<TransparentAddress> = match transparent_receiver {
             Some(addr) => account_receivers
                 .get(&addr)
+                .and_then(|(_, balance)| {
+                    (balance.spendable_value() >= shielding_threshold).then_some(addr)
+                })
                 .into_iter()
-                .filter_map(|(_, v)| (v.spendable_value() >= shielding_threshold).then_some(addr))
                 .collect(),
-            None => account_receivers
-                .into_iter()
-                .filter_map(|(a, (_, v))| (v.spendable_value() >= shielding_threshold).then_some(a))
-                .collect(),
+            None => {
+                let (ephemeral, non_ephemeral): (Vec<_>, Vec<_>) = account_receivers
+                    .into_iter()
+                    .filter(|(_, (_, balance))| balance.spendable_value() >= shielding_threshold)
+                    .partition(|(_, (scope, _))| *scope == TransparentKeyScope::EPHEMERAL);
+
+                if non_ephemeral.is_empty() {
+                    ephemeral
+                        .into_iter()
+                        .take(1)
+                        .map(|(addr, _)| addr)
+                        .collect()
+                } else {
+                    non_ephemeral.into_iter().map(|(addr, _)| addr).collect()
+                }
+            }
         };
 
         if from_addrs.is_empty() {
@@ -3212,6 +3278,95 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_get
         Ok(utils::rust_bytes_to_java(env, &treestate.encode_to_vec())?.into_raw())
     });
     unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Checks to find any single-use ephemeral addresses exposed in the past day that have not yet
+/// received funds, excluding any whose next check time is in the future. This will then choose the
+/// address that is most overdue for checking, retrieve any UTXOs for that address over Tor, and
+/// add them to the wallet database. If no such UTXOs are found, the check will be rescheduled
+/// following an expoential-backoff-with-jitter algorithm.
+///
+/// Returns `true` if UTXOs were added to the wallet, `false` otherwise.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_checkSingleUseTaddr<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    lwd_conn: jlong,
+    db_data: JString<'local>,
+    network_id: jint,
+    account_uuid: JByteArray<'local>,
+) -> bool {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.checkSingleUseTaddr").entered();
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+        let account_uuid = account_id_from_jni(env, account_uuid)?;
+
+        let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
+        let lwd_conn = unsafe { lwd_conn.as_mut() }
+            .ok_or_else(|| anyhow!("A Tor lightwalletd connection is required"))?;
+
+        // one day's worth of blocks.
+        let exposure_depth = (24 * 60 * 60) / 75;
+        let addrs =
+            db_data.get_ephemeral_transparent_receivers(account_uuid, exposure_depth, true)?;
+
+        // pick the address with the minimum check time that is less than or equal to now (or
+        // absent)
+        let now = SystemTime::now();
+        let selected_addr_meta = addrs
+            .into_iter()
+            .filter(|(_, meta)| meta.next_check_time().iter().all(|t| t <= &now))
+            .min_by_key(|(_, meta)| meta.next_check_time());
+
+        let cur_height = db_data
+            .chain_height()?
+            .ok_or(SqliteClientError::ChainHeightUnknown)?;
+
+        let mut found = false;
+        if let Some((addr, meta)) = selected_addr_meta {
+            lwd_conn.with_taddress_transactions(
+                &network,
+                addr,
+                None,
+                None,
+                |tx_data, mined_height| {
+                    found = true;
+                    let consensus_branch_id =
+                        BranchId::for_height(&network, mined_height.unwrap_or(cur_height + 1));
+
+                    let tx = Transaction::read(&tx_data[..], consensus_branch_id)?;
+                    decrypt_and_store_transaction(&network, &mut db_data, &tx, mined_height)?;
+
+                    Ok(())
+                },
+            )?;
+
+            if !found {
+                let blocks_since_exposure = match meta.exposure() {
+                    Exposure::Exposed { at_height, .. } => {
+                        f64::from(std::cmp::max(u32::from(cur_height - at_height), 1))
+                    }
+                    Exposure::Unknown => 1.0,
+                    Exposure::CannotKnow => 1.0,
+                };
+
+                // We will schedule the next check to occur after approximately
+                // log2(blocks_since_exposure) additional blocks.
+                let offset_blocks = blocks_since_exposure.log2();
+                // Convert the offset in blocks to an offset in seconds; this will always fit in a
+                // u32.
+                let offset_seconds = (offset_blocks * 75.0).round() as u32;
+                db_data.schedule_next_check(&addr, offset_seconds)?;
+            }
+        }
+
+        Ok(found)
+    });
+
+    unwrap_exc_or(&mut env, res, false)
 }
 
 /// Returns the transactions corresponding to the given t-address within the given block range.
