@@ -11,35 +11,34 @@ use anyhow::{anyhow, Context};
 use bitflags::bitflags;
 use bytes::Bytes;
 use http_body_util::BodyExt;
-use jni::objects::{JByteArray, JObject, JObjectArray, JValue};
 use jni::{
-    objects::{JClass, JString},
+    objects::{JByteArray, JClass, JObject, JObjectArray, JString, JValue},
     sys::{jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
 };
 use nonempty::NonEmpty;
-use pczt::roles::redactor::Redactor;
-use pczt::{
-    roles::{combiner::Combiner, prover::Prover},
-    Pczt,
-};
 use prost::Message;
 use rand::rngs::OsRng;
 use secrecy::{ExposeSecret, SecretVec};
 use tor_rtcompat::BlockOn;
 use tracing::{debug, error};
-use tracing_subscriber::prelude::*;
-use tracing_subscriber::reload;
-use transparent::bundle::{OutPoint, TxOut};
+use tracing_subscriber::{prelude::*, reload};
 use utils::{java_nullable_string_to_rust, java_string_to_rust};
 use uuid::Uuid;
-use zcash_address::unified::{Container, Encoding, Item as _};
-use zcash_address::{unified, ToAddress, ZcashAddress};
-use zcash_client_backend::data_api::{
-    AccountPurpose, BirthdayError, OutputStatusFilter, TransactionDataRequest, TransactionStatus,
-    TransactionStatusFilter, Zip32Derivation,
+
+use pczt::roles::redactor::Redactor;
+use pczt::{
+    roles::{combiner::Combiner, prover::Prover},
+    Pczt,
 };
-use zcash_client_backend::tor::http::HttpError;
+use transparent::{
+    address::{Script, TransparentAddress},
+    bundle::{OutPoint, TxOut},
+};
+use zcash_address::{
+    unified::{self, Container, Encoding, Item as _},
+    ToAddress, ZcashAddress,
+};
 use zcash_client_backend::{
     address::{Address, UnifiedAddress},
     data_api::{
@@ -50,8 +49,10 @@ use zcash_client_backend::{
             decrypt_and_store_transaction, extract_and_store_transaction_from_pczt,
             input_selection::GreedyInputSelector, propose_shielding, propose_transfer,
         },
-        Account, AccountBalance, AccountBirthday, InputSource, SeedRelevance,
-        WalletCommitmentTrees, WalletRead, WalletSummary, WalletWrite,
+        Account, AccountBalance, AccountBirthday, AccountPurpose, BirthdayError, InputSource,
+        OutputStatusFilter, SeedRelevance, TransactionDataRequest, TransactionStatus,
+        TransactionStatusFilter, WalletCommitmentTrees, WalletRead, WalletSummary, WalletWrite,
+        Zip32Derivation,
     },
     encoding::AddressCodec,
     fees::{zip317::MultiOutputChangeStrategy, DustOutputPolicy, SplitPolicy, StandardFeeRule},
@@ -60,33 +61,33 @@ use zcash_client_backend::{
         UnifiedSpendingKey,
     },
     proto::{proposal::Proposal, service::TreeState},
-    tor::{http::cryptex, DormantMode},
+    tor::{
+        http::{cryptex, HttpError},
+        DormantMode,
+    },
     wallet::{NoteId, OvkPolicy, WalletTransparentOutput},
     zip321::{Payment, TransactionRequest},
 };
-use zcash_client_sqlite::error::SqliteClientError;
-use zcash_client_sqlite::util::SystemClock;
-use zcash_client_sqlite::AccountUuid;
 use zcash_client_sqlite::{
     chain::{init::init_blockmeta_db, BlockMeta},
+    error::SqliteClientError,
+    util::SystemClock,
     wallet::init::{init_wallet_db, WalletMigrationError},
-    FsBlockDb, WalletDb,
+    AccountUuid, FsBlockDb, WalletDb,
 };
-use zcash_primitives::consensus::NetworkConstants;
 use zcash_primitives::{
     block::BlockHash,
-    consensus::{
-        BlockHeight, BranchId, Network,
-        Network::{MainNetwork, TestNetwork},
-        NetworkType, Parameters,
-    },
-    legacy::{Script, TransparentAddress},
-    memo::{Memo, MemoBytes},
     merkle_tree::HashSer,
     transaction::{Transaction, TxId},
 };
 use zcash_proofs::prover::LocalTxProver;
 use zcash_protocol::{
+    consensus::{
+        BlockHeight, BranchId, Network,
+        Network::{MainNetwork, TestNetwork},
+        NetworkConstants, NetworkType, Parameters,
+    },
+    memo::{Memo, MemoBytes},
     value::{ZatBalance, Zatoshis},
     ShieldedProtocol,
 };
@@ -2082,11 +2083,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
             Some(addr) => account_receivers
                 .get(&addr)
                 .into_iter()
-                .filter_map(|v| (v.spendable_value() >= shielding_threshold).then_some(addr))
+                .filter_map(|(_, v)| (v.spendable_value() >= shielding_threshold).then_some(addr))
                 .collect(),
             None => account_receivers
                 .into_iter()
-                .filter_map(|(a, v)| (v.spendable_value() >= shielding_threshold).then_some(a))
+                .filter_map(|(a, (_, v))| (v.spendable_value() >= shielding_threshold).then_some(a))
                 .collect(),
         };
 
