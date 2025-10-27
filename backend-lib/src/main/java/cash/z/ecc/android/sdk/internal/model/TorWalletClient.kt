@@ -149,6 +149,7 @@ class TorWalletClient private constructor(
          */
         @JvmStatic
         @Throws(RuntimeException::class)
+        @Suppress("LongParameterList")
         private external fun updateTransparentAddressTransactions(
             nativeHandle: Long,
             dbDataPath: String,
