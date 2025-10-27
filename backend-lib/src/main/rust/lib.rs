@@ -498,10 +498,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
 /// - `treestate`: The tree state corresponding to the last block prior to the wallet's
 ///   birthday height.
 /// - `recover_until`: An optional height at which the wallet should exit "recovery mode". In
-///    order to avoid confusing shifts in wallet balance and spendability that may temporarily be
-///    visible to a user during the process of recovering from seed, wallets may optionally set a
-///    "recover until" height. The wallet is considered to be in "recovery mode" until there
-///    exist no unscanned ranges between the wallet's birthday height and the provided
+///   order to avoid confusing shifts in wallet balance and spendability that may temporarily be
+///   visible to a user during the process of recovering from seed, wallets may optionally set a
+///   "recover until" height. The wallet is considered to be in "recovery mode" until there
+///   exist no unscanned ranges between the wallet's birthday height and the provided
 ///   `recover_until` height, exclusive.
 /// - `purpose`: 0 (Spending) if data required for spending should be tracked by the wallet,
 ///   or 1 (ViewOnly) if the account will never be used to spend funds.
