@@ -7,21 +7,19 @@ use std::path::PathBuf;
 use std::ptr;
 use std::time::UNIX_EPOCH;
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use bitflags::bitflags;
 use bytes::Bytes;
 use http_body_util::BodyExt;
-use jni::objects::{JByteArray, JObject, JObjectArray, JValue};
 use jni::{
-    objects::{JClass, JString},
-    sys::{jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
+    objects::{JByteArray, JClass, JObject, JObjectArray, JString, JValue},
+    sys::{JNI_FALSE, JNI_TRUE, jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring},
 };
 use nonempty::NonEmpty;
-use pczt::roles::redactor::Redactor;
 use pczt::{
-    roles::{combiner::Combiner, prover::Prover},
     Pczt,
+    roles::{combiner::Combiner, prover::Prover, redactor::Redactor},
 };
 use prost::Message;
 use rand::rngs::OsRng;
@@ -33,66 +31,66 @@ use tracing_subscriber::reload;
 use transparent::bundle::{OutPoint, TxOut};
 use utils::{java_nullable_string_to_rust, java_string_to_rust};
 use uuid::Uuid;
-use zcash_address::unified::{Container, Encoding, Item as _};
-use zcash_address::{unified, ToAddress, ZcashAddress};
-use zcash_client_backend::data_api::{
-    AccountPurpose, BirthdayError, OutputStatusFilter, TransactionDataRequest, TransactionStatus,
-    TransactionStatusFilter, Zip32Derivation,
+use zcash_address::{
+    ToAddress, ZcashAddress,
+    unified::{self, Container, Encoding, Item as _},
 };
-use zcash_client_backend::tor::http::HttpError;
 use zcash_client_backend::{
     address::{Address, UnifiedAddress},
     data_api::{
-        chain::{scan_cached_blocks, CommitmentTreeRoot, ScanSummary},
+        Account, AccountBalance, AccountBirthday, AccountPurpose, BirthdayError, InputSource,
+        OutputStatusFilter, SeedRelevance, TransactionDataRequest, TransactionStatus,
+        TransactionStatusFilter, WalletCommitmentTrees, WalletRead, WalletSummary, WalletWrite,
+        Zip32Derivation,
+        chain::{CommitmentTreeRoot, ScanSummary, scan_cached_blocks},
         scanning::{ScanPriority, ScanRange},
         wallet::{
             self, create_pczt_from_proposal, create_proposed_transactions,
             decrypt_and_store_transaction, extract_and_store_transaction_from_pczt,
             input_selection::GreedyInputSelector, propose_shielding, propose_transfer,
         },
-        Account, AccountBalance, AccountBirthday, InputSource, SeedRelevance,
-        WalletCommitmentTrees, WalletRead, WalletSummary, WalletWrite,
     },
     encoding::AddressCodec,
-    fees::{zip317::MultiOutputChangeStrategy, DustOutputPolicy, SplitPolicy, StandardFeeRule},
+    fees::{DustOutputPolicy, SplitPolicy, StandardFeeRule, zip317::MultiOutputChangeStrategy},
     keys::{
         DecodingError, Era, ReceiverRequirement, UnifiedAddressRequest, UnifiedFullViewingKey,
         UnifiedSpendingKey,
     },
     proto::{proposal::Proposal, service::TreeState},
-    tor::{http::cryptex, DormantMode},
+    tor::{
+        DormantMode,
+        http::{HttpError, cryptex},
+    },
     wallet::{NoteId, OvkPolicy, WalletTransparentOutput},
     zip321::{Payment, TransactionRequest},
 };
-use zcash_client_sqlite::error::SqliteClientError;
-use zcash_client_sqlite::util::SystemClock;
-use zcash_client_sqlite::AccountUuid;
 use zcash_client_sqlite::{
-    chain::{init::init_blockmeta_db, BlockMeta},
-    wallet::init::{init_wallet_db, WalletMigrationError},
-    FsBlockDb, WalletDb,
+    AccountUuid, FsBlockDb, WalletDb,
+    chain::{BlockMeta, init::init_blockmeta_db},
+    error::SqliteClientError,
+    util::SystemClock,
+    wallet::init::{WalletMigrationError, init_wallet_db},
 };
-use zcash_primitives::consensus::NetworkConstants;
 use zcash_primitives::{
     block::BlockHash,
-    consensus::{
-        BlockHeight, BranchId, Network,
-        Network::{MainNetwork, TestNetwork},
-        NetworkType, Parameters,
-    },
     legacy::{Script, TransparentAddress},
-    memo::{Memo, MemoBytes},
     merkle_tree::HashSer,
     transaction::{Transaction, TxId},
 };
 use zcash_proofs::prover::LocalTxProver;
 use zcash_protocol::{
-    value::{ZatBalance, Zatoshis},
     ShieldedProtocol,
+    consensus::{
+        BlockHeight, BranchId, Network,
+        Network::{MainNetwork, TestNetwork},
+        NetworkConstants, NetworkType, Parameters,
+    },
+    memo::{Memo, MemoBytes},
+    value::{ZatBalance, Zatoshis},
 };
 use zcash_script::script;
 use zip32::{
-    fingerprint::SeedFingerprint, registered::PathElement, ChainCode, ChildIndex, DiversifierIndex,
+    ChainCode, ChildIndex, DiversifierIndex, fingerprint::SeedFingerprint, registered::PathElement,
 };
 
 use crate::utils::{catch_unwind, exception::unwrap_exc_or};
@@ -1989,12 +1987,12 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         // Always use ZIP 317 fees
         let (change_strategy, input_selector) = zip317_helper(None);
 
-        let request =
-            TransactionRequest::new(vec![Payment::new(to, value, memo, None, None, vec![])
-                .ok_or_else(|| {
-                    anyhow!("Memos are not permitted when sending to transparent recipients.")
-                })?])
-            .map_err(|e| anyhow!("Error creating transaction request: {:?}", e))?;
+        let request = TransactionRequest::new(vec![
+            Payment::new(to, value, memo, None, None, vec![]).ok_or_else(|| {
+                anyhow!("Memos are not permitted when sending to transparent recipients.")
+            })?,
+        ])
+        .map_err(|e| anyhow!("Error creating transaction request: {:?}", e))?;
 
         let proposal = propose_transfer::<_, _, _, _, Infallible>(
             &mut db_data,
@@ -2654,9 +2652,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
 
         let private_use_keys = match ufvk_string {
             // For the inherent subtree, there is only ever one key.
-            None => vec![account_metadata_key
-                .derive_child_with_tag(ChildIndex::hardened(0), &[])
-                .derive_child_with_tag(ChildIndex::PRIVATE_USE, &private_use_subject)],
+            None => vec![
+                account_metadata_key
+                    .derive_child_with_tag(ChildIndex::hardened(0), &[])
+                    .derive_child_with_tag(ChildIndex::PRIVATE_USE, &private_use_subject),
+            ],
             // For the external subtree, we derive keys from the UFVK's items.
             Some(ufvk_string) => {
                 let (net, ufvk) =
@@ -3286,7 +3286,10 @@ fn parse_network(value: u32) -> anyhow::Result<Network> {
     match value {
         0 => Ok(TestNetwork),
         1 => Ok(MainNetwork),
-        _ => Err(anyhow!("Invalid network type: {}. Expected either 0 or 1 for Testnet or Mainnet, respectively.", value))
+        _ => Err(anyhow!(
+            "Invalid network type: {}. Expected either 0 or 1 for Testnet or Mainnet, respectively.",
+            value
+        )),
     }
 }
 

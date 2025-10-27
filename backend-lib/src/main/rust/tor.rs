@@ -13,8 +13,8 @@ use zcash_client_backend::{
     tor::{Client, DormantMode},
 };
 use zcash_protocol::{
-    consensus::{self, BlockHeight},
     TxId,
+    consensus::{self, BlockHeight},
 };
 
 pub struct TorRuntime {

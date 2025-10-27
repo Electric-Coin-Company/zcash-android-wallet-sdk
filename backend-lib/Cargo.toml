@@ -7,7 +7,7 @@ authors = [
 ]
 description = "JNI backend for the Android wallet SDK"
 publish = false
-edition = "2021"
+edition = "2024"
 rust-version = "1.90"
 
 [dependencies]
