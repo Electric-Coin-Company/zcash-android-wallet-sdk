@@ -24,12 +24,14 @@ use pczt::{
 use prost::Message;
 use rand::rngs::OsRng;
 use secrecy::{ExposeSecret, SecretVec};
-use tor_rtcompat::BlockOn;
+use tor_rtcompat::ToplevelBlockOn;
 use tracing::{debug, error};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
-use transparent::bundle::{OutPoint, TxOut};
-use utils::{java_nullable_string_to_rust, java_string_to_rust};
+use transparent::{
+    address::{Script, TransparentAddress},
+    bundle::{OutPoint, TxOut},
+};
 use uuid::Uuid;
 use zcash_address::{
     ToAddress, ZcashAddress,
@@ -73,7 +75,6 @@ use zcash_client_sqlite::{
 };
 use zcash_primitives::{
     block::BlockHash,
-    legacy::{Script, TransparentAddress},
     merkle_tree::HashSer,
     transaction::{Transaction, TxId},
 };
@@ -93,7 +94,9 @@ use zip32::{
     ChainCode, ChildIndex, DiversifierIndex, fingerprint::SeedFingerprint, registered::PathElement,
 };
 
-use crate::utils::{catch_unwind, exception::unwrap_exc_or};
+use crate::utils::{
+    catch_unwind, exception::unwrap_exc_or, java_nullable_string_to_rust, java_string_to_rust,
+};
 
 mod tor;
 mod utils;
@@ -2080,11 +2083,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
             Some(addr) => account_receivers
                 .get(&addr)
                 .into_iter()
-                .filter_map(|v| (v.spendable_value() >= shielding_threshold).then_some(addr))
+                .filter_map(|(_, v)| (v.spendable_value() >= shielding_threshold).then_some(addr))
                 .collect(),
             None => account_receivers
                 .into_iter()
-                .filter_map(|(a, v)| (v.spendable_value() >= shielding_threshold).then_some(a))
+                .filter_map(|(a, (_, v))| (v.spendable_value() >= shielding_threshold).then_some(a))
                 .collect(),
         };
 
