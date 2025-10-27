@@ -61,6 +61,16 @@ class RustBackend private constructor(
     }
 
     //
+    // Helper Functions
+    //
+
+    internal suspend fun <T> withWallet(
+        block: suspend (dataDbFile: File, networkId: Int) -> T
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
+        block(dataDbFile, networkId)
+    }
+
+    //
     // Wrapper Functions
     //
 
