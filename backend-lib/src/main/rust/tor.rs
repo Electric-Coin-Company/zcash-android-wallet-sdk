@@ -5,7 +5,7 @@ use std::path::Path;
 
 use anyhow::anyhow;
 use tonic::transport::{Channel, Uri};
-use tor_rtcompat::{BlockOn, PreferredRuntime};
+use tor_rtcompat::{PreferredRuntime, ToplevelBlockOn};
 use transparent::address::TransparentAddress;
 use zcash_client_backend::{
     encoding::AddressCodec,
@@ -13,8 +13,8 @@ use zcash_client_backend::{
     tor::{Client, DormantMode},
 };
 use zcash_protocol::{
-    consensus::{self, BlockHeight},
     TxId,
+    consensus::{self, BlockHeight},
 };
 
 pub struct TorRuntime {
