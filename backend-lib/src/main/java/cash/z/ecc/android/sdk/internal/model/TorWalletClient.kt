@@ -84,7 +84,7 @@ class TorWalletClient private constructor(
     suspend fun updateTransparentAddressTransactions(
         backend: RustBackend,
         address: String,
-        startHeight: BlockHeightUnsafe?,
+        startHeight: BlockHeightUnsafe,
         endHeight: BlockHeightUnsafe?,
     ) =
         backend.withWallet { dataDbFile, networkId ->
@@ -93,7 +93,7 @@ class TorWalletClient private constructor(
                     it,
                     dataDbFile.absolutePath,
                     address,
-                    startHeight?.value ?: -1,
+                    startHeight.value,
                     endHeight?.value ?: -1,
                     networkId = networkId
                 )

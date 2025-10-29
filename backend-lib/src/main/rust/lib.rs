@@ -3368,7 +3368,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_che
                 &network,
                 addr,
                 match meta.exposure() {
-                    Exposure::Exposed { at_height, .. } => Some(at_height),
+                    Exposure::Exposed { at_height, .. } => at_height,
                     Exposure::Unknown | Exposure::CannotKnow => {
                         panic!("unexposed addresses should have already been filtered out");
                     }
@@ -3417,7 +3417,15 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_che
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
-/// Returns the transactions corresponding to the given t-address within the given block range.
+/// Retrieves transactions corresponding to the given t-address from the light wallet server that
+/// were mined within the given block range, and adds them to the wallet using
+/// [`decrypt_and_store_transaction`].
+///
+/// The start height must be in the range of a valid u32.
+///
+/// The end height is optional; to omit the end height for the query range use the sentinel value
+/// `-1`. If any other value is specified, it must be in the range of a valid u32. Note that older
+/// versions of `lightwalletd` will return an error if the end height is not specified.
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_updateTransparentAddressTransactions<
     'local,
@@ -3449,7 +3457,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_upd
                 Address::Transparent(addr) => Ok(addr),
             },
         }?;
-        let start = parse_optional_height(start)?;
+        let start = parse_optional_height(start)?
+            .ok_or_else(|| anyhow!("Start height for address queries is non-optional."))?;
         let end = parse_optional_height(end)?;
 
         lwd_conn.with_taddress_transactions(
