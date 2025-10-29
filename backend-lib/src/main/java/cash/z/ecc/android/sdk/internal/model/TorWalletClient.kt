@@ -86,7 +86,7 @@ class TorWalletClient private constructor(
         address: String,
         startHeight: BlockHeightUnsafe,
         endHeight: BlockHeightUnsafe?,
-    ) =
+    ): Response<JniAddressCheckResult> =
         backend.withWallet { dataDbFile, networkId ->
             execute {
                 updateTransparentAddressTransactions(
@@ -185,6 +185,6 @@ class TorWalletClient private constructor(
             startHeight: Long,
             endHeight: Long,
             networkId: Int,
-        )
+        ): JniAddressCheckResult
     }
 }
