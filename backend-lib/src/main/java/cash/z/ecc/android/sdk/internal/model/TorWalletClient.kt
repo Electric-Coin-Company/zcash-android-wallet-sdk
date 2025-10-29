@@ -100,6 +100,23 @@ class TorWalletClient private constructor(
             }
         }
 
+    suspend fun fetchUtxosByAddress(
+        backend: RustBackend,
+        accountUuid: ByteArray,
+        address: String,
+    ): Response<JniAddressCheckResult> =
+        backend.withWallet { dataDbFile, networkId ->
+            execute {
+                fetchUtxosByAddress(
+                    it,
+                    dataDbFile.absolutePath,
+                    networkId = networkId,
+                    accountUuid,
+                    address
+                )
+            }
+        }
+
     @Suppress("TooGenericExceptionCaught")
     private suspend fun <T> execute(
         block: (handle: Long) -> T
@@ -185,6 +202,20 @@ class TorWalletClient private constructor(
             startHeight: Long,
             endHeight: Long,
             networkId: Int,
+        ): JniAddressCheckResult
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        @Suppress("LongParameterList")
+        private external fun fetchUtxosByAddress(
+            nativeHandle: Long,
+            dbDataPath: String,
+            networkId: Int,
+            accountUuid: ByteArray,
+            address: String,
         ): JniAddressCheckResult
     }
 }
