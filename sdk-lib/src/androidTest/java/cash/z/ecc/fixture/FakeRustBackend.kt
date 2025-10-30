@@ -6,6 +6,7 @@ import cash.z.ecc.android.sdk.internal.model.JniAccountUsk
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
+import cash.z.ecc.android.sdk.internal.model.JniSingleUseTransparentAddress
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
@@ -201,6 +202,10 @@ internal class FakeRustBackend(
 
     override suspend fun getCurrentAddress(accountUuid: ByteArray): String {
         error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun getSingleUseTransparentAddress(accountUuid: ByteArray): JniSingleUseTransparentAddress {
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
     }
 
     override suspend fun getNextAvailableAddress(

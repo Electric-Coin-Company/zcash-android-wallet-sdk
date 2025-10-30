@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use tracing::{error, span, Subscriber};
+use tracing::{Subscriber, error, span};
 use tracing_subscriber::{layer::Context, registry::LookupSpan};
 
 use super::target_ndk::{Api23, NdkApi};
@@ -23,12 +23,11 @@ impl Layer {
     }
 
     fn with_api(&self, f23: impl FnOnce(&Api23)) {
-        if let Some(api) = self.ndk_api.as_ref() {
-            if let Some(v23) = api.v23.as_ref() {
-                if unsafe { v23.ATrace_isEnabled() } {
-                    f23(v23)
-                }
-            }
+        if let Some(api) = self.ndk_api.as_ref()
+            && let Some(v23) = api.v23.as_ref()
+            && unsafe { v23.ATrace_isEnabled() }
+        {
+            f23(v23)
         }
     }
 

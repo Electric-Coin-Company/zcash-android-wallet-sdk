@@ -5,97 +5,99 @@ use std::num::{NonZeroU32, NonZeroUsize};
 use std::panic;
 use std::path::PathBuf;
 use std::ptr;
-use std::time::UNIX_EPOCH;
+use std::time::{SystemTime, UNIX_EPOCH};
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use bitflags::bitflags;
 use bytes::Bytes;
 use http_body_util::BodyExt;
-use jni::objects::{JByteArray, JObject, JObjectArray, JValue};
 use jni::{
-    objects::{JClass, JString},
-    sys::{jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring, JNI_FALSE, JNI_TRUE},
     JNIEnv,
+    objects::{JByteArray, JClass, JObject, JObjectArray, JString, JValue},
+    sys::{JNI_FALSE, JNI_TRUE, jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring},
 };
 use nonempty::NonEmpty;
-use pczt::roles::redactor::Redactor;
 use pczt::{
-    roles::{combiner::Combiner, prover::Prover},
     Pczt,
+    roles::{combiner::Combiner, prover::Prover, redactor::Redactor},
 };
 use prost::Message;
 use rand::rngs::OsRng;
 use secrecy::{ExposeSecret, SecretVec};
-use tor_rtcompat::BlockOn;
+use tor_rtcompat::ToplevelBlockOn;
 use tracing::{debug, error};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
-use transparent::bundle::{OutPoint, TxOut};
-use utils::{java_nullable_string_to_rust, java_string_to_rust};
-use uuid::Uuid;
-use zcash_address::unified::{Container, Encoding, Item as _};
-use zcash_address::{unified, ToAddress, ZcashAddress};
-use zcash_client_backend::data_api::{
-    AccountPurpose, BirthdayError, OutputStatusFilter, TransactionDataRequest, TransactionStatus,
-    TransactionStatusFilter, Zip32Derivation,
+use transparent::{
+    address::{Script, TransparentAddress},
+    bundle::{OutPoint, TxOut},
+    keys::TransparentKeyScope,
 };
-use zcash_client_backend::tor::http::HttpError;
+use uuid::Uuid;
+use zcash_address::{
+    ToAddress, ZcashAddress,
+    unified::{self, Container, Encoding, Item as _},
+};
 use zcash_client_backend::{
     address::{Address, UnifiedAddress},
     data_api::{
-        chain::{scan_cached_blocks, CommitmentTreeRoot, ScanSummary},
+        Account, AccountBalance, AccountBirthday, AccountPurpose, BirthdayError, InputSource,
+        OutputStatusFilter, SeedRelevance, TransactionDataRequest, TransactionStatus,
+        TransactionStatusFilter, WalletCommitmentTrees, WalletRead, WalletSummary, WalletWrite,
+        Zip32Derivation,
+        chain::{CommitmentTreeRoot, ScanSummary, scan_cached_blocks},
         scanning::{ScanPriority, ScanRange},
         wallet::{
             self, create_pczt_from_proposal, create_proposed_transactions,
             decrypt_and_store_transaction, extract_and_store_transaction_from_pczt,
             input_selection::GreedyInputSelector, propose_shielding, propose_transfer,
         },
-        Account, AccountBalance, AccountBirthday, InputSource, SeedRelevance,
-        WalletCommitmentTrees, WalletRead, WalletSummary, WalletWrite,
     },
     encoding::AddressCodec,
-    fees::{zip317::MultiOutputChangeStrategy, DustOutputPolicy, SplitPolicy, StandardFeeRule},
+    fees::{DustOutputPolicy, SplitPolicy, StandardFeeRule, zip317::MultiOutputChangeStrategy},
     keys::{
         DecodingError, Era, ReceiverRequirement, UnifiedAddressRequest, UnifiedFullViewingKey,
         UnifiedSpendingKey,
     },
     proto::{proposal::Proposal, service::TreeState},
-    tor::{http::cryptex, DormantMode},
-    wallet::{NoteId, OvkPolicy, WalletTransparentOutput},
+    tor::{
+        DormantMode,
+        http::{HttpError, cryptex},
+    },
+    wallet::{Exposure, GapMetadata, NoteId, OvkPolicy, WalletTransparentOutput},
     zip321::{Payment, TransactionRequest},
 };
-use zcash_client_sqlite::error::SqliteClientError;
-use zcash_client_sqlite::util::SystemClock;
-use zcash_client_sqlite::AccountUuid;
 use zcash_client_sqlite::{
-    chain::{init::init_blockmeta_db, BlockMeta},
-    wallet::init::{init_wallet_db, WalletMigrationError},
-    FsBlockDb, WalletDb,
+    AccountUuid, FsBlockDb, WalletDb,
+    chain::{BlockMeta, init::init_blockmeta_db},
+    error::SqliteClientError,
+    util::SystemClock,
+    wallet::init::{WalletMigrationError, init_wallet_db},
 };
-use zcash_primitives::consensus::NetworkConstants;
 use zcash_primitives::{
     block::BlockHash,
-    consensus::{
-        BlockHeight, BranchId, Network,
-        Network::{MainNetwork, TestNetwork},
-        NetworkType, Parameters,
-    },
-    legacy::{Script, TransparentAddress},
-    memo::{Memo, MemoBytes},
     merkle_tree::HashSer,
     transaction::{Transaction, TxId},
 };
 use zcash_proofs::prover::LocalTxProver;
 use zcash_protocol::{
-    value::{ZatBalance, Zatoshis},
     ShieldedProtocol,
+    consensus::{
+        BlockHeight, BranchId, Network,
+        Network::{MainNetwork, TestNetwork},
+        NetworkConstants, NetworkType, Parameters,
+    },
+    memo::{Memo, MemoBytes},
+    value::{ZatBalance, Zatoshis},
 };
 use zcash_script::script;
 use zip32::{
-    fingerprint::SeedFingerprint, registered::PathElement, ChainCode, ChildIndex, DiversifierIndex,
+    ChainCode, ChildIndex, DiversifierIndex, fingerprint::SeedFingerprint, registered::PathElement,
 };
 
-use crate::utils::{catch_unwind, exception::unwrap_exc_or};
+use crate::utils::{
+    catch_unwind, exception::unwrap_exc_or, java_nullable_string_to_rust, java_string_to_rust,
+};
 
 mod tor;
 mod utils;
@@ -498,10 +500,10 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_createAcc
 /// - `treestate`: The tree state corresponding to the last block prior to the wallet's
 ///   birthday height.
 /// - `recover_until`: An optional height at which the wallet should exit "recovery mode". In
-///    order to avoid confusing shifts in wallet balance and spendability that may temporarily be
-///    visible to a user during the process of recovering from seed, wallets may optionally set a
-///    "recover until" height. The wallet is considered to be in "recovery mode" until there
-///    exist no unscanned ranges between the wallet's birthday height and the provided
+///   order to avoid confusing shifts in wallet balance and spendability that may temporarily be
+///   visible to a user during the process of recovering from seed, wallets may optionally set a
+///   "recover until" height. The wallet is considered to be in "recovery mode" until there
+///   exist no unscanned ranges between the wallet's birthday height and the provided
 ///   `recover_until` height, exclusive.
 /// - `purpose`: 0 (Spending) if data required for spending should be tracked by the wallet,
 ///   or 1 (ViewOnly) if the account will never be used to spend funds.
@@ -636,6 +638,78 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getCurren
             }
             Ok(None) => Err(anyhow!("{:?} is not known to the wallet", account_uuid)),
             Err(e) => Err(anyhow!("Error while fetching address: {}", e)),
+        }
+    });
+
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+fn encode_single_use_taddr<'a>(
+    env: &mut JNIEnv<'a>,
+    network: &Network,
+    address: &TransparentAddress,
+    gap_position: u32,
+    gap_limit: u32,
+) -> jni::errors::Result<JObject<'a>> {
+    let address_str = address.encode(&network);
+    env.new_object(
+        "cash/z/ecc/android/sdk/internal/model/JniSingleUseTransparentAddress",
+        "(Ljava/lang/String;II)V",
+        &[
+            (&env.new_string(address_str)?).into(),
+            JValue::Int(i32::try_from(gap_position).expect("child index fits in u31")),
+            JValue::Int(i32::try_from(gap_limit).expect("child index fits in u31")),
+        ],
+    )
+}
+
+/// Generates and returns an ephemeral address for one-time use, such as when receiving a swap from
+/// a decentralized exchange.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getSingleUseTaddr<'local>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    network_id: jint,
+    account_uuid: JByteArray<'local>,
+) -> jobject {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.getSingleUseTaddr").entered();
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+        let account_uuid = account_id_from_jni(env, account_uuid)?;
+
+        match db_data.reserve_next_n_ephemeral_addresses(account_uuid, 1) {
+            Ok(addrs) => {
+                if let Some((addr, meta)) = addrs.first() {
+                    match meta.exposure() {
+                        Exposure::Exposed {
+                            gap_metadata:
+                                GapMetadata::InGap {
+                                    gap_position,
+                                    gap_limit,
+                                },
+                            ..
+                        } => Ok(encode_single_use_taddr(
+                            env,
+                            &network,
+                            addr,
+                            gap_position,
+                            gap_limit,
+                        )?
+                        .into_raw()),
+                        _ => Err(anyhow!(
+                            "Exposure metadata invalid for a newly generated address."
+                        )),
+                    }
+                } else {
+                    Err(anyhow!("Unable to reserve a new one-time-use address"))
+                }
+            }
+            Err(e) => Err(anyhow!(
+                "Error while generating one-time-use address: {}",
+                e
+            )),
         }
     });
 
@@ -1989,12 +2063,12 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         // Always use ZIP 317 fees
         let (change_strategy, input_selector) = zip317_helper(None);
 
-        let request =
-            TransactionRequest::new(vec![Payment::new(to, value, memo, None, None, vec![])
-                .ok_or_else(|| {
-                    anyhow!("Memos are not permitted when sending to transparent recipients.")
-                })?])
-            .map_err(|e| anyhow!("Error creating transaction request: {:?}", e))?;
+        let request = TransactionRequest::new(vec![
+            Payment::new(to, value, memo, None, None, vec![]).ok_or_else(|| {
+                anyhow!("Memos are not permitted when sending to transparent recipients.")
+            })?,
+        ])
+        .map_err(|e| anyhow!("Error creating transaction request: {:?}", e))?;
 
         let proposal = propose_transfer::<_, _, _, _, Infallible>(
             &mut db_data,
@@ -2061,33 +2135,58 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeSh
                 },
             }?;
 
-        let chain_tip_height = db_data
-            .chain_height()?
-            .ok_or_else(|| anyhow!("Chain tip height must be known to shield funds."))?;
         let account_receivers = db_data
-            .get_transparent_balances(
-                account_uuid,
-                wallet::TargetHeight::from(chain_tip_height),
-                confirmations_policy,
-            )
-            .map_err(|e| {
-                anyhow!(
-                    "Error while fetching transparent balances for {:?}: {}",
-                    account_uuid,
-                    e
-                )
+            .get_target_and_anchor_heights(NonZeroU32::MIN)
+            .map_err(|e| anyhow!("Error while fetching anchor height: {}", e))
+            .and_then(|opt| {
+                opt.map(|(target, _)| target) // Include unconfirmed funds.
+                    .ok_or_else(|| anyhow!("height not available; scan required."))
+            })
+            .and_then(|target_height| {
+                db_data
+                    .get_transparent_balances(account_uuid, target_height, confirmations_policy)
+                    .map_err(|e| {
+                        anyhow!(
+                            "Error while fetching transparent balances for {:?}: {}",
+                            account_uuid,
+                            e,
+                        )
+                    })
             })?;
 
+        // If a specific address is specified, or balance only exists for one address, select the
+        // value for that address.
+        //
+        // Otherwise, if there are any non-ephemeral addresses, select value for all those
+        // addresses. See the warnings associated with the documentation of the
+        // `transparent_receiver` argument in the method documentation for privacy considerations.
+        //
+        // Finally, if there are only ephemeral addresses, select value for exactly one of those
+        // addresses.
         let from_addrs: Vec<TransparentAddress> = match transparent_receiver {
             Some(addr) => account_receivers
                 .get(&addr)
+                .and_then(|(_, balance)| {
+                    (balance.spendable_value() >= shielding_threshold).then_some(addr)
+                })
                 .into_iter()
-                .filter_map(|v| (v.spendable_value() >= shielding_threshold).then_some(addr))
                 .collect(),
-            None => account_receivers
-                .into_iter()
-                .filter_map(|(a, v)| (v.spendable_value() >= shielding_threshold).then_some(a))
-                .collect(),
+            None => {
+                let (ephemeral, non_ephemeral): (Vec<_>, Vec<_>) = account_receivers
+                    .into_iter()
+                    .filter(|(_, (_, balance))| balance.spendable_value() >= shielding_threshold)
+                    .partition(|(_, (scope, _))| *scope == TransparentKeyScope::EPHEMERAL);
+
+                if non_ephemeral.is_empty() {
+                    ephemeral
+                        .into_iter()
+                        .take(1)
+                        .map(|(addr, _)| addr)
+                        .collect()
+                } else {
+                    non_ephemeral.into_iter().map(|(addr, _)| addr).collect()
+                }
+            }
         };
 
         if from_addrs.is_empty() {
@@ -2654,9 +2753,11 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustDerivationTool_de
 
         let private_use_keys = match ufvk_string {
             // For the inherent subtree, there is only ever one key.
-            None => vec![account_metadata_key
-                .derive_child_with_tag(ChildIndex::hardened(0), &[])
-                .derive_child_with_tag(ChildIndex::PRIVATE_USE, &private_use_subject)],
+            None => vec![
+                account_metadata_key
+                    .derive_child_with_tag(ChildIndex::hardened(0), &[])
+                    .derive_child_with_tag(ChildIndex::PRIVATE_USE, &private_use_subject),
+            ],
             // For the external subtree, we derive keys from the UFVK's items.
             Some(ufvk_string) => {
                 let (net, ufvk) =
@@ -3213,7 +3314,118 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_get
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
-/// Returns the transactions corresponding to the given t-address within the given block range.
+/// Checks to find any single-use ephemeral addresses exposed in the past day that have not yet
+/// received funds, excluding any whose next check time is in the future. This will then choose the
+/// address that is most overdue for checking, retrieve any UTXOs for that address over Tor, and
+/// add them to the wallet database. If no such UTXOs are found, the check will be rescheduled
+/// following an expoential-backoff-with-jitter algorithm.
+///
+/// Returns the address for which UTXOs were added to the wallet, or `null` otherwise.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_checkSingleUseTaddr<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    lwd_conn: jlong,
+    db_data: JString<'local>,
+    network_id: jint,
+    account_uuid: JByteArray<'local>,
+) -> jstring {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.checkSingleUseTaddr").entered();
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)?;
+        let account_uuid = account_id_from_jni(env, account_uuid)?;
+
+        let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
+        let lwd_conn = unsafe { lwd_conn.as_mut() }
+            .ok_or_else(|| anyhow!("A Tor lightwalletd connection is required"))?;
+
+        // one day's worth of blocks.
+        let max_exposure_depth = (24 * 60 * 60) / 75;
+        let addrs =
+            db_data.get_ephemeral_transparent_receivers(account_uuid, max_exposure_depth, true)?;
+
+        // pick the address with the minimum check time that is less than or equal to now (or
+        // absent)
+        let now = SystemTime::now();
+        let selected_addr_meta = addrs
+            .into_iter()
+            .filter(|(_, meta)| {
+                meta.next_check_time().iter().all(|t| t <= &now)
+                    && matches!(meta.exposure(), Exposure::Exposed { .. })
+            })
+            .min_by_key(|(_, meta)| meta.next_check_time());
+
+        let cur_height = db_data
+            .chain_height()?
+            .ok_or(SqliteClientError::ChainHeightUnknown)?;
+
+        let mut found = None;
+        if let Some((addr, meta)) = selected_addr_meta {
+            lwd_conn.with_taddress_transactions(
+                &network,
+                addr,
+                match meta.exposure() {
+                    Exposure::Exposed { at_height, .. } => at_height,
+                    Exposure::Unknown | Exposure::CannotKnow => {
+                        panic!("unexposed addresses should have already been filtered out");
+                    }
+                },
+                Some(cur_height + 1),
+                |tx_data, mined_height| {
+                    found = Some(addr);
+                    let consensus_branch_id =
+                        BranchId::for_height(&network, mined_height.unwrap_or(cur_height + 1));
+
+                    let tx = Transaction::read(&tx_data[..], consensus_branch_id)?;
+                    decrypt_and_store_transaction(&network, &mut db_data, &tx, mined_height)?;
+
+                    Ok(())
+                },
+            )?;
+
+            if found.is_none() {
+                let blocks_since_exposure = match meta.exposure() {
+                    Exposure::Exposed { at_height, .. } => {
+                        f64::from(std::cmp::max(cur_height - at_height, 1))
+                    }
+                    Exposure::Unknown => 1.0,
+                    Exposure::CannotKnow => 1.0,
+                };
+
+                // We will schedule the next check to occur after approximately
+                // log2(blocks_since_exposure) additional blocks.
+                let offset_blocks = blocks_since_exposure.log2();
+                // Convert the offset in blocks to an offset in seconds; this will always fit in a
+                // u32.
+                let offset_seconds = (offset_blocks * 75.0).round() as u32;
+                db_data.schedule_next_check(&addr, offset_seconds)?;
+            }
+        }
+
+        match found {
+            Some(address) => {
+                let address_str = address.encode(&network);
+                Ok(env.new_string(address_str)?.into_raw())
+            }
+            None => Ok(ptr::null_mut()),
+        }
+    });
+
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Retrieves transactions corresponding to the given t-address from the light wallet server that
+/// were mined within the given block range, and adds them to the wallet using
+/// [`decrypt_and_store_transaction`].
+///
+/// The start height must be in the range of a valid u32.
+///
+/// The end height is optional; to omit the end height for the query range use the sentinel value
+/// `-1`. If any other value is specified, it must be in the range of a valid u32. Note that older
+/// versions of `lightwalletd` will return an error if the end height is not specified.
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_updateTransparentAddressTransactions<
     'local,
@@ -3245,7 +3457,8 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_upd
                 Address::Transparent(addr) => Ok(addr),
             },
         }?;
-        let start = parse_optional_height(start)?;
+        let start = parse_optional_height(start)?
+            .ok_or_else(|| anyhow!("Start height for address queries is non-optional."))?;
         let end = parse_optional_height(end)?;
 
         lwd_conn.with_taddress_transactions(
@@ -3286,7 +3499,10 @@ fn parse_network(value: u32) -> anyhow::Result<Network> {
     match value {
         0 => Ok(TestNetwork),
         1 => Ok(MainNetwork),
-        _ => Err(anyhow!("Invalid network type: {}. Expected either 0 or 1 for Testnet or Mainnet, respectively.", value))
+        _ => Err(anyhow!(
+            "Invalid network type: {}. Expected either 0 or 1 for Testnet or Mainnet, respectively.",
+            value
+        )),
     }
 }
 

@@ -6,6 +6,9 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Migrated to Rust 1.90.0.
+
 ## [2.3.9] - 2025-10-23
 
 ### Changed

@@ -4,11 +4,11 @@ use std::panic::{self, AssertUnwindSafe, UnwindSafe};
 use std::thread;
 
 use jni::{
+    JNIEnv,
     descriptors::Desc,
     errors::{Error as JNIError, Result as JNIResult},
     objects::{JByteArray, JClass, JObject, JObjectArray, JString},
     sys::jsize,
-    JNIEnv,
 };
 
 pub(crate) mod exception;

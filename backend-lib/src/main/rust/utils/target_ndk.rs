@@ -1,8 +1,8 @@
 //! Utilities for accessing target NDK APIs.
 
 use dlopen2::{
-    wrapper::{Container, WrapperApi, WrapperMultiApi},
     Error,
+    wrapper::{Container, WrapperApi, WrapperMultiApi},
 };
 use libc::c_char;
 

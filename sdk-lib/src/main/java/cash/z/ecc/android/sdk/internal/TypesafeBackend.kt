@@ -20,6 +20,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.SingleUseTransparentAddress
 import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
@@ -132,6 +133,13 @@ internal interface TypesafeBackend {
 
     @Throws(RustLayerException.GetAddressException::class)
     suspend fun getCurrentAddress(account: Account): String
+
+    /**
+     * Generates and returns an ephemeral address for one-time use, such as when receiving a swap
+     * from a decentralized exchange.
+     */
+    @Throws(RustLayerException.GetAddressException::class)
+    suspend fun getSingleUseTransparentAddress(account: Account): SingleUseTransparentAddress
 
     @Throws(RustLayerException.GetAddressException::class)
     suspend fun getNextAvailableAddress(
