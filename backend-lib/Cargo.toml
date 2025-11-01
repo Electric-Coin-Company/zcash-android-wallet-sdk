@@ -97,15 +97,15 @@ xz2 = { version = "0.1", features = ["static"] }
 #zcash_protocol = { git = "https://github.com/zcash/librustzcash", branch = "main" }
 
 [patch.crates-io]
-pczt = { git = "https://github.com/zcash/librustzcash.git", rev = "d59451b90c5037183dd800151fc35110b6846d37" }
-transparent = { package = "zcash_transparent", git = "https://github.com/zcash/librustzcash", rev = "d59451b90c5037183dd800151fc35110b6846d37" }
-zcash_address = { git = "https://github.com/zcash/librustzcash", rev = "d59451b90c5037183dd800151fc35110b6846d37" }
-zcash_client_backend = { git = "https://github.com/zcash/librustzcash", rev = "d59451b90c5037183dd800151fc35110b6846d37" }
-zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash", rev = "d59451b90c5037183dd800151fc35110b6846d37" }
-zcash_keys = { git = "https://github.com/zcash/librustzcash", rev = "d59451b90c5037183dd800151fc35110b6846d37" }
-zcash_primitives = { git = "https://github.com/zcash/librustzcash", rev = "d59451b90c5037183dd800151fc35110b6846d37" }
-zcash_proofs = { git = "https://github.com/zcash/librustzcash", rev = "d59451b90c5037183dd800151fc35110b6846d37" }
-zcash_protocol = { git = "https://github.com/zcash/librustzcash", rev = "d59451b90c5037183dd800151fc35110b6846d37" }
+pczt = { git = "https://github.com/zcash/librustzcash.git", rev = "3110d0a693ea8e04794198c1fa3acdc86f9db98c" }
+transparent = { package = "zcash_transparent", git = "https://github.com/zcash/librustzcash", rev = "3110d0a693ea8e04794198c1fa3acdc86f9db98c" }
+zcash_address = { git = "https://github.com/zcash/librustzcash", rev = "3110d0a693ea8e04794198c1fa3acdc86f9db98c" }
+zcash_client_backend = { git = "https://github.com/zcash/librustzcash", rev = "3110d0a693ea8e04794198c1fa3acdc86f9db98c" }
+zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash", rev = "3110d0a693ea8e04794198c1fa3acdc86f9db98c" }
+zcash_keys = { git = "https://github.com/zcash/librustzcash", rev = "3110d0a693ea8e04794198c1fa3acdc86f9db98c" }
+zcash_primitives = { git = "https://github.com/zcash/librustzcash", rev = "3110d0a693ea8e04794198c1fa3acdc86f9db98c" }
+zcash_proofs = { git = "https://github.com/zcash/librustzcash", rev = "3110d0a693ea8e04794198c1fa3acdc86f9db98c" }
+zcash_protocol = { git = "https://github.com/zcash/librustzcash", rev = "3110d0a693ea8e04794198c1fa3acdc86f9db98c" }
 
 [lib]
 name = "zcashwalletsdk"
