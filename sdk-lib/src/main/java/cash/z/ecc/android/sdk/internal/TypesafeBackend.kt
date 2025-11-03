@@ -16,7 +16,6 @@ import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountImportSetup
 import cash.z.ecc.android.sdk.model.AccountUsk
-import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Pczt
@@ -30,8 +29,6 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 @Suppress("TooManyFunctions")
 internal interface TypesafeBackend {
-    val backend: Backend
-
     val network: ZcashNetwork
 
     suspend fun getAccounts(): List<Account>
@@ -142,7 +139,7 @@ internal interface TypesafeBackend {
      * from a decentralized exchange.
      */
     @Throws(RustLayerException.GetAddressException::class)
-    suspend fun getSingleUseTransparentAddress(accountUuid: AccountUuid): SingleUseTransparentAddress
+    suspend fun getSingleUseTransparentAddress(account: Account): SingleUseTransparentAddress
 
     @Throws(RustLayerException.GetAddressException::class)
     suspend fun getNextAvailableAddress(

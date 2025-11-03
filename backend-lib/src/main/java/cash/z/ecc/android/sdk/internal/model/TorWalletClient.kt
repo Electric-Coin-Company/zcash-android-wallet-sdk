@@ -1,6 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model
 
-import cash.z.ecc.android.sdk.internal.Backend
+import cash.z.ecc.android.sdk.internal.jni.RustBackend
 import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.PartialTorWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
@@ -18,7 +18,6 @@ import kotlinx.coroutines.withContext
 
 class TorWalletClient private constructor(
     private var nativeHandle: Long?,
-    private val backend: Backend
 ) : PartialTorWalletClient {
     private val semaphore = Mutex()
 
@@ -67,7 +66,10 @@ class TorWalletClient private constructor(
             TreeStateUnsafe.new(Service.TreeState.parseFrom(treeState))
         }
 
-    override suspend fun checkSingleUseTransparentAddress(accountUuid: ByteArray): Response<String?> =
+    suspend fun checkSingleUseTransparentAddress(
+        backend: RustBackend,
+        accountUuid: ByteArray,
+    ) =
         backend.withWallet { dataDbFile, networkId ->
             execute {
                 checkSingleUseTaddr(
@@ -80,7 +82,7 @@ class TorWalletClient private constructor(
         }
 
     suspend fun updateTransparentAddressTransactions(
-        backend: Backend,
+        backend: RustBackend,
         address: String,
         startHeight: BlockHeightUnsafe,
         endHeight: BlockHeightUnsafe?,
@@ -114,9 +116,9 @@ class TorWalletClient private constructor(
     }
 
     companion object {
-        internal suspend fun new(nativeHandle: Long, backend: Backend): TorWalletClient =
+        internal suspend fun new(nativeHandle: Long): TorWalletClient =
             withContext(Dispatchers.IO) {
-                TorWalletClient(nativeHandle, backend)
+                TorWalletClient(nativeHandle)
             }
 
         @JvmStatic

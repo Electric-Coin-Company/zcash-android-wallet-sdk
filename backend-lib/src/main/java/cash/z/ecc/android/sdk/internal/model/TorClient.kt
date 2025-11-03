@@ -1,6 +1,5 @@
 package cash.z.ecc.android.sdk.internal.model
 
-import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.ext.existsSuspend
 import cash.z.ecc.android.sdk.internal.ext.mkdirsSuspend
 import cash.z.ecc.android.sdk.internal.jni.RustBackend
@@ -15,7 +14,6 @@ import java.math.BigDecimal
 
 class TorClient private constructor(
     private var nativeHandle: Long?,
-    private val backend: Backend,
 ) : Disposable {
     private val accessMutex = Mutex()
 
@@ -50,7 +48,7 @@ class TorClient private constructor(
     private suspend fun isolatedTorClientInternal() =
         withContext(Dispatchers.IO) {
             checkNotNull(nativeHandle) { "TorClient is disposed" }
-            TorClient(isolatedClient(nativeHandle!!), backend)
+            TorClient(nativeHandle = isolatedClient(nativeHandle!!))
         }
 
     /**
@@ -139,14 +137,13 @@ class TorClient private constructor(
                         connectToLightwalletd(
                             nativeHandle = nativeHandle!!,
                             endpoint = endpoint
-                        ),
-                    backend = backend
+                        )
                 )
             }
         }
 
     companion object {
-        suspend fun new(torDir: File, backend: Backend): TorClient =
+        suspend fun new(torDir: File): TorClient =
             withContext(Dispatchers.IO) {
                 RustBackend.loadLibrary()
 
@@ -156,7 +153,7 @@ class TorClient private constructor(
                     error("${torDir.path} directory does not exist and could not be created.")
                 }
 
-                TorClient(createTorRuntime(torDir.path), backend)
+                TorClient(nativeHandle = createTorRuntime(torDir.path))
             }
 
         //

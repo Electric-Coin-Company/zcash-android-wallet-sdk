@@ -8,13 +8,13 @@ import cash.z.ecc.android.sdk.internal.model.JniSingleUseTransparentAddress
  *
  * This address is for one-time use, such as when receiving a swap from a decentralized exchange.
  */
-data class SingleUseTransparentAddress private constructor(
+class SingleUseTransparentAddress private constructor(
     /**
      * The ephemeral transparent address.
      */
     val address: String,
-    val gapPosition: UInt,
-    val gapLimit: UInt,
+    private val gapPosition: UInt,
+    private val gapLimit: UInt,
 ) {
     override fun toString() = "SingleUseTransparentAddress(..)"
 

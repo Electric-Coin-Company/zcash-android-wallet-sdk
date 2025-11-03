@@ -28,7 +28,7 @@ import java.io.File
 @Suppress("TooManyFunctions")
 class RustBackend private constructor(
     override val networkId: Int,
-    override val dataDbFile: File,
+    private val dataDbFile: File,
     private val fsBlockDbRoot: File,
     private val saplingSpendFile: File,
     private val saplingOutputFile: File,
@@ -59,6 +59,16 @@ class RustBackend private constructor(
             }
         }
         return cacheClearResult && dataClearResult
+    }
+
+    //
+    // Helper Functions
+    //
+
+    internal suspend fun <T> withWallet(
+        block: suspend (dataDbFile: File, networkId: Int) -> T
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
+        block(dataDbFile, networkId)
     }
 
     //
@@ -511,7 +521,7 @@ class RustBackend private constructor(
         txId: ByteArray,
         status: Long
     ) = withContext(SdkDispatchers.DATABASE_IO) {
-        setTransactionStatus(
+        Companion.setTransactionStatus(
             dataDbFile.absolutePath,
             txId,
             status,
