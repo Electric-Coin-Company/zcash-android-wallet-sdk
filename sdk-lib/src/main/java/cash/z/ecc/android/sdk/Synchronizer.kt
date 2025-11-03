@@ -32,6 +32,7 @@ import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.SdkFlags
+import cash.z.ecc.android.sdk.model.SingleUseTransparentAddress
 import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionOutput
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -605,6 +606,14 @@ interface Synchronizer {
      */
     suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<TransactionOverview>>
 
+    /**
+     * Generates and returns an ephemeral address for one-time use, such as when receiving a swap
+     * from a decentralized exchange.
+     */
+    suspend fun getSingleUseTransparentAddress(accountUuid: AccountUuid): SingleUseTransparentAddress
+
+    suspend fun checkSingleUseTransparentAddress(accountUuid: AccountUuid): Boolean
+
     fun onBackground()
 
     fun onForeground()
@@ -821,7 +830,7 @@ interface Synchronizer {
             val torClient =
                 if (sdkFlags.isTorEnabled || sdkFlags.isExchangeRateEnabled) {
                     try {
-                        TorClient.new(torDir)
+                        TorClient.new(torDir, backend.backend)
                     } catch (e: Exception) {
                         Twig.error(e) { "Error instantiating Tor Client" }
                         null

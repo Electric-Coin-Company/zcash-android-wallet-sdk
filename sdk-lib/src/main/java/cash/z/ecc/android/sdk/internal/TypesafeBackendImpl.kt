@@ -17,6 +17,7 @@ import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountImportSetup
 import cash.z.ecc.android.sdk.model.AccountPurpose
 import cash.z.ecc.android.sdk.model.AccountUsk
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Pczt
@@ -31,7 +32,7 @@ import kotlinx.coroutines.withContext
 
 @Suppress("TooManyFunctions")
 internal class TypesafeBackendImpl(
-    private val backend: Backend
+    override val backend: Backend
 ) : TypesafeBackend {
     override val network: ZcashNetwork
         get() = ZcashNetwork.from(backend.networkId)
@@ -184,9 +185,9 @@ internal class TypesafeBackendImpl(
             Twig.warn(it) { "Currently unable to get current address" }
         }.getOrElse { throw RustLayerException.GetAddressException(it) }
 
-    override suspend fun getSingleUseTransparentAddress(account: Account): SingleUseTransparentAddress =
+    override suspend fun getSingleUseTransparentAddress(accountUuid: AccountUuid): SingleUseTransparentAddress =
         runCatching {
-            SingleUseTransparentAddress.new(backend.getSingleUseTransparentAddress(account.accountUuid.value))
+            SingleUseTransparentAddress.new(backend.getSingleUseTransparentAddress(accountUuid.value))
         }.onFailure {
             Twig.warn(it) { "Currently unable to get single-use transparent address" }
         }.getOrElse { throw RustLayerException.GetAddressException(it) }
