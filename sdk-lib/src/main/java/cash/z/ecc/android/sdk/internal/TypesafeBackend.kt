@@ -16,10 +16,12 @@ import cash.z.ecc.android.sdk.internal.model.ZcashProtocol
 import cash.z.ecc.android.sdk.model.Account
 import cash.z.ecc.android.sdk.model.AccountImportSetup
 import cash.z.ecc.android.sdk.model.AccountUsk
+import cash.z.ecc.android.sdk.model.AccountUuid
 import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.SingleUseTransparentAddress
 import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
 import cash.z.ecc.android.sdk.model.UnifiedSpendingKey
@@ -28,6 +30,8 @@ import cash.z.ecc.android.sdk.model.ZcashNetwork
 
 @Suppress("TooManyFunctions")
 internal interface TypesafeBackend {
+    val backend: Backend
+
     val network: ZcashNetwork
 
     suspend fun getAccounts(): List<Account>
@@ -132,6 +136,13 @@ internal interface TypesafeBackend {
 
     @Throws(RustLayerException.GetAddressException::class)
     suspend fun getCurrentAddress(account: Account): String
+
+    /**
+     * Generates and returns an ephemeral address for one-time use, such as when receiving a swap
+     * from a decentralized exchange.
+     */
+    @Throws(RustLayerException.GetAddressException::class)
+    suspend fun getSingleUseTransparentAddress(accountUuid: AccountUuid): SingleUseTransparentAddress
 
     @Throws(RustLayerException.GetAddressException::class)
     suspend fun getNextAvailableAddress(

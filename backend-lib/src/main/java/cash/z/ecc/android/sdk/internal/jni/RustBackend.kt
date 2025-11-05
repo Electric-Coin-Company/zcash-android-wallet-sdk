@@ -10,6 +10,7 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniScanSummary
+import cash.z.ecc.android.sdk.internal.model.JniSingleUseTransparentAddress
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
@@ -27,7 +28,7 @@ import java.io.File
 @Suppress("TooManyFunctions")
 class RustBackend private constructor(
     override val networkId: Int,
-    private val dataDbFile: File,
+    override val dataDbFile: File,
     private val fsBlockDbRoot: File,
     private val saplingSpendFile: File,
     private val saplingOutputFile: File,
@@ -58,16 +59,6 @@ class RustBackend private constructor(
             }
         }
         return cacheClearResult && dataClearResult
-    }
-
-    //
-    // Helper Functions
-    //
-
-    internal suspend fun <T> withWallet(
-        block: suspend (dataDbFile: File, networkId: Int) -> T
-    ) = withContext(SdkDispatchers.DATABASE_IO) {
-        block(dataDbFile, networkId)
     }
 
     //
@@ -166,6 +157,15 @@ class RustBackend private constructor(
                 dataDbFile.absolutePath,
                 accountUuid,
                 networkId = networkId
+            )
+        }
+
+    override suspend fun getSingleUseTransparentAddress(accountUuid: ByteArray) =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            getSingleUseTaddr(
+                dataDbFile.absolutePath,
+                networkId,
+                accountUuid,
             )
         }
 
@@ -511,7 +511,7 @@ class RustBackend private constructor(
         txId: ByteArray,
         status: Long
     ) = withContext(SdkDispatchers.DATABASE_IO) {
-        Companion.setTransactionStatus(
+        setTransactionStatus(
             dataDbFile.absolutePath,
             txId,
             status,
@@ -639,6 +639,13 @@ class RustBackend private constructor(
             accountUuid: ByteArray,
             networkId: Int
         ): String
+
+        @JvmStatic
+        private external fun getSingleUseTaddr(
+            dbDataPath: String,
+            networkId: Int,
+            accountUuid: ByteArray,
+        ): JniSingleUseTransparentAddress
 
         @JvmStatic
         private external fun getNextAvailableAddress(

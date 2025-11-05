@@ -6,10 +6,13 @@ import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniScanSummary
+import cash.z.ecc.android.sdk.internal.model.JniSingleUseTransparentAddress
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
+import kotlinx.coroutines.withContext
+import java.io.File
 
 /**
  * Contract defining the exposed capabilities of the Rust backend.
@@ -20,6 +23,8 @@ import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
 @Suppress("TooManyFunctions")
 interface Backend {
     val networkId: Int
+
+    val dataDbFile: File
 
     suspend fun initBlockMetaDb(): Int
 
@@ -196,6 +201,9 @@ interface Backend {
     suspend fun getCurrentAddress(accountUuid: ByteArray): String
 
     @Throws(RuntimeException::class)
+    suspend fun getSingleUseTransparentAddress(accountUuid: ByteArray): JniSingleUseTransparentAddress
+
+    @Throws(RuntimeException::class)
     suspend fun getNextAvailableAddress(
         accountUuid: ByteArray,
         receiverFlags: Int
@@ -349,4 +357,14 @@ interface Backend {
         txId: ByteArray,
         status: Long,
     )
+
+    //
+    // Helper Functions
+    //
+
+    suspend fun <T> withWallet(
+        block: suspend (dataDbFile: File, networkId: Int) -> T
+    ) = withContext(SdkDispatchers.DATABASE_IO) {
+        block(dataDbFile, networkId)
+    }
 }

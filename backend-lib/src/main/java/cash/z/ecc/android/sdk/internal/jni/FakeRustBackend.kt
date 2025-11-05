@@ -1,4 +1,4 @@
-package cash.z.ecc.fixture
+package cash.z.ecc.android.sdk.internal.jni
 
 import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.model.JniAccount
@@ -6,15 +6,21 @@ import cash.z.ecc.android.sdk.internal.model.JniAccountUsk
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
+import cash.z.ecc.android.sdk.internal.model.JniSingleUseTransparentAddress
 import cash.z.ecc.android.sdk.internal.model.JniSubtreeRoot
 import cash.z.ecc.android.sdk.internal.model.JniTransactionDataRequest
 import cash.z.ecc.android.sdk.internal.model.JniWalletSummary
 import cash.z.ecc.android.sdk.internal.model.ProposalUnsafe
+import java.io.File
 
-internal class FakeRustBackend(
+@Suppress("TooManyFunctions")
+class FakeRustBackend(
     override val networkId: Int,
     val metadata: MutableList<JniBlockMeta>
 ) : Backend {
+    override val dataDbFile: File
+        get() = error("Intentionally not implemented yet.")
+
     override suspend fun writeBlockMetadata(blockMetadata: List<JniBlockMeta>) {
         metadata.addAll(blockMetadata)
     }
@@ -201,6 +207,10 @@ internal class FakeRustBackend(
 
     override suspend fun getCurrentAddress(accountUuid: ByteArray): String {
         error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun getSingleUseTransparentAddress(accountUuid: ByteArray): JniSingleUseTransparentAddress {
+        error("Intentionally not implemented in mocked FakeRustBackend implementation.")
     }
 
     override suspend fun getNextAvailableAddress(

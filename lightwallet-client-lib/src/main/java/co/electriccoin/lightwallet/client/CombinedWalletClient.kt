@@ -123,6 +123,14 @@ interface CombinedWalletClient : Disposable {
         serviceMode: ServiceMode
     ): Response<TreeStateUnsafe>
 
+    suspend fun checkSingleUseTransparentAddress(accountUuid: ByteArray, serviceMode: ServiceMode): Response<String?>
+
+    suspend fun fetchUtxosByAddress(
+        accountUuid: ByteArray,
+        address: String,
+        serviceMode: ServiceMode
+    ): Response<String?>
+
     /**
      * Reconnect to the same or a different server. This is useful when the connection is
      * unrecoverable. That might be time to switch to a mirror or just reconnect.

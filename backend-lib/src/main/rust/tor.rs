@@ -5,17 +5,24 @@ use std::path::Path;
 
 use anyhow::anyhow;
 use tonic::transport::{Channel, Uri};
-use tor_rtcompat::{BlockOn, PreferredRuntime};
-use transparent::address::TransparentAddress;
+use tor_rtcompat::{PreferredRuntime, ToplevelBlockOn};
+
+use transparent::{
+    address::{Script, TransparentAddress},
+    bundle::{OutPoint, TxOut},
+};
 use zcash_client_backend::{
     encoding::AddressCodec,
     proto::service::{self, compact_tx_streamer_client::CompactTxStreamerClient},
     tor::{Client, DormantMode},
+    wallet::WalletTransparentOutput,
 };
 use zcash_protocol::{
-    consensus::{self, BlockHeight},
     TxId,
+    consensus::{self, BlockHeight},
+    value::Zatoshis,
 };
+use zcash_script::script;
 
 pub struct TorRuntime {
     runtime: PreferredRuntime,
@@ -159,6 +166,47 @@ impl LwdConn {
         }
     }
 
+    /// Calls the given closure with UTXOS corresponding to the given t-address within the given
+    /// block range.
+    pub(crate) fn with_taddress_utxos(
+        &mut self,
+        params: &impl consensus::Parameters,
+        address: TransparentAddress,
+        start: Option<BlockHeight>,
+        limit: Option<u32>,
+        mut f: impl FnMut(WalletTransparentOutput) -> anyhow::Result<()>,
+    ) -> anyhow::Result<()> {
+        let request = service::GetAddressUtxosArg {
+            addresses: vec![address.encode(params)],
+            start_height: start.map_or(0, u64::from),
+            max_entries: limit.unwrap_or(0),
+        };
+
+        self.runtime.clone().block_on(async {
+            let mut utxos = self
+                .conn
+                .get_address_utxos_stream(request)
+                .await?
+                .into_inner();
+
+            while let Some(result) = utxos.message().await? {
+                f(WalletTransparentOutput::from_parts(
+                    OutPoint::new(result.txid[..].try_into()?, result.index.try_into()?),
+                    TxOut::new(
+                        Zatoshis::from_nonnegative_i64(result.value_zat)?,
+                        Script(script::Code(result.script)),
+                    ),
+                    Some(BlockHeight::from(u32::try_from(result.height)?)),
+                )
+                .ok_or(anyhow!(
+                    "Received UTXO that doesn't correspond to a valid P2PKH or P2SH address"
+                ))?)?;
+            }
+
+            Ok(())
+        })
+    }
+
     /// Calls the given closure with the transactions corresponding to the given t-address
     /// within the given block range, and the height of the main-chain block they are
     /// mined in (if any).
@@ -166,15 +214,15 @@ impl LwdConn {
         &mut self,
         params: &impl consensus::Parameters,
         address: TransparentAddress,
-        start: Option<BlockHeight>,
+        start: BlockHeight,
         end: Option<BlockHeight>,
         mut f: impl FnMut(Vec<u8>, Option<BlockHeight>) -> anyhow::Result<()>,
     ) -> anyhow::Result<()> {
         let request = service::TransparentAddressBlockFilter {
             address: address.encode(params),
-            range: (start.is_some() || end.is_some()).then(|| service::BlockRange {
-                start: start.map(|height| service::BlockId {
-                    height: u32::from(height).into(),
+            range: Some(service::BlockRange {
+                start: Some(service::BlockId {
+                    height: u32::from(start).into(),
                     ..Default::default()
                 }),
                 end: end.map(|height| service::BlockId {

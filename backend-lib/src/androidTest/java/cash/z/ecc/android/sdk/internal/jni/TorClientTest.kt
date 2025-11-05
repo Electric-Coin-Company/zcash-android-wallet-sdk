@@ -29,7 +29,7 @@ class TorClientTest {
         runTest {
             // Spin up a new Tor client.
             val torDir = createTempDirectory("tor-client-").toFile()
-            val torClient = TorClient.new(torDir)
+            val torClient = TorClient.new(torDir, FakeRustBackend(0, mutableListOf()))
 
             // Connect to a testnet lightwalletd server.
             val lwdConn = torClient.createIsolatedWalletClient("https://testnet.zec.rocks:443")

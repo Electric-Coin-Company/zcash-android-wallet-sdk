@@ -1,8 +1,7 @@
 package cash.z.ecc.android.sdk
 
 import android.content.Context
-import cash.z.ecc.android.sdk.WalletInitMode.ExistingWallet
-import cash.z.ecc.android.sdk.WalletInitMode.NewWallet
+import cash.z.ecc.android.sdk.Synchronizer.Companion.new
 import cash.z.ecc.android.sdk.WalletInitMode.RestoreWallet
 import cash.z.ecc.android.sdk.block.processor.CompactBlockProcessor
 import cash.z.ecc.android.sdk.exception.InitializeException
@@ -32,6 +31,7 @@ import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.SdkFlags
+import cash.z.ecc.android.sdk.model.SingleUseTransparentAddress
 import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionOutput
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -605,6 +605,30 @@ interface Synchronizer {
      */
     suspend fun getTransactions(accountUuid: AccountUuid): Flow<List<TransactionOverview>>
 
+    /**
+     * Generates and returns an ephemeral address for one-time use, such as when receiving a swap
+     * from a decentralized exchange.
+     */
+    suspend fun getSingleUseTransparentAddress(accountUuid: AccountUuid): SingleUseTransparentAddress
+
+    /**
+     * Checks to find any single-use ephemeral addresses exposed in the past day that have not yet
+     * received funds, excluding any whose next check time is in the future. This will then choose the
+     * address that is most overdue for checking, retrieve any UTXOs for that address over Tor, and
+     * add them to the wallet database. If no such UTXOs are found, the check will be rescheduled
+     * following an expoential-backoff-with-jitter algorithm.
+     */
+    suspend fun checkSingleUseTransparentAddress(accountUuid: AccountUuid): Boolean
+
+    /**
+     * Queries the light wallet server to find any UTXOs associated with the given transparent
+     * address, and adds any UTXOs discovered to the wallet.
+     *
+     * This check will cover the block range starting at the exposure height for that address, if
+     * known, or otherwise at the birthday height of the specified account.
+     */
+    suspend fun fetchUtxosByAddress(accountUuid: AccountUuid, address: String): Boolean
+
     fun onBackground()
 
     fun onForeground()
@@ -821,7 +845,7 @@ interface Synchronizer {
             val torClient =
                 if (sdkFlags.isTorEnabled || sdkFlags.isExchangeRateEnabled) {
                     try {
-                        TorClient.new(torDir)
+                        TorClient.new(torDir, backend.backend)
                     } catch (e: Exception) {
                         Twig.error(e) { "Error instantiating Tor Client" }
                         null

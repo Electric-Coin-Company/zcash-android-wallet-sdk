@@ -1,6 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model
 
-import cash.z.ecc.android.sdk.internal.jni.RustBackend
+import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.PartialTorWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 
 class TorWalletClient private constructor(
     private var nativeHandle: Long?,
+    private val backend: Backend
 ) : PartialTorWalletClient {
     private val semaphore = Mutex()
 
@@ -66,19 +67,50 @@ class TorWalletClient private constructor(
             TreeStateUnsafe.new(Service.TreeState.parseFrom(treeState))
         }
 
+    override suspend fun checkSingleUseTransparentAddress(accountUuid: ByteArray): Response<String?> =
+        backend.withWallet { dataDbFile, networkId ->
+            execute {
+                checkSingleUseTaddr(
+                    it,
+                    dataDbFile.absolutePath,
+                    networkId,
+                    accountUuid,
+                )
+            }
+        }
+
+    override suspend fun fetchUtxosByAddress(accountUuid: ByteArray, address: String): Response<String?> =
+        backend.withWallet { dataDbFile, networkId ->
+            execute {
+                when (
+                    val result =
+                        fetchUtxosByAddress(
+                            nativeHandle = it,
+                            dbDataPath = dataDbFile.absolutePath,
+                            networkId = networkId,
+                            accountUuid = accountUuid,
+                            address = address
+                        )
+                ) {
+                    is JniAddressCheckResult.Found -> result.address
+                    JniAddressCheckResult.NotFound -> null
+                }
+            }
+        }
+
     suspend fun updateTransparentAddressTransactions(
-        backend: RustBackend,
+        backend: Backend,
         address: String,
-        startHeight: BlockHeightUnsafe?,
+        startHeight: BlockHeightUnsafe,
         endHeight: BlockHeightUnsafe?,
-    ) =
+    ): Response<JniAddressCheckResult> =
         backend.withWallet { dataDbFile, networkId ->
             execute {
                 updateTransparentAddressTransactions(
                     it,
                     dataDbFile.absolutePath,
                     address,
-                    startHeight?.value ?: -1,
+                    startHeight.value,
                     endHeight?.value ?: -1,
                     networkId = networkId
                 )
@@ -101,9 +133,9 @@ class TorWalletClient private constructor(
     }
 
     companion object {
-        internal suspend fun new(nativeHandle: Long): TorWalletClient =
+        internal suspend fun new(nativeHandle: Long, backend: Backend): TorWalletClient =
             withContext(Dispatchers.IO) {
-                TorWalletClient(nativeHandle)
+                TorWalletClient(nativeHandle, backend)
             }
 
         @JvmStatic
@@ -150,6 +182,19 @@ class TorWalletClient private constructor(
         @JvmStatic
         @Throws(RuntimeException::class)
         @Suppress("LongParameterList")
+        private external fun checkSingleUseTaddr(
+            nativeHandle: Long,
+            dbDataPath: String,
+            networkId: Int,
+            accountUuid: ByteArray,
+        ): String?
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        @Suppress("LongParameterList")
         private external fun updateTransparentAddressTransactions(
             nativeHandle: Long,
             dbDataPath: String,
@@ -157,6 +202,20 @@ class TorWalletClient private constructor(
             startHeight: Long,
             endHeight: Long,
             networkId: Int,
-        )
+        ): JniAddressCheckResult
+
+        /**
+         * @throws RuntimeException as a common indicator of the operation failure
+         */
+        @JvmStatic
+        @Throws(RuntimeException::class)
+        @Suppress("LongParameterList")
+        private external fun fetchUtxosByAddress(
+            nativeHandle: Long,
+            dbDataPath: String,
+            networkId: Int,
+            accountUuid: ByteArray,
+            address: String,
+        ): JniAddressCheckResult
     }
 }
