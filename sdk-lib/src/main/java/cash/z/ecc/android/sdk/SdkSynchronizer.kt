@@ -62,6 +62,7 @@ import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.Proposal
 import cash.z.ecc.android.sdk.model.SdkFlags
+import cash.z.ecc.android.sdk.model.SingleUseTransparentAddress
 import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionOutput
 import cash.z.ecc.android.sdk.model.TransactionOverview
@@ -545,6 +546,39 @@ class SdkSynchronizer private constructor(
             allAccountTransactions
                 .map { TransactionOverview.new(it, latestBlockHeight) }
                 .map { it.checkAndFillInTime(storage) }
+        }
+
+    override suspend fun getSingleUseTransparentAddress(accountUuid: AccountUuid): SingleUseTransparentAddress =
+        backend
+            .getSingleUseTransparentAddress(
+                accountUuid
+            )
+
+    override suspend fun checkSingleUseTransparentAddress(accountUuid: AccountUuid): Boolean =
+        when (
+            val result =
+                walletClient
+                    .checkSingleUseTransparentAddress(
+                        accountUuid = accountUuid.value,
+                        serviceMode = ServiceMode.UniqueTor
+                    )
+        ) {
+            is Response.Success<String?> -> result.result != null
+            is Response.Failure -> false
+        }
+
+    override suspend fun fetchUtxosByAddress(accountUuid: AccountUuid, address: String): Boolean =
+        when (
+            val result =
+                walletClient
+                    .fetchUtxosByAddress(
+                        accountUuid = accountUuid.value,
+                        address = address,
+                        serviceMode = ServiceMode.UniqueTor
+                    )
+        ) {
+            is Response.Failure -> false
+            is Response.Success<String?> -> result.result != null
         }
 
     override fun onBackground() {

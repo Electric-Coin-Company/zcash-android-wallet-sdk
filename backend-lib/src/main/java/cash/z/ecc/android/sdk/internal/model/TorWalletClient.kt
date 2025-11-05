@@ -1,6 +1,6 @@
 package cash.z.ecc.android.sdk.internal.model
 
-import cash.z.ecc.android.sdk.internal.jni.RustBackend
+import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.wallet.sdk.internal.rpc.Service
 import co.electriccoin.lightwallet.client.PartialTorWalletClient
 import co.electriccoin.lightwallet.client.model.BlockHeightUnsafe
@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 
 class TorWalletClient private constructor(
     private var nativeHandle: Long?,
+    private val backend: Backend
 ) : PartialTorWalletClient {
     private val semaphore = Mutex()
 
@@ -66,10 +67,7 @@ class TorWalletClient private constructor(
             TreeStateUnsafe.new(Service.TreeState.parseFrom(treeState))
         }
 
-    suspend fun checkSingleUseTransparentAddress(
-        backend: RustBackend,
-        accountUuid: ByteArray,
-    ) =
+    override suspend fun checkSingleUseTransparentAddress(accountUuid: ByteArray): Response<String?> =
         backend.withWallet { dataDbFile, networkId ->
             execute {
                 checkSingleUseTaddr(
@@ -81,8 +79,27 @@ class TorWalletClient private constructor(
             }
         }
 
+    override suspend fun fetchUtxosByAddress(accountUuid: ByteArray, address: String): Response<String?> =
+        backend.withWallet { dataDbFile, networkId ->
+            execute {
+                when (
+                    val result =
+                        fetchUtxosByAddress(
+                            nativeHandle = it,
+                            dbDataPath = dataDbFile.absolutePath,
+                            networkId = networkId,
+                            accountUuid = accountUuid,
+                            address = address
+                        )
+                ) {
+                    is JniAddressCheckResult.Found -> result.address
+                    JniAddressCheckResult.NotFound -> null
+                }
+            }
+        }
+
     suspend fun updateTransparentAddressTransactions(
-        backend: RustBackend,
+        backend: Backend,
         address: String,
         startHeight: BlockHeightUnsafe,
         endHeight: BlockHeightUnsafe?,
@@ -96,23 +113,6 @@ class TorWalletClient private constructor(
                     startHeight.value,
                     endHeight?.value ?: -1,
                     networkId = networkId
-                )
-            }
-        }
-
-    suspend fun fetchUtxosByAddress(
-        backend: RustBackend,
-        accountUuid: ByteArray,
-        address: String,
-    ): Response<JniAddressCheckResult> =
-        backend.withWallet { dataDbFile, networkId ->
-            execute {
-                fetchUtxosByAddress(
-                    it,
-                    dataDbFile.absolutePath,
-                    networkId = networkId,
-                    accountUuid,
-                    address
                 )
             }
         }
@@ -133,9 +133,9 @@ class TorWalletClient private constructor(
     }
 
     companion object {
-        internal suspend fun new(nativeHandle: Long): TorWalletClient =
+        internal suspend fun new(nativeHandle: Long, backend: Backend): TorWalletClient =
             withContext(Dispatchers.IO) {
-                TorWalletClient(nativeHandle)
+                TorWalletClient(nativeHandle, backend)
             }
 
         @JvmStatic

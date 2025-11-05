@@ -28,6 +28,12 @@ class IsolatedTorWalletClient private constructor(
 
     override suspend fun getTreeState(height: BlockHeightUnsafe) = executeAndDispose { it.getTreeState(height) }
 
+    override suspend fun checkSingleUseTransparentAddress(accountUuid: ByteArray): Response<String?> =
+        executeAndDispose { it.checkSingleUseTransparentAddress(accountUuid) }
+
+    override suspend fun fetchUtxosByAddress(accountUuid: ByteArray, address: String): Response<String?> =
+        executeAndDispose { it.fetchUtxosByAddress(accountUuid, address) }
+
     @Suppress("TooGenericExceptionCaught")
     private suspend fun <T> executeAndDispose(
         block: suspend (PartialTorWalletClient) -> Response<T>
