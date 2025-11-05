@@ -6,6 +6,16 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2025-11-05
+
+### Added
+- `Synchronizer.fetchUtxosByAddress` function added to query light wallet server to find any UTXOs associated with 
+  given transparent address
+- `Synchronizer.getSingleUseTransparentAddress` function added that returns an ephemeral transparent address for 
+  one-time use
+- `Synchronizer.checkSingleUseTransparentAddress` function added to check for most overdue ephemeral address within 
+  24h window to retrieve and store it's UTXOs.
+
 ### Changed
 - Migrated to Rust 1.90.0.
 
