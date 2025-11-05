@@ -83,13 +83,14 @@ class TorWalletClient private constructor(
         backend.withWallet { dataDbFile, networkId ->
             execute {
                 when (
-                    val result = fetchUtxosByAddress(
-                        nativeHandle = it,
-                        dbDataPath = dataDbFile.absolutePath,
-                        networkId = networkId,
-                        accountUuid = accountUuid,
-                        address = address
-                    )
+                    val result =
+                        fetchUtxosByAddress(
+                            nativeHandle = it,
+                            dbDataPath = dataDbFile.absolutePath,
+                            networkId = networkId,
+                            accountUuid = accountUuid,
+                            address = address
+                        )
                 ) {
                     is JniAddressCheckResult.Found -> result.address
                     JniAddressCheckResult.NotFound -> null

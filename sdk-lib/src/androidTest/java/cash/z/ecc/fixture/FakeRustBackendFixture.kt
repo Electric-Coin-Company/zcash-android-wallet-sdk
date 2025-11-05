@@ -1,5 +1,6 @@
 package cash.z.ecc.fixture
 
+import cash.z.ecc.android.sdk.internal.jni.FakeRustBackend
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
 import cash.z.ecc.android.sdk.model.ZcashNetwork
 

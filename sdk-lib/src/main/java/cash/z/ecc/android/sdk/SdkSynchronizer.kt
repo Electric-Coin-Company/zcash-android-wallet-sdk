@@ -569,12 +569,13 @@ class SdkSynchronizer private constructor(
 
     override suspend fun fetchUtxosByAddress(accountUuid: AccountUuid, address: String): Boolean =
         when (
-            val result = walletClient
-                .fetchUtxosByAddress(
-                    accountUuid = accountUuid.value,
-                    address = address,
-                    serviceMode = ServiceMode.UniqueTor
-                )
+            val result =
+                walletClient
+                    .fetchUtxosByAddress(
+                        accountUuid = accountUuid.value,
+                        address = address,
+                        serviceMode = ServiceMode.UniqueTor
+                    )
         ) {
             is Response.Failure -> false
             is Response.Success<String?> -> result.result != null
