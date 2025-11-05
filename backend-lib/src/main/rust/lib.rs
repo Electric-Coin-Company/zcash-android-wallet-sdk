@@ -17,10 +17,6 @@ use jni::{
     sys::{JNI_FALSE, JNI_TRUE, jboolean, jbyteArray, jint, jlong, jobject, jobjectArray, jstring},
 };
 use nonempty::NonEmpty;
-use pczt::{
-    Pczt,
-    roles::{combiner::Combiner, prover::Prover, redactor::Redactor},
-};
 use prost::Message;
 use rand::rngs::OsRng;
 use secrecy::{ExposeSecret, SecretVec};
@@ -28,12 +24,17 @@ use tor_rtcompat::ToplevelBlockOn;
 use tracing::{debug, error};
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::reload;
+use uuid::Uuid;
+
+use pczt::{
+    Pczt,
+    roles::{combiner::Combiner, prover::Prover, redactor::Redactor},
+};
 use transparent::{
     address::{Script, TransparentAddress},
     bundle::{OutPoint, TxOut},
     keys::TransparentKeyScope,
 };
-use uuid::Uuid;
 use zcash_address::{
     ToAddress, ZcashAddress,
     unified::{self, Container, Encoding, Item as _},
@@ -3417,6 +3418,31 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_che
     unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
+fn encode_address_check_result<'a, P: Parameters>(
+    env: &mut JNIEnv<'a>,
+    network: &P,
+    found: Option<TransparentAddress>,
+) -> jni::errors::Result<JObject<'a>> {
+    match found {
+        None => {
+            let nf_class = env.find_class(
+                "cash/z/ecc/android/sdk/internal/model/JniAddressCheckResult$NotFound",
+            )?;
+
+            let instance_sig =
+                "Lcash/z/ecc/android/sdk/internal/model/JniAddressCheckResult$NotFound;";
+
+            let value = env.get_static_field(nf_class, "INSTANCE", instance_sig)?;
+            value.l()
+        }
+        Some(address) => env.new_object(
+            "cash/z/ecc/android/sdk/internal/model/JniAddressCheckResult$Found",
+            "(Ljava/lang/String;)V",
+            &[(&env.new_string(address.encode(network))?).into()],
+        ),
+    }
+}
+
 /// Retrieves transactions corresponding to the given t-address from the light wallet server that
 /// were mined within the given block range, and adds them to the wallet using
 /// [`decrypt_and_store_transaction`].
@@ -3438,7 +3464,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_upd
     start: jlong,
     end: jlong,
     network_id: jint,
-) {
+) -> jobject {
     let res = catch_unwind(&mut env, |env| {
         let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
         let lwd_conn = unsafe { lwd_conn.as_mut() }
@@ -3461,6 +3487,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_upd
             .ok_or_else(|| anyhow!("Start height for address queries is non-optional."))?;
         let end = parse_optional_height(end)?;
 
+        let mut found = None;
         lwd_conn.with_taddress_transactions(
             &network,
             address,
@@ -3474,13 +3501,80 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_upd
                 // - v5 and above transactions ignore the argument, and parse the correct
                 //   value from their encoding.
                 let tx = Transaction::read(&tx_bytes[..], BranchId::Sapling)?;
+                found = Some(address);
 
                 decrypt_and_store_transaction(&network, &mut db_data, &tx, mined_height)
                     .map_err(|e| anyhow!("Error while decrypting transaction: {}", e))
             },
-        )
+        )?;
+
+        Ok(encode_address_check_result(env, &network, found)?.into_raw())
     });
-    unwrap_exc_or(&mut env, res, ())
+
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
+}
+
+/// Queries the light wallet server to find any UTXOs associated with the given transparent
+/// address, and adds any UTXOs discovered to the wallet.
+///
+/// This check will cover the block range starting at the exposure height for that address, if
+/// known, or otherwise at the birthday height of the specified account.
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_model_TorWalletClient_fetchUtxosByAddress<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    lwd_conn: jlong,
+    db_data: JString<'local>,
+    network_id: jint,
+    account_uuid: JByteArray<'local>,
+    address: JString<'local>,
+) -> jobject {
+    let res = catch_unwind(&mut env, |env| {
+        let lwd_conn = ptr::with_exposed_provenance_mut::<crate::tor::LwdConn>(lwd_conn as usize);
+        let lwd_conn = unsafe { lwd_conn.as_mut() }
+            .ok_or_else(|| anyhow!("A Tor lightwalletd connection is required"))?;
+
+        let network = parse_network(network_id as u32)?;
+        let mut db_data = wallet_db(env, network, db_data)
+            .map_err(|e| anyhow!("Error while opening data DB: {}", e))?;
+
+        let account_uuid = account_id_from_jni(env, account_uuid)?;
+        let address = match Address::decode(&network, &utils::java_string_to_rust(env, &address)?) {
+            None => Err(anyhow!("Address is for the wrong network")),
+            Some(addr) => match addr {
+                Address::Sapling(_) | Address::Unified(_) | Address::Tex(_) => {
+                    Err(anyhow!("Address is not a transparent address"))
+                }
+                Address::Transparent(addr) => Ok(addr),
+            },
+        }?;
+
+        let mut found = None;
+        if let Some(meta) = db_data.get_transparent_address_metadata(account_uuid, &address)? {
+            lwd_conn.with_taddress_utxos(
+                &network,
+                address,
+                match meta.exposure() {
+                    Exposure::Exposed { at_height, .. } => Some(at_height),
+                    Exposure::Unknown | Exposure::CannotKnow => {
+                        Some(db_data.get_account_birthday(account_uuid)?)
+                    }
+                },
+                None,
+                |output| {
+                    found = Some(address);
+                    db_data.put_received_transparent_utxo(&output)?;
+                    Ok(())
+                },
+            )?;
+        }
+
+        Ok(encode_address_check_result(env, &network, found)?.into_raw())
+    });
+
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
 //
