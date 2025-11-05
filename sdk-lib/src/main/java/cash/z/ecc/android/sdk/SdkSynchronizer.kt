@@ -559,12 +559,25 @@ class SdkSynchronizer private constructor(
             val result =
                 walletClient
                     .checkSingleUseTransparentAddress(
-                        accountUuid.value,
-                        ServiceMode.UniqueTor
+                        accountUuid = accountUuid.value,
+                        serviceMode = ServiceMode.UniqueTor
                     )
         ) {
             is Response.Success<String?> -> result.result != null
             is Response.Failure -> false
+        }
+
+    override suspend fun fetchUtxosByAddress(accountUuid: AccountUuid, address: String): Boolean =
+        when (
+            val result = walletClient
+                .fetchUtxosByAddress(
+                    accountUuid = accountUuid.value,
+                    address = address,
+                    serviceMode = ServiceMode.UniqueTor
+                )
+        ) {
+            is Response.Failure -> false
+            is Response.Success<String?> -> result.result != null
         }
 
     override fun onBackground() {

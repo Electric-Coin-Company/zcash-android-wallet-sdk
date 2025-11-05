@@ -620,6 +620,15 @@ interface Synchronizer {
      */
     suspend fun checkSingleUseTransparentAddress(accountUuid: AccountUuid): Boolean
 
+    /**
+     * Queries the light wallet server to find any UTXOs associated with the given transparent
+     * address, and adds any UTXOs discovered to the wallet.
+     *
+     * This check will cover the block range starting at the exposure height for that address, if
+     * known, or otherwise at the birthday height of the specified account.
+     */
+    suspend fun fetchUtxosByAddress(accountUuid: AccountUuid, address: String): Boolean
+
     fun onBackground()
 
     fun onForeground()

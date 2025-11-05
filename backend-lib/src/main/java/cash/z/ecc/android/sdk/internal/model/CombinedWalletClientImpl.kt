@@ -74,6 +74,18 @@ class CombinedWalletClientImpl private constructor(
         }
     }
 
+    override suspend fun fetchUtxosByAddress(
+        accountUuid: ByteArray,
+        address: String,
+        serviceMode: ServiceMode
+    ): Response<String?> {
+        require(serviceMode == ServiceMode.UniqueTor)
+        return executeAsResponse(serviceMode) {
+            require(this is PartialTorWalletClient)
+            fetchUtxosByAddress(accountUuid, address)
+        }
+    }
+
     override suspend fun fetchUtxos(
         tAddresses: List<String>,
         startHeight: BlockHeightUnsafe,

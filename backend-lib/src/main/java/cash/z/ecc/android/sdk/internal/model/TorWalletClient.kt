@@ -79,6 +79,24 @@ class TorWalletClient private constructor(
             }
         }
 
+    override suspend fun fetchUtxosByAddress(accountUuid: ByteArray, address: String): Response<String?> =
+        backend.withWallet { dataDbFile, networkId ->
+            execute {
+                when (
+                    val result = fetchUtxosByAddress(
+                        nativeHandle = it,
+                        dbDataPath = dataDbFile.absolutePath,
+                        networkId = networkId,
+                        accountUuid = accountUuid,
+                        address = address
+                    )
+                ) {
+                    is JniAddressCheckResult.Found -> result.address
+                    JniAddressCheckResult.NotFound -> null
+                }
+            }
+        }
+
     suspend fun updateTransparentAddressTransactions(
         backend: Backend,
         address: String,

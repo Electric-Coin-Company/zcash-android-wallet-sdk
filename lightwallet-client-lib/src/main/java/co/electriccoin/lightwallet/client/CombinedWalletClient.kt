@@ -123,8 +123,11 @@ interface CombinedWalletClient : Disposable {
         serviceMode: ServiceMode
     ): Response<TreeStateUnsafe>
 
-    suspend fun checkSingleUseTransparentAddress(
+    suspend fun checkSingleUseTransparentAddress(accountUuid: ByteArray, serviceMode: ServiceMode): Response<String?>
+
+    suspend fun fetchUtxosByAddress(
         accountUuid: ByteArray,
+        address: String,
         serviceMode: ServiceMode
     ): Response<String?>
 
