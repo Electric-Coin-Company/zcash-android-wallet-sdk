@@ -92,10 +92,10 @@ internal class OutboundTransactionManagerImpl(
                             "completed with response: ${response.result.code}: ${response.result.message}"
                     }
                     TransactionSubmitResult.Failure(
-                        encodedTransaction.txId,
-                        false,
-                        response.result.code,
-                        response.result.message
+                        txId = encodedTransaction.txId,
+                        grpcError = false,
+                        code = response.result.code,
+                        description = response.result.message
                     )
                 }
             }
@@ -107,10 +107,10 @@ internal class OutboundTransactionManagerImpl(
                     }"
                 }
                 TransactionSubmitResult.Failure(
-                    encodedTransaction.txId,
-                    true,
-                    response.code,
-                    response.description
+                    txId = encodedTransaction.txId,
+                    grpcError = true,
+                    code = response.code,
+                    description = response.description
                 )
             }
         }

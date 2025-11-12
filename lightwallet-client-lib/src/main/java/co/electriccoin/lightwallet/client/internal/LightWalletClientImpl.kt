@@ -23,6 +23,7 @@ import io.grpc.ConnectivityState
 import io.grpc.ManagedChannel
 import io.grpc.Status
 import io.grpc.StatusException
+import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -116,8 +117,8 @@ internal class LightWalletClientImpl(
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
 
-    override suspend fun submitTransaction(spendTransaction: ByteArray): Response<SendResponseUnsafe> {
-        require(spendTransaction.isNotEmpty()) {
+    override suspend fun submitTransaction(tx: ByteArray): Response<SendResponseUnsafe> {
+        require(tx.isNotEmpty()) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE_EMPTY} Failed to submit transaction because it was empty," +
                 " so this request was ignored on the client-side." // NON-NLS
         }
@@ -125,7 +126,7 @@ internal class LightWalletClientImpl(
         val request =
             Service.RawTransaction
                 .newBuilder()
-                .setData(ByteString.copyFrom(spendTransaction))
+                .setData(ByteString.copyFrom(tx))
                 .build()
 
         return try {
@@ -134,7 +135,11 @@ internal class LightWalletClientImpl(
             val sendResponse = SendResponseUnsafe.new(response)
 
             Response.Success(sendResponse)
+        } catch (e: StatusRuntimeException) {
+            GrpcStatusResolver.resolveFailureFromStatus(e)
         } catch (e: StatusException) {
+            GrpcStatusResolver.resolveFailureFromStatus(e)
+        } catch (e: Exception) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
