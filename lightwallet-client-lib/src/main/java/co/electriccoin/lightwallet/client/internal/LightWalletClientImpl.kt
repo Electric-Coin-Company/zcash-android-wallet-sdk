@@ -117,6 +117,7 @@ internal class LightWalletClientImpl(
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun submitTransaction(tx: ByteArray): Response<SendResponseUnsafe> {
         require(tx.isNotEmpty()) {
             "${Constants.ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE_EMPTY} Failed to submit transaction because it was empty," +
