@@ -6,6 +6,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2025-11-14
+
+### Fixed
+- `LightWalletClient.submitTransaction` now correctly handles errors if StatusRuntimeException is thrown
+
 ## [2.4.0] - 2025-11-05
 
 ### Added
