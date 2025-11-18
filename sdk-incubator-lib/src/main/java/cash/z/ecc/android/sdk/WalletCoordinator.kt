@@ -21,11 +21,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -78,13 +78,22 @@ class WalletCoordinator(
         ) : InternalSynchronizerStatus()
     }
 
-    private val synchronizerOrLockoutId: Flow<Flow<InternalSynchronizerStatus>> =
+    @Suppress("DestructuringDeclarationWithTooManyEntries")
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val synchronizerOrLockoutId: Flow<InternalSynchronizerStatus> =
         combine(
             persistableWallet,
             synchronizerLockoutId,
             isTorEnabled,
             isExchangeRateEnabled
         ) { persistableWallet, lockoutId, isTorEnabled, isExchangeRateEnabled ->
+            SynchronizerLockoutInternalState(
+                persistableWallet = persistableWallet,
+                lockoutId = lockoutId,
+                isTorEnabled = isTorEnabled,
+                isExchangeRateEnabled = isExchangeRateEnabled
+            )
+        }.flatMapLatest { (persistableWallet, lockoutId, isTorEnabled, isExchangeRateEnabled) ->
             if (null != lockoutId) { // this one needs to come first
                 flowOf(InternalSynchronizerStatus.Lockout(lockoutId))
             } else if (null == persistableWallet) {
@@ -126,18 +135,16 @@ class WalletCoordinator(
     @OptIn(ExperimentalCoroutinesApi::class)
     val synchronizer: StateFlow<Synchronizer?> =
         synchronizerOrLockoutId
-            .flatMapLatest {
-                it
-            }.map {
+            .map {
                 when (it) {
                     is InternalSynchronizerStatus.Available -> it.synchronizer
                     is InternalSynchronizerStatus.Lockout -> null
                     InternalSynchronizerStatus.NoWallet -> null
                 }
             }.stateIn(
-                walletScope,
-                SharingStarted.WhileSubscribed(),
-                null
+                scope = walletScope,
+                started = SharingStarted.WhileSubscribed(0, 0),
+                initialValue = null
             )
 
     /**
@@ -161,6 +168,18 @@ class WalletCoordinator(
         return false
     }
 
+    fun resetSynchronizer() {
+        walletScope.launch {
+            lockoutMutex.withLock {
+                if (synchronizer.value != null || persistableWallet.first() == null) {
+                    synchronizerLockoutId.update { UUID.randomUUID() }
+                    synchronizer.first { it == null }
+                    synchronizerLockoutId.update { null }
+                }
+            }
+        }
+    }
+
     /**
      * Resets persisted data in the SDK, but preserves the wallet secret.  This will cause the
      * WalletCoordinator to emit a new synchronizer instance.
@@ -172,10 +191,9 @@ class WalletCoordinator(
             if (null != zcashNetwork) {
                 lockoutMutex.withLock {
                     val lockoutId = UUID.randomUUID()
-                    synchronizerLockoutId.value = lockoutId
+                    synchronizerLockoutId.update { lockoutId }
 
                     synchronizerOrLockoutId
-                        .flatMapConcat { it }
                         .filterIsInstance<InternalSynchronizerStatus.Lockout>()
                         .filter { it.id == lockoutId }
                         .onFirst {
@@ -189,7 +207,7 @@ class WalletCoordinator(
                             }
                         }
 
-                    synchronizerLockoutId.value = null
+                    synchronizerLockoutId.update { null }
                 }
             }
         }
@@ -224,3 +242,10 @@ class WalletCoordinator(
     // Allows for extension functions
     companion object
 }
+
+private data class SynchronizerLockoutInternalState(
+    val persistableWallet: PersistableWallet?,
+    val lockoutId: UUID?,
+    val isTorEnabled: Boolean?,
+    val isExchangeRateEnabled: Boolean?
+)
