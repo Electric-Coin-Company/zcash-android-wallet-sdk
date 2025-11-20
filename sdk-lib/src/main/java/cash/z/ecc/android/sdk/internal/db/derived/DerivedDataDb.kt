@@ -25,6 +25,37 @@ internal class DerivedDataDb private constructor(
 
     val txOutputsView = TxOutputsView(sqliteDatabase)
 
+    suspend fun debugQuery(query: String): String =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            val cursor = sqliteDatabase.query(query)
+            buildString {
+                cursor.use {
+                    val columnCount = it.columnCount
+
+                    // Append column names as header
+                    val columnNames = (0 until columnCount).map { index -> it.getColumnName(index) }
+                    appendLine(columnNames.joinToString(" | "))
+                    appendLine("-".repeat(columnNames.sumOf { name -> name.length + 3 }))
+
+                    // Append rows
+                    while (it.moveToNext()) {
+                        val row =
+                            (0 until columnCount).map { index ->
+                                when (it.getType(index)) {
+                                    android.database.Cursor.FIELD_TYPE_NULL -> "NULL"
+                                    android.database.Cursor.FIELD_TYPE_INTEGER -> it.getLong(index).toString()
+                                    android.database.Cursor.FIELD_TYPE_FLOAT -> it.getDouble(index).toString()
+                                    android.database.Cursor.FIELD_TYPE_STRING -> it.getString(index)
+                                    android.database.Cursor.FIELD_TYPE_BLOB -> "<BLOB>"
+                                    else -> "<UNKNOWN>"
+                                }
+                            }
+                        appendLine(row.joinToString(" | "))
+                    }
+                }
+            }
+        }
+
     suspend fun close() =
         withContext(SdkDispatchers.DATABASE_IO) {
             sqliteDatabase.close()

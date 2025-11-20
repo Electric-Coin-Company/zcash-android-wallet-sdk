@@ -71,6 +71,8 @@ internal class DbDerivedDataRepository(
     override fun getRecipients(transactionId: TransactionId): Flow<TransactionRecipient> =
         derivedDataDb.txOutputsView.getRecipients(transactionId.value)
 
+    override suspend fun debugQuery(query: String): String = derivedDataDb.debugQuery(query)
+
     override suspend fun findBlockByHeight(blockHeight: BlockHeight): DbBlock? =
         derivedDataDb.blockTable.findBlockByExpiryHeight(blockHeight)
 
