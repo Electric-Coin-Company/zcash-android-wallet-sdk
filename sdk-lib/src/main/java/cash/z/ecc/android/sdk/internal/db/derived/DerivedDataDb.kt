@@ -1,8 +1,18 @@
 package cash.z.ecc.android.sdk.internal.db.derived
 
 import android.content.Context
+import android.database.Cursor.FIELD_TYPE_BLOB
+import android.database.Cursor.FIELD_TYPE_FLOAT
+import android.database.Cursor.FIELD_TYPE_INTEGER
+import android.database.Cursor.FIELD_TYPE_NULL
+import android.database.Cursor.FIELD_TYPE_STRING
+import androidx.core.database.getBlobOrNull
+import androidx.core.database.getDoubleOrNull
+import androidx.core.database.getLongOrNull
+import androidx.core.database.getStringOrNull
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cash.z.ecc.android.sdk.exception.InitializeException
+import cash.z.ecc.android.sdk.ext.toHex
 import cash.z.ecc.android.sdk.internal.NoBackupContextWrapper
 import cash.z.ecc.android.sdk.internal.SdkDispatchers
 import cash.z.ecc.android.sdk.internal.Twig
@@ -11,6 +21,9 @@ import cash.z.ecc.android.sdk.internal.db.ReadOnlySupportSqliteOpenHelper
 import cash.z.ecc.android.sdk.internal.model.Checkpoint
 import cash.z.ecc.android.sdk.model.AccountCreateSetup
 import cash.z.ecc.android.sdk.model.BlockHeight
+import cash.z.ecc.android.sdk.model.FirstClassByteArray
+import cash.z.ecc.android.sdk.model.MemoContent
+import cash.z.ecc.android.sdk.model.TransactionId
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -25,29 +38,47 @@ internal class DerivedDataDb private constructor(
 
     val txOutputsView = TxOutputsView(sqliteDatabase)
 
+    @Suppress("CyclomaticComplexMethod", "MagicNumber")
     suspend fun debugQuery(query: String): String =
         withContext(SdkDispatchers.DATABASE_IO) {
             val cursor = sqliteDatabase.query(query)
             buildString {
-                cursor.use {
-                    val columnCount = it.columnCount
+                cursor.use { cursor ->
+                    val columnCount = cursor.columnCount
 
                     // Append column names as header
-                    val columnNames = (0 until columnCount).map { index -> it.getColumnName(index) }
+                    val columnNames =
+                        (0 until columnCount)
+                            .map { index -> cursor.getColumnName(index) }
                     appendLine(columnNames.joinToString(" | "))
                     appendLine("-".repeat(columnNames.sumOf { name -> name.length + 3 }))
 
                     // Append rows
-                    while (it.moveToNext()) {
+                    while (cursor.moveToNext()) {
                         val row =
                             (0 until columnCount).map { index ->
-                                when (it.getType(index)) {
-                                    android.database.Cursor.FIELD_TYPE_NULL -> "NULL"
-                                    android.database.Cursor.FIELD_TYPE_INTEGER -> it.getLong(index).toString()
-                                    android.database.Cursor.FIELD_TYPE_FLOAT -> it.getDouble(index).toString()
-                                    android.database.Cursor.FIELD_TYPE_STRING -> it.getString(index)
-                                    android.database.Cursor.FIELD_TYPE_BLOB -> "<BLOB>"
-                                    else -> "<UNKNOWN>"
+                                when (cursor.getType(index)) {
+                                    FIELD_TYPE_NULL -> "null"
+                                    FIELD_TYPE_INTEGER -> cursor.getLongOrNull(index).toString()
+                                    FIELD_TYPE_FLOAT -> cursor.getDoubleOrNull(index).toString()
+                                    FIELD_TYPE_STRING -> cursor.getStringOrNull(index)
+                                    FIELD_TYPE_BLOB -> {
+                                        val columnName = cursor.getColumnName(index)
+                                        val blob = cursor.getBlobOrNull(index)
+                                        when (columnName.lowercase()) {
+                                            "txid" ->
+                                                blob?.let {
+                                                    TransactionId(FirstClassByteArray(it)).txIdString()
+                                                }
+                                            "memo" ->
+                                                blob
+                                                    ?.let { MemoContent.fromBytes(it) }
+                                                    ?.toStringOrNull() ?: blob?.toHex() ?: "null"
+                                            else -> blob?.toHex()
+                                        }
+                                    }
+
+                                    else -> "unknown"
                                 }
                             }
                         appendLine(row.joinToString(" | "))
