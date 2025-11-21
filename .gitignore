@@ -59,6 +59,8 @@ captures/
 .idea/material_theme_project_new.xml
 .idea/AndroidProjectSystem.xml
 .idea/.name
+.idea/ChatHistory_schema_v3.xml
+.idea/markdown.xml
 *.iml
 
 # Keystore files
