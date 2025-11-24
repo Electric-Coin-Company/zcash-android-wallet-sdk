@@ -21,6 +21,7 @@ data class TransactionId internal constructor(
 
         fun new(byteArray: ByteArray) = TransactionId(FirstClassByteArray(byteArray))
 
+        @Suppress("MagicNumber")
         fun new(txId: String): TransactionId {
             require(txId.isNotEmpty()) {
                 "Transaction ID string must not be empty"
