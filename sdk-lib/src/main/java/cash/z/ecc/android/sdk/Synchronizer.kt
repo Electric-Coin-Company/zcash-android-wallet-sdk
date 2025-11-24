@@ -629,6 +629,11 @@ interface Synchronizer {
      */
     suspend fun fetchUtxosByAddress(accountUuid: AccountUuid, address: String): Boolean
 
+    /**
+     * Requests to enhance transaction enhancement for the [txId].
+     */
+    fun enhanceTransaction(txId: TransactionId)
+
     fun onBackground()
 
     fun onForeground()

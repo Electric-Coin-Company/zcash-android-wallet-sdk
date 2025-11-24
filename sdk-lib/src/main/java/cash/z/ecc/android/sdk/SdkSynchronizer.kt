@@ -581,6 +581,12 @@ class SdkSynchronizer private constructor(
             is Response.Success<String?> -> result.result != null
         }
 
+    override fun enhanceTransaction(txId: TransactionId) {
+        coroutineScope.launch {
+            processor.enhanceTransaction(txId)
+        }
+    }
+
     override fun onBackground() {
         coroutineScope.launch { torClient?.setDormant(TorDormantMode.SOFT) }
     }
