@@ -645,6 +645,8 @@ interface Synchronizer {
     @Throws(TorInitializationErrorException::class, TorUnavailableException::class)
     suspend fun getTorHttpClient(config: HttpClientConfig<HttpClientEngineConfig>.() -> Unit = {}): HttpClient
 
+    suspend fun debugQuery(query: String): String
+
     //
     // Error Handling
     //

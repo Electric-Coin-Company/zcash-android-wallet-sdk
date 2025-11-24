@@ -643,6 +643,8 @@ class SdkSynchronizer private constructor(
             throw TorUnavailableException()
         }
 
+    override suspend fun debugQuery(query: String): String = storage.debugQuery(query)
+
     suspend fun isValidAddress(address: String): Boolean = !validateAddress(address).isNotValid
 
     //

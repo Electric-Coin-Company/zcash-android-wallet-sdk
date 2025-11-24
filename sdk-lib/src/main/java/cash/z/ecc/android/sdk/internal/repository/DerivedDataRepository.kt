@@ -90,6 +90,8 @@ internal interface DerivedDataRepository {
 
     fun getRecipients(transactionId: TransactionId): Flow<TransactionRecipient>
 
+    suspend fun debugQuery(query: String): String
+
     //
     // Blocks
     //
