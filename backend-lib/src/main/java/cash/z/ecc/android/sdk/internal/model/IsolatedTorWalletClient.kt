@@ -45,7 +45,7 @@ class IsolatedTorWalletClient private constructor(
                     .use {
                         block(it)
                     }
-            } catch (e: RuntimeException) {
+            } catch (e: Exception) {
                 Response.Failure.OverTor(cause = e)
             }
         }

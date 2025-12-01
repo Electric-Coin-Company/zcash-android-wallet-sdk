@@ -115,6 +115,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -274,7 +275,7 @@ class SdkSynchronizer private constructor(
 
     override val walletBalances = processor.walletBalances.asStateFlow()
 
-    private val refreshExchangeRateUsd = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
+    private val refreshExchangeRateUsd = MutableSharedFlow<Unit>()
 
     private var lastExchangeRateValue = ObserveFiatCurrencyResult()
 
@@ -282,6 +283,7 @@ class SdkSynchronizer private constructor(
     override val exchangeRateUsd =
         channelFlow {
             refreshExchangeRateUsd
+                .onStart { emit(Unit) }
                 .flatMapLatest {
                     flow {
                         if (fetchExchangeChangeUsd == null) {
@@ -386,13 +388,7 @@ class SdkSynchronizer private constructor(
      */
     override var onProcessorErrorHandler: ((Throwable?) -> Boolean)? = null
 
-    /**
-     * A callback to invoke whenever a server error is encountered while submitting a transaction to
-     * lightwalletd. Returning true signals that the error was handled and a retry attempt should be
-     * made, if possible. This callback is not called on the main thread so any UI work would need
-     * to switch context to the main thread.
-     */
-    override var onSubmissionErrorHandler: ((Throwable?) -> Boolean)? = null
+    override var onProcessorErrorResolved: (() -> Unit)? = null
 
     /**
      * A callback to invoke whenever a processor is not setup correctly. Returning true signals that
@@ -673,6 +669,7 @@ class SdkSynchronizer private constructor(
 
         launch(CoroutineExceptionHandler(::onCriticalError)) {
             processor.onProcessorErrorListener = ::onProcessorError
+            processor.onProcessorErrorResolved = ::onProcessorErrorResolved
             processor.onSetupErrorListener = ::onSetupError
             processor.onChainErrorListener = ::onChainError
 
@@ -715,9 +712,8 @@ class SdkSynchronizer private constructor(
                     "errors (perhaps to update the UI or alert the user) set " +
                     "synchronizer.onCriticalErrorHandler to a non-null value."
             }
-
-            onCriticalErrorHandler?.invoke(error)
         }
+        onCriticalErrorHandler?.invoke(error)
     }
 
     private fun onProcessorError(error: Throwable): Boolean {
@@ -736,6 +732,10 @@ class SdkSynchronizer private constructor(
                     "${if (it) "try again" else "abort"}!"
             }
         } == true
+    }
+
+    private fun onProcessorErrorResolved() {
+        onProcessorErrorResolved?.invoke()
     }
 
     private fun onSetupError(error: Throwable): Boolean {
