@@ -6,6 +6,18 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.2] - 2025-12-02
+
+### Added
+- `WalletCoordinator.resetSynchronizer` function added to kill current synchronizer and recreate a new one
+- `Synchronizer.debugQuery` function added to request read-only database queries
+- `Synchronizer.enhanceTransaction` function added to request an enhancement of specified transaction
+- `TransactionId.new(String)` function added to create a new transaction ID from a string
+
+### Changed
+- `ResponseException` is now thrown instead of generic `Throwable` when `Response.Failure` occurs during networking
+- `Synchronizer.getTorHttpClient` is now able to return a client if either tor or exchange rate has been enabled
+
 ## [2.4.1] - 2025-11-14
 
 ### Fixed
