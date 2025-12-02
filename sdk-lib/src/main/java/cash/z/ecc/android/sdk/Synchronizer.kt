@@ -645,7 +645,7 @@ interface Synchronizer {
      * @return http client that does http communication over Tor network
      *
      * @throws TorInitializationErrorException if an error occurred during Tor setup
-     * @throws TorUnavailableException if Tor is not enabled
+     * @throws TorUnavailableException if Tor or exchange rate is not enabled
      */
     @Throws(TorInitializationErrorException::class, TorUnavailableException::class)
     suspend fun getTorHttpClient(config: HttpClientConfig<HttpClientEngineConfig>.() -> Unit = {}): HttpClient

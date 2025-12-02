@@ -620,7 +620,7 @@ class SdkSynchronizer private constructor(
     override suspend fun getTorHttpClient(
         config: HttpClientConfig<HttpClientEngineConfig>.() -> Unit
     ): HttpClient =
-        if (sdkFlags.isTorEnabled) {
+        if (sdkFlags.isTorEnabled || sdkFlags.isExchangeRateEnabled) {
             if (torClient == null) {
                 throw TorInitializationErrorException(
                     NullPointerException("Tor has not been initialized during synchronizer setup")
