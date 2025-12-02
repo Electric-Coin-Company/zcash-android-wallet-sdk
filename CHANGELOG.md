@@ -6,6 +6,10 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Reduced the number of exchanges queried for ZEC/USD back to the number we had
+  in 2.3.9 and earlier, to reduce power consumption.
+
 ## [2.4.2] - 2025-12-02
 
 ### Added
