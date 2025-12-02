@@ -69,6 +69,7 @@ import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.PercentDecimal
 import cash.z.ecc.android.sdk.model.RawTransaction
 import cash.z.ecc.android.sdk.model.SdkFlags
+import cash.z.ecc.android.sdk.model.TransactionId
 import cash.z.ecc.android.sdk.model.TransactionSubmitResult
 import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import cash.z.ecc.android.sdk.model.Zatoshi
@@ -451,6 +452,17 @@ class CompactBlockProcessor internal constructor(
                 // do nothing
             }
         }.collect()
+    }
+
+    suspend fun enhanceTransaction(txId: TransactionId) {
+        processingMutex.withLockLogged("processNewBlocks") {
+            enhanceTransaction(
+                transactionRequest = TransactionDataRequest.Enhancement(txId.value.byteArray),
+                backend = backend,
+                downloader = downloader,
+                sdkFlags = sdkFlags
+            )
+        }
     }
 
     private fun resetErrorCounters() {
