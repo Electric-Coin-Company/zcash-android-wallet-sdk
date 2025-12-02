@@ -89,22 +89,32 @@ suspend inline fun retryUpToAndContinue(
 @Suppress("MagicNumber")
 suspend inline fun retryWithBackoff(
     noinline onErrorListener: ((Throwable) -> Boolean)? = null,
+    noinline onErrorResolved: (() -> Unit)? = null,
     initialDelayMillis: Long = 1000L,
     maxDelayMillis: Long = MAX_BACKOFF_INTERVAL,
     block: () -> Unit
 ) {
     // count up to the max and then reset to half. So that we don't repeat the max but we also don't repeat too much.
+
+    var errorOccurred = false
+
     var sequence = 0
     while (true) {
         @Suppress("TooGenericExceptionCaught")
         try {
             block()
+            if (errorOccurred) {
+                onErrorResolved?.invoke()
+                errorOccurred = false
+            }
             return
         } catch (t: Throwable) {
             // offer to listener first
             if (onErrorListener?.invoke(t) == false) {
                 throw t
             }
+
+            errorOccurred = true
 
             sequence++
             // initialDelay^(sequence/4) + jitter

@@ -8,59 +8,59 @@ import io.grpc.Status
  * This class provides conversion from GRPC Status to our predefined Server or Client error classes.
  */
 object GrpcStatusResolver : ApiStatusResolver {
-    override fun <T> resolveFailureFromStatus(throwable: Throwable): Response.Failure<T> {
-        val status = Status.fromThrowable(throwable)
+    override fun <T> resolveFailureFromStatus(exception: Exception): Response.Failure<T> {
+        val status = Status.fromThrowable(exception)
         Log.w(Constants.LOG_TAG, "Networking error: ${status.code}: ${status.description}")
 
         return when (status.code) {
-            Status.Code.ABORTED -> {
+            Status.Code.ABORTED ->
                 Response.Failure.Server.Aborted(
+                    cause = exception,
                     code = status.code.value(),
                     description = status.description
                 )
-            }
-            Status.Code.CANCELLED -> {
+            Status.Code.CANCELLED ->
                 Response.Failure.Client.Canceled(
+                    cause = exception,
                     code = status.code.value(),
                     description = status.description
                 )
-            }
-            Status.Code.DEADLINE_EXCEEDED -> {
+            Status.Code.DEADLINE_EXCEEDED ->
                 Response.Failure.Server.DeadlineExceeded(
+                    cause = exception,
                     code = status.code.value(),
                     description = status.description
                 )
-            }
-            Status.Code.NOT_FOUND -> {
+            Status.Code.NOT_FOUND ->
                 Response.Failure.Server.NotFound(
+                    cause = exception,
                     code = status.code.value(),
                     description = status.description
                 )
-            }
-            Status.Code.PERMISSION_DENIED -> {
+            Status.Code.PERMISSION_DENIED ->
                 Response.Failure.Server.PermissionDenied(
+                    cause = exception,
                     code = status.code.value(),
                     description = status.description
                 )
-            }
-            Status.Code.UNAVAILABLE -> {
+            Status.Code.UNAVAILABLE ->
                 Response.Failure.Server.Unavailable(
+                    cause = exception,
                     code = status.code.value(),
                     description = status.description
                 )
-            }
-            Status.Code.UNKNOWN -> {
+            Status.Code.UNKNOWN ->
                 Response.Failure.Server.Unknown(
+                    cause = exception,
                     code = status.code.value(),
                     description = status.description
                 )
-            }
-            else -> {
+            else ->
                 Response.Failure.Server.Other(
+                    cause = exception,
                     code = status.code.value(),
                     description = status.description
                 )
-            }
         }
     }
 }

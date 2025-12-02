@@ -146,6 +146,8 @@ class CompactBlockProcessor internal constructor(
      */
     var onProcessorErrorListener: ((Throwable) -> Boolean)? = null
 
+    var onProcessorErrorResolved: (() -> Unit)? = null
+
     /**
      * Callback for reorgs. This callback is invoked when validation fails with the height at which
      * an error was found and the lower bound to which the data will rewind, at most.
@@ -291,6 +293,7 @@ class CompactBlockProcessor internal constructor(
         do {
             retryWithBackoff(
                 onErrorListener = ::onProcessorError,
+                onErrorResolved = ::onProcessorErrorResolved,
                 maxDelayMillis = MAX_BACKOFF_INTERVAL
             ) {
                 val result =
@@ -2589,6 +2592,8 @@ class CompactBlockProcessor internal constructor(
      * and all processing should halt and stop retrying.
      */
     private fun onProcessorError(throwable: Throwable): Boolean = onProcessorErrorListener?.invoke(throwable) ?: true
+
+    private fun onProcessorErrorResolved() = onProcessorErrorResolved?.invoke()
 
     private fun determineLowerBound(errorHeight: BlockHeight): BlockHeight {
         val errorCount = consecutiveChainErrors.incrementAndGet()

@@ -1,45 +1,38 @@
 package co.electriccoin.lightwallet.client.model
 
-internal const val CONNECTION_ERROR_CODE = 3100
-internal const val CONNECTION_ERROR_DESCRIPTION = "Missing internet connection." // NON-NLS
-
-internal const val OVER_TOR_COMMUNICATION_ERROR_CODE = 3200
-
-sealed class Response<T> {
+sealed interface Response<T> {
     data class Success<T>(
         val result: T
-    ) : Response<T>()
+    ) : Response<T>
 
-    sealed class Failure<T>(
-        open val code: Int,
-        open val description: String?
-    ) : Response<T>() {
+    sealed interface Failure<T> : Response<T> {
+        val code: Int
+        val description: String?
+        val cause: Exception
+
         /**
          * Use this function to convert Failure into Throwable object.
          */
-        fun toThrowable() = Throwable("Communication failure with details: $code${description?.let{": $it"} ?: "."}")
+        fun toThrowable() = ResponseException(code = code, description = description, cause = cause)
 
         /**
          * The client was not able to communicate with the server.
          */
         class Connection<T>(
-            override val description: String? = CONNECTION_ERROR_DESCRIPTION
-        ) : Failure<T>(CONNECTION_ERROR_CODE, description) {
-            override fun toString(): String {
-                return "Connection Error(code='$code', description='$description')" // NON-NLS
-            }
-        }
+            override val cause: Exception,
+            override val description: String? = "Missing internet connection.",
+            override val code: Int = 3100,
+        ) : Failure<T>
 
         /**
          * This exception comes from the failed communication with server using the Rust internal networking
          * communication over Tor.
          */
         class OverTor<T>(
-            val cause: Exception
-        ) : Failure<T>(OVER_TOR_COMMUNICATION_ERROR_CODE, cause.message) {
-            override fun toString(): String =
-                "Over Tor communication error(code='$code', description='$description', cause: $cause)"
-        }
+            override val cause: Exception,
+            override val description: String? = cause.message,
+            override val code: Int = 3200,
+        ) : Failure<T>
 
         /**
          * The server did respond and returned an error.
@@ -47,12 +40,13 @@ sealed class Response<T> {
         sealed class Server<T>(
             override val code: Int,
             override val description: String?
-        ) : Failure<T>(code, description) {
+        ) : Failure<T> {
             /**
              * The operation was aborted, typically due to a concurrency issue like sequencer check failures,
              * transaction aborts, etc.
              */
             class Aborted<T>(
+                override val cause: Exception,
                 code: Int,
                 description: String?
             ) : Server<T>(code, description)
@@ -63,6 +57,7 @@ sealed class Response<T> {
              * successful response from a server could have been delayed long enough for the deadline to expire.
              */
             class DeadlineExceeded<T>(
+                override val cause: Exception,
                 code: Int,
                 description: String?
             ) : Server<T>(code, description)
@@ -71,6 +66,7 @@ sealed class Response<T> {
              * Some requested entity (e.g., file or directory) was not found.
              */
             class NotFound<T>(
+                override val cause: Exception,
                 code: Int,
                 description: String?
             ) : Server<T>(code, description)
@@ -81,6 +77,7 @@ sealed class Response<T> {
              * {@link io.grpc.Status.Code}.
              */
             class Other<T>(
+                override val cause: Exception,
                 code: Int,
                 description: String?
             ) : Server<T>(code, description)
@@ -89,6 +86,7 @@ sealed class Response<T> {
              * The caller does not have permission to execute the specified operation.
              */
             class PermissionDenied<T>(
+                override val cause: Exception,
                 code: Int,
                 description: String?
             ) : Server<T>(code, description)
@@ -98,6 +96,7 @@ sealed class Response<T> {
              * corrected by retrying with a backoff. Note that it is not always safe to retry non-idempotent operations.
              */
             class Unavailable<T>(
+                override val cause: Exception,
                 code: Int,
                 description: String?
             ) : Server<T>(code, description)
@@ -108,13 +107,10 @@ sealed class Response<T> {
              * raised by APIs that do not return enough error information may be converted to this error.
              */
             class Unknown<T>(
+                override val cause: Exception,
                 code: Int,
                 description: String?
             ) : Server<T>(code, description)
-
-            override fun toString(): String {
-                return "Server Error(code='$code', description='$description')" // NON-NLS
-            }
         }
 
         /**
@@ -123,18 +119,15 @@ sealed class Response<T> {
         sealed class Client<T>(
             override val code: Int,
             override val description: String?
-        ) : Failure<T>(code, description) {
+        ) : Failure<T> {
             /**
              * The operation was cancelled (typically by the caller).
              */
             class Canceled<T>(
+                override val cause: Exception,
                 code: Int,
                 description: String?
             ) : Client<T>(code, description)
-
-            override fun toString(): String {
-                return "Client Error(code='$code', description='$description')" // NON-NLS
-            }
         }
     }
 }

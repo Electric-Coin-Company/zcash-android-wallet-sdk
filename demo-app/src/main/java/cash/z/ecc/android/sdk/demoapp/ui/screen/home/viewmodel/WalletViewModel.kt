@@ -505,11 +505,6 @@ private fun Synchronizer.toCommonError(): Flow<SynchronizerError?> =
             trySend(SynchronizerError.Processor(it))
             false
         }
-        onSubmissionErrorHandler = {
-            Twig.error { "WALLET - Error Submission: $it" }
-            trySend(SynchronizerError.Submission(it))
-            false
-        }
         onSetupErrorHandler = {
             Twig.error { "WALLET - Error Setup: $it" }
             trySend(SynchronizerError.Setup(it))

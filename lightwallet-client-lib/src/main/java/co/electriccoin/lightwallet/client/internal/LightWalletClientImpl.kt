@@ -27,6 +27,7 @@ import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.emitAll
@@ -74,11 +75,13 @@ internal class LightWalletClientImpl(
                 .map {
                     val response: Response<CompactBlockUnsafe> = Response.Success(CompactBlockUnsafe.new(it))
                     response
-                }.catch {
+                }.catchExceptions {
                     val failure: Response.Failure<CompactBlockUnsafe> = GrpcStatusResolver.resolveFailureFromStatus(it)
                     emit(failure)
                 }
         } catch (e: StatusException) {
+            flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
+        } catch (e: StatusRuntimeException) {
             flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
         }
     }
@@ -101,6 +104,8 @@ internal class LightWalletClientImpl(
             }
         } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
+        } catch (e: StatusRuntimeException) {
+            GrpcStatusResolver.resolveFailureFromStatus(e)
         }
 
     override suspend fun getServerInfo(): Response<LightWalletEndpointInfoUnsafe> =
@@ -114,6 +119,8 @@ internal class LightWalletClientImpl(
 
             Response.Success(lightwalletEndpointInfo)
         } catch (e: StatusException) {
+            GrpcStatusResolver.resolveFailureFromStatus(e)
+        } catch (e: StatusRuntimeException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
 
@@ -169,6 +176,8 @@ internal class LightWalletClientImpl(
             Response.Success(transactionResponse)
         } catch (e: StatusException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
+        } catch (e: StatusRuntimeException) {
+            GrpcStatusResolver.resolveFailureFromStatus(e)
         }
     }
 
@@ -196,12 +205,14 @@ internal class LightWalletClientImpl(
                     val response: Response<GetAddressUtxosReplyUnsafe> =
                         Response.Success(GetAddressUtxosReplyUnsafe.new(it))
                     response
-                }.catch {
+                }.catchExceptions {
                     val failure: Response.Failure<GetAddressUtxosReplyUnsafe> =
                         GrpcStatusResolver.resolveFailureFromStatus(it)
                     emit(failure)
                 }
         } catch (e: StatusException) {
+            flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
+        } catch (e: StatusRuntimeException) {
             flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
         }
     }
@@ -229,12 +240,14 @@ internal class LightWalletClientImpl(
                 .map {
                     val response: Response<RawTransactionUnsafe> = Response.Success(RawTransactionUnsafe.new(it))
                     response
-                }.catch {
+                }.catchExceptions {
                     val failure: Response.Failure<RawTransactionUnsafe> =
                         GrpcStatusResolver.resolveFailureFromStatus(it)
                     emit(failure)
                 }
         } catch (e: StatusException) {
+            flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
+        } catch (e: StatusRuntimeException) {
             flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
         }
     }
@@ -258,11 +271,13 @@ internal class LightWalletClientImpl(
                 .map {
                     val response: Response<SubtreeRootUnsafe> = Response.Success(SubtreeRootUnsafe.new(it))
                     response
-                }.catch {
+                }.catchExceptions {
                     val failure: Response.Failure<SubtreeRootUnsafe> = GrpcStatusResolver.resolveFailureFromStatus(it)
                     emit(failure)
                 }
         } catch (e: StatusException) {
+            flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
+        } catch (e: StatusRuntimeException) {
             flowOf(GrpcStatusResolver.resolveFailureFromStatus(e))
         }
     }
@@ -276,6 +291,8 @@ internal class LightWalletClientImpl(
 
             Response.Success(TreeStateUnsafe.new(response))
         } catch (e: StatusException) {
+            GrpcStatusResolver.resolveFailureFromStatus(e)
+        } catch (e: StatusRuntimeException) {
             GrpcStatusResolver.resolveFailureFromStatus(e)
         }
 
@@ -292,7 +309,7 @@ internal class LightWalletClientImpl(
                                     Response.Success(RawTransactionUnsafe.new(it))
                                 }
                         )
-                    }.retryWhen { cause, attempt ->
+                    }.retryWhen { cause, _ ->
                         // handle EOF
                         if (cause is StatusException && cause.status.code == Status.Code.INTERNAL) {
                             delay(1.seconds)
@@ -300,7 +317,7 @@ internal class LightWalletClientImpl(
                         } else {
                             false
                         }
-                    }.retryWhen { cause, attempt ->
+                    }.retryWhen { _, attempt ->
                         // handle other exceptions with backoff
                         if (attempt <= 1) {
                             delay(1.seconds)
@@ -356,3 +373,21 @@ private fun ClosedRange<BlockHeightUnsafe>.toBlockRange(): Service.BlockRange =
         .setStart(start.toBlockHeight())
         .setEnd(endInclusive.toBlockHeight())
         .build()
+
+/**
+ * Catches exceptions of a specific type [T] in the upstream flow and calls the given [action].
+ *
+ * Unlike the standard [catch] operator, this function will only catch subtypes of [Exception].
+ * It will re-throw any [Throwable] that is not an [Exception], such as [Error].
+ */
+private inline fun <T> Flow<T>.catchExceptions(
+    crossinline action: suspend FlowCollector<T>.(cause: Exception) -> Unit
+): Flow<T> =
+    catch { cause ->
+        if (cause is Exception) {
+            action(cause)
+        } else {
+            // Re-throw Throwables that are not Exceptions (e.g., Errors)
+            throw cause
+        }
+    }

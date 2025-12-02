@@ -13,6 +13,7 @@ import co.electriccoin.lightwallet.client.model.RawTransactionUnsafe
 import co.electriccoin.lightwallet.client.model.Response
 import co.electriccoin.lightwallet.client.model.ShieldedProtocolEnum
 import co.electriccoin.lightwallet.client.model.SubtreeRootUnsafe
+import co.electriccoin.lightwallet.client.model.UninitializedTorClientException
 import co.electriccoin.lightwallet.client.util.use
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -215,7 +216,3 @@ class CombinedWalletClientImpl private constructor(
         )
     }
 }
-
-class UninitializedTorClientException(
-    cause: Exception
-) : RuntimeException(cause)

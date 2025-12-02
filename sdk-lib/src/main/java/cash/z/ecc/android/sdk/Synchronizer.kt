@@ -674,15 +674,7 @@ interface Synchronizer {
      */
     var onProcessorErrorHandler: ((Throwable?) -> Boolean)?
 
-    /**
-     * An error handler for exceptions while submitting transactions to lightwalletd. For instance,
-     * a transaction may get rejected because it would be a double-spend or the user might lose
-     * their cellphone signal.
-     *
-     * @return true when the error has been handled and the sender should attempt to resend. False
-     * when the error is unrecoverable and the sender should [stop].
-     */
-    var onSubmissionErrorHandler: ((Throwable?) -> Boolean)?
+    var onProcessorErrorResolved: (() -> Unit)?
 
     /**
      * Callback for setup errors that occur prior to processing compact blocks. Can be used to
