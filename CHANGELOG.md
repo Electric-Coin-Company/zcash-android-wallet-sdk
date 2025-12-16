@@ -6,6 +6,11 @@ and this library adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.4] - 2025-12-16
+
+### Changed
+- [SaplingParamTool.ensureParams] is now called as part of a sync loop
+
 ## [2.4.3] - 2025-12-02
 
 ### Changed
