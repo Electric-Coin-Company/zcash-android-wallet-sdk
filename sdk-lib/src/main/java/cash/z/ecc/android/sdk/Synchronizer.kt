@@ -12,6 +12,7 @@ import cash.z.ecc.android.sdk.exception.TorUnavailableException
 import cash.z.ecc.android.sdk.ext.ZcashSdk
 import cash.z.ecc.android.sdk.internal.FastestServerFetcher
 import cash.z.ecc.android.sdk.internal.Files
+import cash.z.ecc.android.sdk.internal.SaplingParamFetcher
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.db.DatabaseCoordinator
@@ -836,6 +837,8 @@ interface Synchronizer {
                     coordinator
                 )
 
+            val saplingParamFetcher = SaplingParamFetcher(saplingParamTool, backend)
+
             val blockStore =
                 DefaultSynchronizerFactory
                     .defaultCompactBlockRepository(coordinator.fsBlockDbRoot(zcashNetwork, alias), backend)
@@ -909,7 +912,7 @@ interface Synchronizer {
                     setup = setup,
                 )
 
-            val encoder = DefaultSynchronizerFactory.defaultEncoder(backend, saplingParamTool, repository)
+            val encoder = DefaultSynchronizerFactory.defaultEncoder(backend, saplingParamFetcher, repository)
 
             val txManager = DefaultSynchronizerFactory.defaultTxManager(encoder, walletClient, sdkFlags)
             val processor =
@@ -919,7 +922,8 @@ interface Synchronizer {
                     downloader = downloader,
                     repository = repository,
                     txManager = txManager,
-                    sdkFlags = sdkFlags
+                    sdkFlags = sdkFlags,
+                    saplingParamFetcher = saplingParamFetcher
                 )
 
             val standardPreferenceProvider = StandardPreferenceProvider(context)

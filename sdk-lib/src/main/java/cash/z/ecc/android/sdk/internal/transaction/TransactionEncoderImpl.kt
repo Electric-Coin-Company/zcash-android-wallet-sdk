@@ -3,7 +3,7 @@ package cash.z.ecc.android.sdk.internal.transaction
 import cash.z.ecc.android.sdk.exception.PcztException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.masked
-import cash.z.ecc.android.sdk.internal.SaplingParamTool
+import cash.z.ecc.android.sdk.internal.SaplingParamFetcher
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.model.EncodedTransaction
@@ -28,7 +28,7 @@ import cash.z.ecc.android.sdk.model.Zatoshi
 @Suppress("TooManyFunctions")
 internal class TransactionEncoderImpl(
     private val backend: TypesafeBackend,
-    private val saplingParamTool: SaplingParamTool,
+    private val saplingParamFetcher: SaplingParamFetcher,
     private val repository: DerivedDataRepository
 ) : TransactionEncoder {
     /**
@@ -126,7 +126,7 @@ internal class TransactionEncoderImpl(
 
         val transactionIds =
             runCatching {
-                saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
+                saplingParamFetcher.forceDownload()
                 Twig.debug { "params exist! attempting to send..." }
                 backend.createProposedTransactions(proposal, usk)
             }.onFailure {
@@ -192,7 +192,7 @@ internal class TransactionEncoderImpl(
             // if (backend.pcztRequiresSaplingProofs(pczt)) {
             //     saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
             // }
-            saplingParamTool.ensureParams(saplingParamTool.properties.paramsDirectory)
+            saplingParamFetcher.forceDownload()
             Twig.debug { "params exist! attempting to send..." }
             backend.addProofsToPczt(pczt = pczt)
         }.onSuccess {

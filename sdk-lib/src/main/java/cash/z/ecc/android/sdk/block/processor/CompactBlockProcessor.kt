@@ -29,6 +29,7 @@ import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.ZcashSdk.MAX_BACKOFF_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL
 import cash.z.ecc.android.sdk.ext.ZcashSdk.POLL_INTERVAL_SHORT
+import cash.z.ecc.android.sdk.internal.SaplingParamFetcher
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
 import cash.z.ecc.android.sdk.internal.block.CompactBlockDownloader
@@ -129,14 +130,15 @@ import kotlin.time.toDuration
  * of the current wallet--the height before which we do not need to scan for transactions.
  */
 @OpenForTesting
-@Suppress("TooManyFunctions", "LargeClass")
+@Suppress("TooManyFunctions", "LargeClass", "LongParameterList")
 class CompactBlockProcessor internal constructor(
     private val backend: TypesafeBackend,
     val downloader: CompactBlockDownloader,
     minimumHeight: BlockHeight,
     private val repository: DerivedDataRepository,
     private val txManager: OutboundTransactionManager,
-    private val sdkFlags: SdkFlags
+    private val sdkFlags: SdkFlags,
+    private val saplingParamFetcher: SaplingParamFetcher
 ) {
     /**
      * Callback for any non-trivial errors that occur while processing compact blocks.
@@ -1091,6 +1093,10 @@ class CompactBlockProcessor internal constructor(
                 }.collect()
         }
         return count
+    }
+
+    internal suspend fun downloadSaplingParams() {
+        saplingParamFetcher.downloadIfNeeded()
     }
 
     /**
