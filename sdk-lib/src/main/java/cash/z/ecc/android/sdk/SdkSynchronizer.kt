@@ -19,6 +19,7 @@ import cash.z.ecc.android.sdk.exception.TorUnavailableException
 import cash.z.ecc.android.sdk.exception.TransactionEncoderException
 import cash.z.ecc.android.sdk.ext.ConsensusBranchId
 import cash.z.ecc.android.sdk.internal.FastestServerFetcher
+import cash.z.ecc.android.sdk.internal.SaplingParamFetcher
 import cash.z.ecc.android.sdk.internal.SaplingParamTool
 import cash.z.ecc.android.sdk.internal.Twig
 import cash.z.ecc.android.sdk.internal.TypesafeBackend
@@ -790,6 +791,7 @@ class SdkSynchronizer private constructor(
                 since = BlockHeight(0)
             )
         }
+        processor.downloadSaplingParams()
     }
 
     private suspend fun dataMaintenance() {
@@ -1291,9 +1293,9 @@ internal object DefaultSynchronizerFactory {
 
     internal fun defaultEncoder(
         backend: TypesafeBackend,
-        saplingParamTool: SaplingParamTool,
+        saplingParamFetcher: SaplingParamFetcher,
         repository: DerivedDataRepository
-    ): TransactionEncoder = TransactionEncoderImpl(backend, saplingParamTool, repository)
+    ): TransactionEncoder = TransactionEncoderImpl(backend, saplingParamFetcher, repository)
 
     fun defaultDownloader(
         walletClient: CombinedWalletClient,
@@ -1313,7 +1315,8 @@ internal object DefaultSynchronizerFactory {
         repository: DerivedDataRepository,
         birthdayHeight: BlockHeight,
         txManager: OutboundTransactionManager,
-        sdkFlags: SdkFlags
+        sdkFlags: SdkFlags,
+        saplingParamFetcher: SaplingParamFetcher
     ): CompactBlockProcessor =
         CompactBlockProcessor(
             backend = backend,
@@ -1321,7 +1324,8 @@ internal object DefaultSynchronizerFactory {
             minimumHeight = birthdayHeight,
             repository = repository,
             txManager = txManager,
-            sdkFlags = sdkFlags
+            sdkFlags = sdkFlags,
+            saplingParamFetcher = saplingParamFetcher
         )
 }
 
