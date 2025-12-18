@@ -7,6 +7,7 @@ import cash.z.ecc.android.sdk.internal.ext.deleteSuspend
 import cash.z.ecc.android.sdk.internal.model.JniAccount
 import cash.z.ecc.android.sdk.internal.model.JniAccountUsk
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniReceivedTransactionOutput
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniScanSummary
@@ -191,6 +192,17 @@ class RustBackend private constructor(
                 dbDataPath = dataDbFile.absolutePath,
                 accountUuid = accountUuid,
                 networkId = networkId
+            ).asList()
+        }
+
+    override suspend fun getReceivedTransactionOutputs(
+        txId: ByteArray,
+    ): List<JniReceivedTransactionOutput> =
+        withContext(SdkDispatchers.DATABASE_IO) {
+            getReceivedTransactionOutputs(
+                dataDbFile.absolutePath,
+                networkId = networkId,
+                txId,
             ).asList()
         }
 
@@ -703,6 +715,13 @@ class RustBackend private constructor(
             taddr: String,
             networkId: Int
         ): Long
+
+        @JvmStatic
+        private external fun getReceivedTransactionOutputs(
+            dbDataPath: String,
+            networkId: Int,
+            txId: ByteArray,
+        ): Array<JniReceivedTransactionOutput>
 
         @JvmStatic
         private external fun getMemoAsUtf8(

@@ -43,9 +43,9 @@ use zcash_client_backend::{
     address::{Address, UnifiedAddress},
     data_api::{
         Account, AccountBalance, AccountBirthday, AccountPurpose, BirthdayError, InputSource,
-        OutputStatusFilter, SeedRelevance, TransactionDataRequest, TransactionStatus,
-        TransactionStatusFilter, WalletCommitmentTrees, WalletRead, WalletSummary, WalletWrite,
-        Zip32Derivation,
+        OutputStatusFilter, ReceivedTransactionOutput, SeedRelevance, TransactionDataRequest,
+        TransactionStatus, TransactionStatusFilter, WalletCommitmentTrees, WalletRead,
+        WalletSummary, WalletWrite, Zip32Derivation,
         chain::{CommitmentTreeRoot, ScanSummary, scan_cached_blocks},
         scanning::{ScanPriority, ScanRange},
         wallet::{
@@ -81,6 +81,7 @@ use zcash_primitives::{
     transaction::{Transaction, TxId},
 };
 use zcash_proofs::prover::LocalTxProver;
+use zcash_protocol::PoolType;
 use zcash_protocol::{
     ShieldedProtocol,
     consensus::{
@@ -1088,6 +1089,71 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getTotalT
     });
 
     unwrap_exc_or(&mut env, res, -1)
+}
+
+const JNI_RECEIVED_TRANSACTION_OUTPUT: &str =
+    "cash/z/ecc/android/sdk/internal/model/JniReceivedTransactionOutput";
+
+fn encode_received_transaction_output<'a>(
+    env: &mut JNIEnv<'a>,
+    output: ReceivedTransactionOutput,
+) -> jni::errors::Result<JObject<'a>> {
+    let value = ZatBalance::from(output.value());
+
+    env.new_object(
+        JNI_RECEIVED_TRANSACTION_OUTPUT,
+        "(IIJJ)V",
+        &[
+            JValue::Int(encode_pool_type(output.pool_type())),
+            JValue::Int(output.output_index().try_into().expect("fits")),
+            JValue::Long(value.into()),
+            JValue::Long(output.confirmations_until_spendable().into()),
+        ],
+    )
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_getReceivedTransactionOutputs<
+    'local,
+>(
+    mut env: JNIEnv<'local>,
+    _: JClass<'local>,
+    db_data: JString<'local>,
+    network_id: jint,
+    txid_bytes: JByteArray<'local>,
+) -> jobjectArray {
+    let res = catch_unwind(&mut env, |env| {
+        let _span = tracing::info_span!("RustBackend.getReceivedTransactionOutputs").entered();
+        let network = parse_network(network_id as u32)?;
+        let db_data = wallet_db(env, network, db_data)?;
+
+        let txid = parse_txid(env, txid_bytes)?;
+        let confirmations_policy = wallet::ConfirmationsPolicy::default();
+
+        let target_height = db_data
+            .chain_height()?
+            .ok_or(SqliteClientError::ChainHeightUnknown)?
+            + 1;
+
+        let outputs = db_data
+            .get_received_outputs(txid, target_height.into(), confirmations_policy)
+            .map_err(|e| {
+                anyhow!(
+                    "An error occurred retrieving the transaction outputs, {}",
+                    e
+                )
+            })?;
+
+        Ok(utils::rust_vec_to_java(
+            env,
+            outputs,
+            JNI_RECEIVED_TRANSACTION_OUTPUT,
+            encode_received_transaction_output,
+        )?
+        .into_raw())
+    });
+
+    unwrap_exc_or(&mut env, res, ptr::null_mut())
 }
 
 #[unsafe(no_mangle)]
@@ -3592,6 +3658,14 @@ fn parse_protocol(code: i32) -> anyhow::Result<ShieldedProtocol> {
         2 => Ok(ShieldedProtocol::Sapling),
         3 => Ok(ShieldedProtocol::Orchard),
         _ => Err(anyhow!("Shielded protocol not recognized: {code}")),
+    }
+}
+
+fn encode_pool_type(pool: PoolType) -> i32 {
+    match pool {
+        PoolType::Transparent => 0,
+        PoolType::SAPLING => 2,
+        PoolType::ORCHARD => 3,
     }
 }
 

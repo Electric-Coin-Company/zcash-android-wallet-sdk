@@ -4,6 +4,7 @@ import cash.z.ecc.android.sdk.internal.Backend
 import cash.z.ecc.android.sdk.internal.model.JniAccount
 import cash.z.ecc.android.sdk.internal.model.JniAccountUsk
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniReceivedTransactionOutput
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniSingleUseTransparentAddress
@@ -233,6 +234,12 @@ class FakeRustBackend(
     }
 
     override fun getBranchIdForHeight(height: Long): Long {
+        error("Intentionally not implemented yet.")
+    }
+
+    override suspend fun getReceivedTransactionOutputs(
+        txId: ByteArray,
+    ): List<JniReceivedTransactionOutput> {
         error("Intentionally not implemented yet.")
     }
 
