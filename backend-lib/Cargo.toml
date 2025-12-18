@@ -8,7 +8,7 @@ authors = [
 description = "JNI backend for the Android wallet SDK"
 publish = false
 edition = "2024"
-rust-version = "1.90"
+rust-version = "1.92"
 
 [dependencies]
 # Zcash dependencies
