@@ -2065,7 +2065,7 @@ pub extern "C" fn Java_cash_z_ecc_android_sdk_internal_jni_RustBackend_proposeTr
         let (change_strategy, input_selector) = zip317_helper(None);
 
         let request = TransactionRequest::new(vec![
-            Payment::new(to, value, memo, None, None, vec![]).ok_or_else(|| {
+            Payment::new(to, Some(value), memo, None, None, vec![]).ok_or_else(|| {
                 anyhow!("Memos are not permitted when sending to transparent recipients.")
             })?,
         ])
