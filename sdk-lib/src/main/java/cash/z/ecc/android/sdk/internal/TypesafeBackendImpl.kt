@@ -22,6 +22,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.ReceivedTransactionOutput
 import cash.z.ecc.android.sdk.model.SingleUseTransparentAddress
 import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
@@ -243,6 +244,11 @@ internal class TypesafeBackendImpl(
         value,
         height.value
     )
+
+    override suspend fun getReceivedTransactionOutputs(
+        txId: ByteArray,
+    ): List<ReceivedTransactionOutput> =
+        backend.getReceivedTransactionOutputs(txId).map { ReceivedTransactionOutput.new(it) }
 
     override suspend fun getMemoAsUtf8(
         txId: ByteArray,

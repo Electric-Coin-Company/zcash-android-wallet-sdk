@@ -3,6 +3,7 @@ package cash.z.ecc.android.sdk.internal
 import cash.z.ecc.android.sdk.internal.model.JniAccount
 import cash.z.ecc.android.sdk.internal.model.JniAccountUsk
 import cash.z.ecc.android.sdk.internal.model.JniBlockMeta
+import cash.z.ecc.android.sdk.internal.model.JniReceivedTransactionOutput
 import cash.z.ecc.android.sdk.internal.model.JniRewindResult
 import cash.z.ecc.android.sdk.internal.model.JniScanRange
 import cash.z.ecc.android.sdk.internal.model.JniScanSummary
@@ -216,6 +217,14 @@ interface Backend {
     suspend fun listTransparentReceivers(accountUuid: ByteArray): List<String>
 
     fun getBranchIdForHeight(height: Long): Long
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun getReceivedTransactionOutputs(
+        txId: ByteArray,
+    ): List<JniReceivedTransactionOutput>
 
     /**
      * @throws RuntimeException as a common indicator of the operation failure

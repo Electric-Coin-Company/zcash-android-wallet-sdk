@@ -21,6 +21,7 @@ import cash.z.ecc.android.sdk.model.BlockHeight
 import cash.z.ecc.android.sdk.model.FirstClassByteArray
 import cash.z.ecc.android.sdk.model.Pczt
 import cash.z.ecc.android.sdk.model.Proposal
+import cash.z.ecc.android.sdk.model.ReceivedTransactionOutput
 import cash.z.ecc.android.sdk.model.SingleUseTransparentAddress
 import cash.z.ecc.android.sdk.model.UnifiedAddressRequest
 import cash.z.ecc.android.sdk.model.UnifiedFullViewingKey
@@ -172,6 +173,14 @@ internal interface TypesafeBackend {
         value: Long,
         height: BlockHeight
     )
+
+    /**
+     * @throws RuntimeException as a common indicator of the operation failure
+     */
+    @Throws(RuntimeException::class)
+    suspend fun getReceivedTransactionOutputs(
+        txId: ByteArray,
+    ): List<ReceivedTransactionOutput>
 
     suspend fun getMemoAsUtf8(
         txId: ByteArray,
